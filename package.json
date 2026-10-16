@@ -1,0 +1,13 @@
+{
+  "name": "maquina-de-ofertas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Acha ofertas da Shopee, faz as artes e publica.",
+  "scripts": {
+    "rodar": "node app/maquina.js lusia",
+    "teste": "node app/teste-automatico.js"
+  },
+  "dependencies": {
+    "sharp": "0.34.4"
+  }
+}

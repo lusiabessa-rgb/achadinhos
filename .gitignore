@@ -1,0 +1,7 @@
+# NUNCA vai para a internet:
+contas/*/CHAVES.txt
+node_modules/
+POSTAR-HOJE/
+# saídas de teste
+publico/*/*-teste/
+publico/*/*-teste.html

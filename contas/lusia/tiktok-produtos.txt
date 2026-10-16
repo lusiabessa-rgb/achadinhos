@@ -1,0 +1,6 @@
+# PRODUTOS DO TIKTOK SHOP
+# Uma linha por produto:   nome | preço | comissão %
+# (preço e comissão são opcionais). Linhas com # são ignoradas.
+# Ou só me mande os prints dos "Mais vendidos" que eu preencho para você.
+
+Cortina de LED Cascata Luz Quente | 49,90 | 10

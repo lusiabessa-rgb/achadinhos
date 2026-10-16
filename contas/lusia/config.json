@@ -1,0 +1,38 @@
+{
+  "palavrasChave": [
+    "decoração de natal",
+    "pisca pisca led",
+    "cortina de led",
+    "enfeite árvore de natal",
+    "toalha de mesa natal",
+    "guirlanda natal"
+  ],
+  "produtosPorDia": 5,
+  "naoRepetirPorDias": 7,
+  "filtros": {
+    "comissaoMinimaPct": 5,
+    "vendasMinimas": 100,
+    "notaMinima": 4.3,
+    "precoMin": 10,
+    "precoMax": 250,
+    "palavrasProibidas": ["réplica", "replica", "arma", "cigarro", "vape"]
+  },
+  "hashtags": ["#achadinhosshopee", "#decoracaodenatal", "#natal", "#casadecorada", "#achadinhos"],
+  "hashtagsTikTok": ["#tiktokshop", "#decoracaodenatal", "#natal", "#casadecorada", "#achadinhos"],
+  "hashtagsInstagram": ["#achadinhos", "#achadinhosshopee", "#decoracaodenatal", "#natal", "#casadecorada", "#ofertas", "#shopee"],
+
+  "marca": "@achadinhoabessa",
+  "corArte": "#b0294a",
+  "site": {
+    "titulo": "Achadinhos Abessa",
+    "subtitulo": "As melhores ofertas para mulheres",
+    "urlBase": ""
+  },
+
+  "instagram": {
+    "ativo": false,
+    "modo": "carrossel",
+    "postsIndividuaisPorRodada": 0,
+    "stories": true
+  }
+}
