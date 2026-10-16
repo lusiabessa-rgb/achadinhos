@@ -55,6 +55,9 @@ jobs:
             node app/maquina.js lusia
           fi
 
+      - name: Preparar os posts de conteudo (sem venda)
+        run: node app/conteudo.js lusia
+
       - name: Salvar o que foi feito
         run: |
           git config user.name "maquina-de-ofertas"

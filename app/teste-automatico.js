@@ -337,6 +337,38 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
+  await teste('post de conteúdo: faz a arte, entra na fila e é publicado uma vez só', async () => {
+    const sharp = require('sharp');
+    const { preparar } = require('./conteudo');
+    const { publicar } = require('./publicar');
+    const raiz = path.join(__dirname, '..');
+    const conta = 'teste-conteudo-' + process.pid;
+    const pastaConta = path.join(raiz, 'contas', conta);
+    try {
+      fs.mkdirSync(path.join(pastaConta, 'conteudo'), { recursive: true });
+      fs.copyFileSync(path.join(raiz, 'contas', 'lusia', 'config.json'), path.join(pastaConta, 'config.json'));
+      await sharp({ create: { width: 800, height: 600, channels: 3, background: '#2a6' } }).png().toFile(path.join(pastaConta, 'conteudo', 'Ideia 1.png'));
+      fs.writeFileSync(path.join(pastaConta, 'conteudo', 'Ideia 1.txt'), 'Título com emoji 🎄 & <sinais>\nLegenda 🐾\n#natal');
+      fs.writeFileSync(path.join(pastaConta, 'conteudo', 'sem-imagem.txt'), 'X\nY');
+      const fila = await preparar(conta, () => {});
+      assert.strictEqual(fila.length, 1);
+      const m = await sharp(path.join(raiz, 'publico', conta, fila[0].arte)).metadata();
+      assert.deepStrictEqual([m.format, m.width, m.height], ['jpeg', 1080, 1350]);
+      const lerCfg = maquina.lerConfig;
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' } });
+      const reg = [];
+      const opcoes = { ignorarDesligado: true, segredos: { igToken: 't', igUserId: '9' }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} };
+      const r1 = await publicar(conta, opcoes);
+      const r2 = await publicar(conta, opcoes);
+      maquina.lerConfig = lerCfg;
+      assert.strictEqual(r1.publicados, 1, 'não publicou o post de conteúdo');
+      assert.strictEqual(r2.publicados, 0, 'publicou o mesmo post duas vezes');
+      assert(reg.some((x) => x.corpo.caption && x.corpo.caption.includes('Legenda')));
+    } finally {
+      for (const p of [pastaConta, path.join(raiz, 'publico', conta)]) fs.rmSync(p, { recursive: true, force: true });
+    }
+  });
+
   console.log(`\nResultado: ${passou} ok, ${falhou} falhou.`);
   process.exitCode = falhou ? 1 : 0;
 })();

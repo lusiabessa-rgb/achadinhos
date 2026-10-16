@@ -34,11 +34,16 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
 
   const pastaPublica = path.join(RAIZ, 'publico', conta);
   const arqHoje = path.join(pastaPublica, 'hoje.txt');
-  if (!diaForcado && !fs.existsSync(arqHoje)) throw new Error('A máquina ainda não preparou as ofertas de hoje. Rode a máquina primeiro.');
-  const dia = diaForcado || fs.readFileSync(arqHoje, 'utf8').trim();
-  const dados = JSON.parse(fs.readFileSync(path.join(pastaPublica, dia, 'dados.json'), 'utf8'));
-  if (!dados.ofertas.length) {
-    log('Nenhuma oferta hoje. Nada publicado.');
+  // Ofertas do dia (podem não existir: sem chaves/lista da Shopee ainda) + posts de conteúdo da fila
+  const dia = diaForcado || (fs.existsSync(arqHoje) ? fs.readFileSync(arqHoje, 'utf8').trim() : '');
+  const arqDados = dia ? path.join(pastaPublica, dia, 'dados.json') : '';
+  const dados = arqDados && fs.existsSync(arqDados) ? JSON.parse(fs.readFileSync(arqDados, 'utf8')) : { ofertas: [] };
+  let filaConteudo = [];
+  try {
+    filaConteudo = JSON.parse(fs.readFileSync(path.join(pastaPublica, 'conteudo', 'fila.json'), 'utf8')) || [];
+  } catch {}
+  if (!dados.ofertas.length && !filaConteudo.length) {
+    log('Nenhuma oferta nem post de conteúdo para publicar.');
     return { publicados: 0 };
   }
 
@@ -59,7 +64,7 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
 
   // Lista do que publicar nesta rodada
   const tarefas = [];
-  if (ig.modo === 'carrossel' && !feitos[`${dia}:carrossel`]) {
+  if (ig.modo === 'carrossel' && dados.ofertas.length && !feitos[`${dia}:carrossel`]) {
     tarefas.push({ chave: `${dia}:carrossel`, tipo: 'carrossel', urls: dados.ofertas.map(urlArte), legenda: dados.legendaCarrossel });
   }
   const individuais = ig.modo === 'individual' ? dados.ofertas.length : Number(ig.postsIndividuaisPorRodada) || 0;
@@ -67,6 +72,11 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
     .filter((o) => !feitos[`${dia}:post:${o.itemId}`])
     .slice(0, individuais)
     .forEach((o) => tarefas.push({ chave: `${dia}:post:${o.itemId}`, tipo: 'post', urls: [urlArte(o)], legenda: o.legendaInstagram }));
+  // Posts de conteúdo (sem venda): um por rodada (ou "conteudoPorRodada" no config), cada um uma vez só
+  filaConteudo
+    .filter((c) => c && c.slug && c.arte && c.legenda && !feitos[`conteudo:${c.slug}`])
+    .slice(0, ig.conteudoPorRodada === undefined ? 1 : Number(ig.conteudoPorRodada) || 0)
+    .forEach((c) => tarefas.push({ chave: `conteudo:${c.slug}`, tipo: 'post', urls: [urlArte(c)], legenda: c.legenda }));
   if (ig.stories) {
     dados.ofertas
       .slice(0, 3)
