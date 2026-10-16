@@ -1,0 +1,11 @@
+# PRODUTOS DA SHOPEE (modo manual, enquanto a Shopee não libera as chaves da API)
+# Uma linha por produto:
+#   nome | preço | comissão % | link de afiliada | foto
+# - O link de afiliada você gera no app da Shopee: produto > Compartilhar > "Link de afiliado"
+#   (ou no site affiliate.shopee.com.br > "Link personalizado").
+# - Foto é opcional: o link da foto, ou o nome de um arquivo que estiver na pasta "fotos" ao lado deste arquivo.
+# - Linhas que começam com # são ignoradas.
+# - Ou só me mande prints + links que eu preencho para você.
+#
+# Exemplo (apague o # do começo para valer):
+# Cortina de LED cascata luz quente | 49,90 | 10 | https://s.shopee.com.br/XXXXXXX | cortina.jpg

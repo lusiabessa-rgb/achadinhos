@@ -6,6 +6,13 @@
 2. Abra `contas/lusia/CHAVES.txt`, cole os dois no lugar do texto "cole aqui" e salve.
    (Não mande essas chaves para ninguém, nem para mim no chat.)
 
+## Enquanto a Shopee não libera as chaves (modo manual)
+- Coloque os produtos em `contas/lusia/shopee-produtos.txt`, um por linha:
+  `nome | preço | comissão % | link de afiliada | foto`
+  (a foto é opcional: link da foto ou arquivo na pasta `contas/lusia/fotos`).
+- Ou só mande prints + links para o Claude, que ele preenche.
+- A máquina faz as artes, as legendas e o site com essa lista, e não repete produto na mesma semana.
+
 ## Para usar
 - Dê **dois cliques em `RODAR-MAQUINA.cmd`**.
 - Abra **`POSTAR-HOJE/lusia/ABRIR-HOJE.html`**: é o painel do dia (foto, preço e botões
@@ -23,4 +30,4 @@
 
 ## Para testar sem chave
 - `node app/maquina.js lusia --teste`: roda com produtos de mentira.
-- `node app/teste-automatico.js`: confere se está tudo funcionando (10 testes).
+- `node app/teste-automatico.js`: confere se está tudo funcionando (18 testes).

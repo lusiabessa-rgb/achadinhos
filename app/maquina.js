@@ -75,6 +75,65 @@ function lerChaves(pastaConta) {
   return { appId, secret };
 }
 
+// "1.249,90" e "49,90" (jeito brasileiro) ou "49.90" -> número
+function numeroBR(s) {
+  let t = String(s || '').replace(/[^\d,.]/g, '');
+  if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+  return Number(t) || 0;
+}
+
+// Lista manual da Shopee (enquanto não há chaves da API), uma linha por produto:
+//   nome | preço | comissão % | link de afiliada | foto (opcional: link da foto ou arquivo em contas/<conta>/fotos)
+// O mesmo produto é reconhecido pelo número dele no link (não repete na semana).
+function lerShopeeManual(pastaConta, avisar = () => {}) {
+  const arq = path.join(pastaConta, 'shopee-produtos.txt');
+  if (!fs.existsSync(arq)) return null;
+  const lista = [];
+  fs.readFileSync(arq, 'utf8')
+    .replace(/^﻿/, '')
+    .split(/\r?\n/)
+    .forEach((linha, i) => {
+      const l = linha.trim();
+      if (!l || l.startsWith('#')) return;
+      const partes = l.split('|').map((s) => s.trim());
+      // O link pode estar em qualquer coluna: acha o que começa com http e parece Shopee
+      const iLink = partes.findIndex((s) => /^https?:\/\/(\S+\.)?(shopee\.com\.br|shp\.ee)\//i.test(s));
+      if (iLink < 0) {
+        avisar(`  aviso: linha ${i + 1} do shopee-produtos.txt sem link da Shopee; pulei.`);
+        return;
+      }
+      const link = partes[iLink];
+      const resto = partes.filter((_, k) => k !== iLink);
+      const [nome, preco, comissao, foto] = resto;
+      if (!nome) {
+        avisar(`  aviso: linha ${i + 1} do shopee-produtos.txt sem nome; pulei.`);
+        return;
+      }
+      // Número do produto: ".../i.LOJA.ITEM", ".../product/LOJA/ITEM" ou o código do link curto
+      const m = link.match(/i\.(\d+)\.(\d+)/) || link.match(/product\/(\d+)\/(\d+)/);
+      const curto = link.match(/(?:s\.shopee\.com\.br|shp\.ee)\/([\w-]+)/i);
+      const itemId = m ? m[2] : curto ? 'sp-' + curto[1] : 'sp-' + nome.toLowerCase();
+      let imageUrl = '';
+      if (foto) {
+        if (/^https?:\/\//i.test(foto)) imageUrl = foto;
+        else {
+          const local = path.join(pastaConta, 'fotos', foto);
+          if (fs.existsSync(local)) imageUrl = local;
+          else avisar(`  aviso: não achei a foto "${foto}" na pasta fotos; a arte sai sem foto.`);
+        }
+      }
+      lista.push({
+        itemId,
+        productName: nome,
+        price: numeroBR(preco),
+        commissionRate: numeroBR(comissao) / 100,
+        offerLink: link,
+        imageUrl,
+      });
+    });
+  return lista;
+}
+
 // "Cortina LED | 49,90 | 12%"  ->  produto (preço e comissão são opcionais)
 function lerTikTok(pastaConta) {
   const arq = path.join(pastaConta, 'tiktok-produtos.txt');
@@ -87,13 +146,7 @@ function lerTikTok(pastaConta) {
     .filter((l) => l && !l.startsWith('#'))
     .map((l) => {
       const [nome, preco, comissao] = l.split('|').map((s) => (s || '').trim());
-      // "1.249,90" e "49,90" (jeito brasileiro) ou "49.90" -> número
-      const n = (s) => {
-        let t = String(s || '').replace(/[^\d,.]/g, '');
-        if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
-        return Number(t) || 0;
-      };
-      return { itemId: 'tt-' + nome.toLowerCase(), productName: nome, price: n(preco), commissionRate: n(comissao) / 100 };
+      return { itemId: 'tt-' + nome.toLowerCase(), productName: nome, price: numeroBR(preco), commissionRate: numeroBR(comissao) / 100 };
     })
     .filter((p) => p.productName);
 }
@@ -104,6 +157,11 @@ const nomePasta = (s) =>
 async function baixarImagem(url, destino) {
   if (!url) return false;
   try {
+    // Foto que já está no computador (lista manual): só copia
+    if (!/^https?:\/\//i.test(url)) {
+      fs.copyFileSync(url, destino);
+      return true;
+    }
     const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
     if (!r.ok) return false;
     fs.writeFileSync(destino, Buffer.from(await r.arrayBuffer()));
@@ -136,9 +194,20 @@ async function rodar(conta, modoTeste) {
     const chaves = modoTeste || manual ? null : lerChaves(pastaConta);
     let listaManual = [];
     if (manual) {
-      const arqManual = path.join(pastaConta, 'shopee-manual.json');
-      if (!fs.existsSync(arqManual)) throw new Error('Sem chaves da Shopee e sem a lista manual (shopee-manual.json).');
-      listaManual = JSON.parse(fs.readFileSync(arqManual, 'utf8'));
+      // Preferência: a listinha de texto (shopee-produtos.txt); o shopee-manual.json antigo também vale
+      listaManual = lerShopeeManual(pastaConta, log);
+      const arqJson = path.join(pastaConta, 'shopee-manual.json');
+      if (!listaManual && fs.existsSync(arqJson)) {
+        try {
+          listaManual = JSON.parse(fs.readFileSync(arqJson, 'utf8'));
+        } catch (e) {
+          throw new Error(`O arquivo ${arqJson} está com erro de digitação (${e.message}).`);
+        }
+      }
+      if (!listaManual) {
+        throw new Error('Sem chaves da Shopee e sem a lista de produtos (contas/' + conta + '/shopee-produtos.txt).');
+      }
+      if (!Array.isArray(listaManual)) throw new Error('A lista manual da Shopee precisa ser uma lista de produtos.');
     }
     const hist = historico.abrir(path.join(pastaConta, 'historico.json'));
     const resumo = [`# Postar hoje (${hoje})`, ''];
@@ -200,7 +269,8 @@ async function rodar(conta, modoTeste) {
           comissao: `${pct}%${p.commission ? ` (≈ R$ ${String(p.commission).replace('.', ',')})` : ''}`,
           vendas: info.vendas,
           link,
-          foto: p.imageUrl || '',
+          // Foto do computador não abre no celular: o painel usa a arte publicada no site
+          foto: /^https?:\/\//i.test(p.imageUrl || '') ? p.imageUrl : config.site.urlBase ? `${config.site.urlBase}/${conta}/${diaPublico}/${n}.jpg` : '',
           legendas: textos.legendasVideo(p, config.hashtags, 'shopee'),
           textoGrupo: textos.postComLink(p, link),
         });
@@ -280,22 +350,26 @@ async function rodar(conta, modoTeste) {
     if (!modoTeste) fs.writeFileSync(path.join(RAIZ, 'POSTAR-HOJE', conta, 'ABRIR-HOJE.html'), html);
 
     // Site público: página "link na bio" + painel + dados do dia (usados pelo publicador do Instagram)
-    const sufixo = modoTeste ? '-teste' : '';
-    fs.mkdirSync(path.join(pastaPublica, diaPublico), { recursive: true });
-    fs.writeFileSync(
-      path.join(pastaPublica, diaPublico, 'dados.json'),
-      JSON.stringify(
-        { data: hoje, conta, ofertas, legendaCarrossel: textos.legendaCarrossel(produtosDoDia, config.hashtagsInstagram) },
-        null,
-        2
-      )
-    );
-    fs.writeFileSync(
-      path.join(pastaPublica, `index${sufixo}.html`),
-      vitrine.gerar({ titulo: config.site.titulo, subtitulo: config.site.subtitulo, data: hoje, ofertas })
-    );
-    fs.writeFileSync(path.join(pastaPublica, `painel${sufixo}.html`), html);
-    if (!modoTeste) fs.writeFileSync(path.join(pastaPublica, 'hoje.txt'), diaPublico);
+    // Sem oferta nova? Não mexe no site: as ofertas de antes continuam no ar.
+    if (!ok) log('Nenhuma oferta nova: o site continua com as ofertas de antes.');
+    else {
+      const sufixo = modoTeste ? '-teste' : '';
+      fs.mkdirSync(path.join(pastaPublica, diaPublico), { recursive: true });
+      fs.writeFileSync(
+        path.join(pastaPublica, diaPublico, 'dados.json'),
+        JSON.stringify(
+          { data: hoje, conta, ofertas, legendaCarrossel: textos.legendaCarrossel(produtosDoDia, config.hashtagsInstagram) },
+          null,
+          2
+        )
+      );
+      fs.writeFileSync(
+        path.join(pastaPublica, `index${sufixo}.html`),
+        vitrine.gerar({ titulo: config.site.titulo, subtitulo: config.site.subtitulo, data: hoje, ofertas })
+      );
+      fs.writeFileSync(path.join(pastaPublica, `painel${sufixo}.html`), html);
+      if (!modoTeste) fs.writeFileSync(path.join(pastaPublica, 'hoje.txt'), diaPublico);
+    }
     if (!modoTeste) hist.salvar();
     log(`Pronto! Abra a pasta: ${pastaDia}`);
     return { pastaDia, shopee: ok, tiktok: tiktok.length };
@@ -314,4 +388,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { rodar, lerChaves, lerSegredos, lerTikTok, lerConfig };
+module.exports = { rodar, lerChaves, lerSegredos, lerTikTok, lerShopeeManual, lerConfig };

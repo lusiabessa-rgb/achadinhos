@@ -223,6 +223,71 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
+  await teste('lista manual da Shopee: entende links, fotos e linhas erradas', async () => {
+    const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'sm-'));
+    fs.mkdirSync(path.join(pasta, 'fotos'));
+    fs.writeFileSync(path.join(pasta, 'fotos', 'pisca.jpg'), 'x');
+    fs.writeFileSync(
+      path.join(pasta, 'shopee-produtos.txt'),
+      [
+        '# comentário',
+        'Pisca LED | 29,90 | 8 | https://s.shopee.com.br/AbC123 | pisca.jpg',
+        'Guirlanda | 1.049,90 | 10% | https://shopee.com.br/Guirlanda-i.111.222 | https://cf.shopee.com.br/file/x',
+        'https://shopee.com.br/product/333/444 | Toalha | 59.90',
+        'Sem link | 10,00',
+        'Foto sumida | 10 | 5 | https://shp.ee/zz9 | nao-existe.jpg',
+        '',
+      ].join('\r\n')
+    );
+    const avisos = [];
+    const l = maquina.lerShopeeManual(pasta, (m) => avisos.push(m));
+    assert.deepStrictEqual(l.map((p) => p.itemId), ['sp-AbC123', '222', '444', 'sp-zz9']);
+    assert.deepStrictEqual(l.map((p) => p.price), [29.9, 1049.9, 59.9, 10]);
+    assert.strictEqual(l[1].commissionRate, 0.1);
+    assert.strictEqual(l[0].imageUrl, path.join(pasta, 'fotos', 'pisca.jpg'));
+    assert.strictEqual(l[3].imageUrl, '');
+    assert.strictEqual(avisos.length, 2, 'devia avisar da linha sem link e da foto sumida');
+    assert.strictEqual(maquina.lerShopeeManual(os.tmpdir() + '/nao-existe-' + process.pid), null);
+    fs.rmSync(pasta, { recursive: true });
+  });
+
+  await teste('rodada completa no modo manual (sem chaves da Shopee)', async () => {
+    const sharp = require('sharp');
+    const raiz = path.join(__dirname, '..');
+    const conta = 'teste-manual-' + process.pid;
+    const pastaConta = path.join(raiz, 'contas', conta);
+    const salvaEnv = { a: process.env.SHOPEE_APP_ID, s: process.env.SHOPEE_SECRET };
+    delete process.env.SHOPEE_APP_ID;
+    delete process.env.SHOPEE_SECRET;
+    try {
+      fs.mkdirSync(path.join(pastaConta, 'fotos'), { recursive: true });
+      fs.copyFileSync(path.join(raiz, 'contas', 'lusia', 'config.json'), path.join(pastaConta, 'config.json'));
+      await sharp({ create: { width: 300, height: 300, channels: 3, background: '#c33' } }).jpeg().toFile(path.join(pastaConta, 'fotos', 'a.jpg'));
+      fs.writeFileSync(
+        path.join(pastaConta, 'shopee-produtos.txt'),
+        'Pisca LED | 29,90 | 8 | https://s.shopee.com.br/AAA | a.jpg\nGuirlanda | 49,90 | 10 | https://s.shopee.com.br/BBB\n'
+      );
+      const r1 = await maquina.rodar(conta, false);
+      assert.strictEqual(r1.shopee, 2);
+      const leia = fs.readdirSync(path.join(r1.pastaDia, 'shopee'));
+      assert(fs.existsSync(path.join(r1.pastaDia, 'shopee', leia[0], 'foto-produto.jpg')), 'foto local não foi copiada');
+      assert(fs.readFileSync(path.join(r1.pastaDia, 'shopee', leia[0], 'LEIA.txt'), 'utf8').includes('https://s.shopee.com.br/AAA'));
+      const dados = JSON.parse(fs.readFileSync(path.join(raiz, 'publico', conta, fs.readFileSync(path.join(raiz, 'publico', conta, 'hoje.txt'), 'utf8'), 'dados.json'), 'utf8'));
+      assert.strictEqual(dados.ofertas.length, 2);
+      const painelHtml = fs.readFileSync(path.join(r1.pastaDia, 'painel.html'), 'utf8');
+      assert(!painelHtml.includes(pastaConta.replace(/\\/g, '\\\\')), 'painel aponta para foto do computador');
+      // Rodar de novo no mesmo dia: não repete os mesmos produtos
+      const r2 = await maquina.rodar(conta, false);
+      assert.strictEqual(r2.shopee, 0, 'repetiu produto já usado');
+    } finally {
+      if (salvaEnv.a !== undefined) process.env.SHOPEE_APP_ID = salvaEnv.a;
+      if (salvaEnv.s !== undefined) process.env.SHOPEE_SECRET = salvaEnv.s;
+      for (const p of [pastaConta, path.join(raiz, 'publico', conta), path.join(raiz, 'POSTAR-HOJE', conta)]) {
+        fs.rmSync(p, { recursive: true, force: true });
+      }
+    }
+  });
+
   console.log(`\nResultado: ${passou} ok, ${falhou} falhou.`);
   process.exitCode = falhou ? 1 : 0;
 })();
