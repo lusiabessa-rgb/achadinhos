@@ -83,7 +83,8 @@ function numeroBR(s) {
 }
 
 // Lista manual da Shopee (enquanto não há chaves da API), uma linha por produto:
-//   nome | preço | comissão % | link de afiliada | foto (opcional: link da foto ou arquivo em contas/<conta>/fotos)
+//   nome | preço | comissão % | link de afiliada | foto | frase de benefício
+//   (foto e frase são opcionais; foto = link da foto ou arquivo em contas/<conta>/fotos)
 // O mesmo produto é reconhecido pelo número dele no link (não repete na semana).
 function lerShopeeManual(pastaConta, avisar = () => {}) {
   const arq = path.join(pastaConta, 'shopee-produtos.txt');
@@ -104,7 +105,11 @@ function lerShopeeManual(pastaConta, avisar = () => {}) {
       }
       const link = partes[iLink];
       const resto = partes.filter((_, k) => k !== iLink);
-      const [nome, preco, comissao, foto] = resto;
+      const [nome, preco, comissao, ...extras] = resto;
+      // Depois da comissão: o que parece foto (link ou arquivo .jpg/.png/.webp) é a foto; o resto é a frase de benefício
+      const ehFoto = (s) => /^https?:\/\//i.test(s) || /\.(jpe?g|png|webp)$/i.test(s);
+      const foto = extras.find(ehFoto);
+      const info = extras.filter((s) => s && !ehFoto(s)).join(' ');
       if (!nome) {
         avisar(`  aviso: linha ${i + 1} do shopee-produtos.txt sem nome; pulei.`);
         return;
@@ -128,6 +133,7 @@ function lerShopeeManual(pastaConta, avisar = () => {}) {
         price: numeroBR(preco),
         commissionRate: numeroBR(comissao) / 100,
         offerLink: link,
+        info,
         imageUrl,
       });
     });
@@ -225,6 +231,12 @@ async function rodar(conta, modoTeste) {
       ? cacador.cacarManual(config, listaManual, hist)
       : await cacador.cacar(config, chaves, hist, modoTeste, log);
     if (manual) log('Modo manual: ' + escolhidos.length + ' produto(s) da lista escolhida.');
+    // Dicas do curso (Desafio 3k): horários de mais movimento e Shopee Vídeos espalhado ao longo do dia
+    resumo.push(
+      '> Melhores horários para postar: 12h, 18h e 20h (se não der, poste quando puder: constância vale mais).',
+      '> Shopee Vídeos: não poste tudo de uma vez; espalhe ao longo do dia. Remova os metadados antes.',
+      ''
+    );
     resumo.push('## Shopee (Shopee Vídeos + grupos)', '');
     if (!escolhidos.length) resumo.push('Nenhum produto passou nos filtros hoje. Afrouxe os filtros no config.json.');
 
@@ -260,6 +272,12 @@ async function rodar(conta, modoTeste) {
             '',
             '=== TELEGRAM / WHATSAPP (com link) ===',
             textos.postComLink(p, link),
+            '',
+            '=== PINTEREST (use a arte-oferta.jpg desta pasta) ===',
+            ...(() => {
+              const pin = textos.pinterest(p, link, config.palavrasChave);
+              return [`Título: ${pin.titulo}`, `Descrição: ${pin.descricao}`, `Link: ${pin.link}`];
+            })(),
           ].join('\n')
         );
         mensagens.push(textos.postComLink(p, link));

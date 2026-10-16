@@ -32,6 +32,12 @@ const CHAMADAS_VIDEO = {
   ],
 };
 
+// #publi: o CONAR pede para marcar post de divulgação (o curso reforça isso). Sempre vai na frente.
+const comPubli = (hashtags = []) => ['#publi', ...hashtags.filter((h) => h.toLowerCase() !== '#publi')].join(' ');
+
+// Frase de benefício que a dona escreveu na lista (opcional): "Liga na tomada e acende sozinha"
+const info = (p) => String(p.info || '').trim();
+
 function resumo(p) {
   const valor = Number(p.priceMin || p.price);
   const preco = valor > 0 ? real(valor) : '';
@@ -47,7 +53,9 @@ function legendasVideo(p, hashtags, loja = 'shopee') {
   const semente = String(p.itemId || p.productName).length;
   const linhaPreco = preco ? `${p.productName} por ${preco}${desc}.` : `${p.productName}.`;
   return [0, 1, 2].map((i) =>
-    [sorteia(GANCHOS[loja], semente + i), linhaPreco, sorteia(CHAMADAS_VIDEO[loja], i), hashtags.join(' ')].join('\n')
+    [sorteia(GANCHOS[loja], semente + i), linhaPreco, info(p), sorteia(CHAMADAS_VIDEO[loja], i), comPubli(hashtags)]
+      .filter(Boolean)
+      .join('\n')
   );
 }
 
@@ -55,6 +63,7 @@ function legendasVideo(p, hashtags, loja = 'shopee') {
 function postComLink(p, link) {
   const { preco, desc, vendas } = resumo(p);
   const linhas = [`🎄 ${p.productName}`];
+  if (info(p)) linhas.push(`✨ ${info(p)}`);
   if (preco) linhas.push(`💰 ${preco}${desc}`);
   const extras = [p.ratingStar ? `⭐ ${p.ratingStar}` : '', vendas ? `🔥 ${vendas}` : ''].filter(Boolean);
   if (extras.length) linhas.push(extras.join('  |  '));
@@ -78,13 +87,14 @@ function legendaInstagram(p, numero, hashtags) {
     sorteia(GANCHOS_INSTA, semente),
     '',
     `🛍️ ${p.productName}`,
+    info(p) ? `✨ ${info(p)}` : '',
     preco ? `💰 ${preco}${desc}` : '',
     vendas ? `🔥 ${vendas}` : '',
     '',
     `👉 Link na bio: oferta nº ${numero}`,
     '_Preço pode mudar a qualquer momento._',
     '',
-    hashtags.join(' '),
+    comPubli(hashtags),
   ]
     .filter((l, i, arr) => l !== '' || (arr[i - 1] !== '' && i > 0))
     .join('\n');
@@ -99,8 +109,26 @@ function legendaCarrossel(produtos, hashtags) {
     '👉 Os links estão na bio, é só procurar o número da oferta.',
     '_Preços podem mudar a qualquer momento._',
     '',
-    hashtags.join(' '),
+    comPubli(hashtags),
   ].join('\n');
 }
 
-module.exports = { legendasVideo, postComLink, resumo, legendaInstagram, legendaCarrossel };
+// Pinterest funciona como um "Google de ideias": título e descrição com as palavras que as pessoas pesquisam,
+// texto curto e link de afiliada curto (o Pinterest entrega menos pins com link com "cara de venda").
+function pinterest(p, link, palavrasChave = []) {
+  const { preco } = resumo(p);
+  const chaves = palavrasChave.slice(0, 3);
+  const titulo = `${p.productName}${chaves[0] ? ' | ' + chaves[0] : ''}`.slice(0, 100);
+  const descricao = [
+    info(p) || `Ideia linda e prática: ${p.productName}.`,
+    preco ? `A partir de ${preco} (preço pode mudar).` : '',
+    chaves.length ? 'Ideias de ' + chaves.join(', ') + '.' : '',
+    '#publi',
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .slice(0, 500);
+  return { titulo, descricao, link };
+}
+
+module.exports = { legendasVideo, postComLink, resumo, legendaInstagram, legendaCarrossel, pinterest, comPubli };

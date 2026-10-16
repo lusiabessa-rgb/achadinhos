@@ -94,6 +94,23 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
+  await teste('todo texto de divulgação leva #publi (regra do CONAR) e a frase de benefício', async () => {
+    const p = { itemId: 9, productName: 'Guirlanda', priceMin: '59.9', info: 'Já vem com luz' };
+    const textosTodos = [
+      ...textos.legendasVideo(p, ['#natal', '#publi'], 'shopee'),
+      textos.legendaInstagram(p, 1, ['#natal']),
+      textos.legendaCarrossel([p], ['#natal']),
+      textos.pinterest(p, 'https://s.shopee.com.br/x', ['decoração de natal']).descricao,
+    ];
+    for (const t of textosTodos) {
+      assert.strictEqual((t.match(/#publi/g) || []).length, 1, 'sem #publi ou repetido: ' + t);
+    }
+    assert(textos.legendasVideo(p, [], 'tiktok')[0].includes('Já vem com luz'));
+    assert(textos.postComLink(p, 'https://x').includes('Já vem com luz'));
+    const pin = textos.pinterest({ productName: 'X'.repeat(150) }, 'https://x', []);
+    assert(pin.titulo.length <= 100 && !pin.descricao.includes('undefined'));
+  });
+
   await teste('histórico não repete e salva sem corromper', async () => {
     const arq = path.join(os.tmpdir(), `hist-${process.pid}.json`);
     const h = historico.abrir(arq);
@@ -231,7 +248,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       path.join(pasta, 'shopee-produtos.txt'),
       [
         '# comentário',
-        'Pisca LED | 29,90 | 8 | https://s.shopee.com.br/AbC123 | pisca.jpg',
+        'Pisca LED | 29,90 | 8 | https://s.shopee.com.br/AbC123 | pisca.jpg | Acende sozinho',
         'Guirlanda | 1.049,90 | 10% | https://shopee.com.br/Guirlanda-i.111.222 | https://cf.shopee.com.br/file/x',
         'https://shopee.com.br/product/333/444 | Toalha | 59.90',
         'Sem link | 10,00',
@@ -244,6 +261,8 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     assert.deepStrictEqual(l.map((p) => p.itemId), ['sp-AbC123', '222', '444', 'sp-zz9']);
     assert.deepStrictEqual(l.map((p) => p.price), [29.9, 1049.9, 59.9, 10]);
     assert.strictEqual(l[1].commissionRate, 0.1);
+    assert.strictEqual(l[0].info, 'Acende sozinho');
+    assert.strictEqual(l[1].info, '');
     assert.strictEqual(l[0].imageUrl, path.join(pasta, 'fotos', 'pisca.jpg'));
     assert.strictEqual(l[3].imageUrl, '');
     assert.strictEqual(avisos.length, 2, 'devia avisar da linha sem link e da foto sumida');
