@@ -258,12 +258,17 @@ async function rodar(conta, modoTeste) {
         const temFoto = await baixarImagem(p.imageUrl, path.join(pasta, 'foto-produto.jpg'));
         const info = textos.resumo(p);
         const pct = (Number(p.commissionRate) * 100).toFixed(0);
+        // Na lista manual nem sempre temos comissão, vendas, nota e loja: só mostra o que existe
+        const comissaoTxt = Number(pct) > 0 ? `${pct}%${p.commission ? ` (≈ R$ ${String(p.commission).replace('.', ',')})` : ''}` : '';
+        const detalhes = [info.vendas ? `Vendas: ${info.vendas}` : '', p.ratingStar ? `Nota: ${p.ratingStar}` : '', p.shopName ? `Loja: ${p.shopName}` : '']
+          .filter(Boolean)
+          .join('  |  ');
         fs.writeFileSync(
           path.join(pasta, 'LEIA.txt'),
           [
             `PRODUTO: ${p.productName}`,
-            `Preço: ${info.preco}${info.desc}  |  Comissão: ${pct}% (≈ R$ ${p.commission || '?'})`,
-            `Vendas: ${info.vendas || '?'}  |  Nota: ${p.ratingStar || '?'}  |  Loja: ${p.shopName || '?'}`,
+            `Preço: ${info.preco}${info.desc}${comissaoTxt ? '  |  Comissão: ' + comissaoTxt : ''}`,
+            ...(detalhes ? [detalhes] : []),
             `Link de afiliada: ${link}`,
             temFoto ? 'Foto: foto-produto.jpg (nesta pasta)' : 'Foto: não baixada',
             '',
@@ -284,7 +289,7 @@ async function rodar(conta, modoTeste) {
         cartoesShopee.push({
           nome: p.productName,
           preco: info.preco + info.desc,
-          comissao: `${pct}%${p.commission ? ` (≈ R$ ${String(p.commission).replace('.', ',')})` : ''}`,
+          comissao: comissaoTxt,
           vendas: info.vendas,
           link,
           // Foto do computador não abre no celular: o painel usa a arte publicada no site
@@ -292,7 +297,7 @@ async function rodar(conta, modoTeste) {
           legendas: textos.legendasVideo(p, config.hashtags, 'shopee'),
           textoGrupo: textos.postComLink(p, link),
         });
-        resumo.push(`${n}. ${p.productName} | ${info.preco} | comissão ${pct}% | ${info.vendas}`);
+        resumo.push([`${n}. ${p.productName}`, info.preco, comissaoTxt ? `comissão ${comissaoTxt}` : '', info.vendas].filter(Boolean).join(' | '));
 
         // Arte da oferta: vai para a pasta do produto e para o site público (o Instagram busca de lá)
         const arteRel = `${diaPublico}/${n}.jpg`;
