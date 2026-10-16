@@ -235,6 +235,10 @@ async function rodar(conta, modoTeste) {
     resumo.push(
       '> Melhores horários para postar: 12h, 18h e 20h (se não der, poste quando puder: constância vale mais).',
       '> Shopee Vídeos: não poste tudo de uma vez; espalhe ao longo do dia. Remova os metadados antes.',
+      '',
+      '## Regras de conteúdo (sempre)',
+      '',
+      ...textos.REGRAS_ORIGINALIDADE.map((r) => `- ${r}`),
       ''
     );
     resumo.push('## Shopee (Shopee Vídeos + grupos)', '');
@@ -282,6 +286,15 @@ async function rodar(conta, modoTeste) {
             ...(() => {
               const pin = textos.pinterest(p, link, config.palavrasChave);
               return [`Título: ${pin.titulo}`, `Descrição: ${pin.descricao}`, `Link: ${pin.link}`];
+            })(),
+            '',
+            '=== VÍDEO REALISTA COM IA (a partir da foto-produto.jpg, sem rosto) ===',
+            'Grátis: Google Flow, YouTube Create ou Gemini (suba a foto e cole os textos abaixo).',
+            'Ou peça ao Claude para fazer no Higgsfield (gasta créditos: ele pergunta antes).',
+            'Ao postar: marque "conteúdo gerado por IA".',
+            ...(() => {
+              const v = textos.videoIA(p);
+              return ['', '1) Imagem (cole junto com a foto):', v.imagem, '', '2) Vídeo (cole junto com a imagem gerada):', v.video, '', `Fala (≈8 s): ${v.fala}`];
             })(),
           ].join('\n')
         );

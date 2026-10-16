@@ -131,4 +131,54 @@ function pinterest(p, link, palavrasChave = []) {
   return { titulo, descricao, link };
 }
 
-module.exports = { legendasVideo, postComLink, resumo, legendaInstagram, legendaCarrossel, pinterest, comPubli };
+// Regras de conteúdo da dona (16/10/2026), confirmadas no curso (TikTok Shop e Shopee Vídeos punem vídeo copiado):
+// tudo ORIGINAL; pode MODELAR (se inspirar no gancho/formato de quem vende), nunca repostar vídeo/foto de outra pessoa.
+const REGRAS_ORIGINALIDADE = [
+  'Todo conteúdo é NOSSO: pode modelar (copiar a ideia, o gancho, o formato), nunca repostar o vídeo ou a foto de outra pessoa.',
+  'TikTok Shop: só vídeo real (produto na mão) ou feito por IA a partir da foto do produto. Vídeo baixado de outra pessoa dá restrição.',
+  'Shopee Vídeos: nada de vídeo de rede social de outra pessoa. Remova os metadados antes de postar.',
+  'Música: use os sons da própria plataforma ou a sua narração (música com direito autoral derruba o vídeo).',
+  'Vídeo feito com IA: marque "conteúdo gerado por IA" ao postar e não esconda a marca da IA.',
+  'Nunca mostrar rosto (só mãos) e nunca mostrar crianças.',
+  'Cada vídeo do mesmo produto é uma VARIAÇÃO (gancho, cena ou ângulo diferente), nunca o mesmo vídeo repetido.',
+];
+
+const nomeCurto = (nome) => String(nome).split(/\s+/).slice(0, 5).join(' ');
+
+// Pedido de vídeo ultra-realista feito por IA a partir da foto do produto (sem rosto, só mãos, cara de vídeo de celular).
+// Prompts em inglês porque as ferramentas de vídeo entendem melhor; a fala é em português e curta (cabe em 8 segundos).
+function videoIA(p, cena = 'a cozy Brazilian living room decorated for Christmas') {
+  const nome = nomeCurto(p.productName);
+  const fala = [`Gente, olha que lindo esse ${nome.toLowerCase()}!`, info(p) ? info(p) + '.' : '', 'Tá na sacolinha com preço ótimo.']
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\.\./g, '.');
+  const comum =
+    'Keep the product EXACTLY like the reference photo (same shape, colors and details). ' +
+    "Only a woman's hands appear: no face, no full body, no children, no other people. " +
+    'No text, no logos, no watermarks on screen.';
+  return {
+    imagem:
+      `Ultra-realistic vertical 9:16 smartphone photo of the product in the reference image (${nome}) in ${cena}, ` +
+      "a woman's hands gently arranging it, warm natural window light and soft fairy-light bokeh, " +
+      `real home details, slightly imperfect framing like an amateur phone photo, not a studio shot. ${comum}`,
+    video:
+      `Vertical 9:16, 8 seconds, handheld iPhone footage with subtle natural camera shake, in ${cena}. ` +
+      `A woman's hands pick up and show the ${nome}, then place it in its spot; slow push-in close-up of the details. ` +
+      `Natural ambient room sound. ${comum} ` +
+      `Friendly Brazilian Portuguese female voice-over, casual like talking to a friend: "${fala}"`,
+    fala,
+  };
+}
+
+module.exports = {
+  legendasVideo,
+  postComLink,
+  resumo,
+  legendaInstagram,
+  legendaCarrossel,
+  pinterest,
+  comPubli,
+  videoIA,
+  REGRAS_ORIGINALIDADE,
+};

@@ -111,6 +111,18 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     assert(pin.titulo.length <= 100 && !pin.descricao.includes('undefined'));
   });
 
+  await teste('pedido de vídeo IA: sem rosto, sem criança, produto fiel e fala curta', async () => {
+    const p = { productName: 'Kit 30 Bolas de Natal 4cm Vermelho e Dourado', info: '30 bolinhas por menos de R$ 1 cada' };
+    const v = textos.videoIA(p);
+    for (const t of [v.imagem, v.video]) {
+      assert(/no face/.test(t) && /no children/.test(t) && /EXACTLY like the reference/.test(t) && /9:16/.test(t));
+    }
+    assert(v.video.includes(v.fala), 'fala fora do prompt');
+    assert(v.fala.split(/\s+/).length <= 30, 'fala longa demais para 8 segundos');
+    assert(!/undefined|\.\./.test(v.fala + v.video));
+    assert(textos.REGRAS_ORIGINALIDADE.some((r) => /nunca repostar/.test(r)));
+  });
+
   await teste('histórico não repete e salva sem corromper', async () => {
     const arq = path.join(os.tmpdir(), `hist-${process.pid}.json`);
     const h = historico.abrir(arq);
