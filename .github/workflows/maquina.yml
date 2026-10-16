@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   rodar:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment:
       name: github-pages
@@ -31,8 +31,8 @@ jobs:
       INSTAGRAM_TOKEN: ${{ secrets.INSTAGRAM_TOKEN }}
       INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -56,7 +56,8 @@ jobs:
         run: |
           git config user.name "maquina-de-ofertas"
           git config user.email "maquina@users.noreply.github.com"
-          git add publico contas/lusia/historico.json
+          git add publico
+          [ -f contas/lusia/historico.json ] && git add contas/lusia/historico.json
           git commit -m "Ofertas de $(date +%F)" || echo "nada novo"
           git push
 
@@ -74,6 +75,6 @@ jobs:
       - name: Salvar o que foi publicado
         if: always()
         run: |
-          git add contas/lusia/publicados.json 2>/dev/null || true
+          [ -f contas/lusia/publicados.json ] && git add contas/lusia/publicados.json
           git commit -m "Publicado em $(date '+%F %H:%M')" || echo "nada novo"
           git push || true
