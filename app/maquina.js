@@ -130,7 +130,16 @@ async function rodar(conta, modoTeste) {
 
   try {
     const config = lerConfig(pastaConta);
-    const chaves = modoTeste ? null : lerChaves(pastaConta);
+    // Sem as chaves da Shopee ainda? Usa o modo manual (produtos escolhidos em shopee-manual.json)
+    const seg = lerSegredos(pastaConta);
+    const manual = !modoTeste && !(seg.appId && seg.secret);
+    const chaves = modoTeste || manual ? null : lerChaves(pastaConta);
+    let listaManual = [];
+    if (manual) {
+      const arqManual = path.join(pastaConta, 'shopee-manual.json');
+      if (!fs.existsSync(arqManual)) throw new Error('Sem chaves da Shopee e sem a lista manual (shopee-manual.json).');
+      listaManual = JSON.parse(fs.readFileSync(arqManual, 'utf8'));
+    }
     const hist = historico.abrir(path.join(pastaConta, 'historico.json'));
     const resumo = [`# Postar hoje (${hoje})`, ''];
     const mensagens = [];
@@ -143,7 +152,10 @@ async function rodar(conta, modoTeste) {
 
     // ---------- SHOPEE ----------
     log(`Caçando produtos na Shopee para "${conta}"${modoTeste ? ' (MODO TESTE)' : ''}...`);
-    const escolhidos = await cacador.cacar(config, chaves, hist, modoTeste, log);
+    const escolhidos = manual
+      ? cacador.cacarManual(config, listaManual, hist)
+      : await cacador.cacar(config, chaves, hist, modoTeste, log);
+    if (manual) log('Modo manual: ' + escolhidos.length + ' produto(s) da lista escolhida.');
     resumo.push('## Shopee (Shopee Vídeos + grupos)', '');
     if (!escolhidos.length) resumo.push('Nenhum produto passou nos filtros hoje. Afrouxe os filtros no config.json.');
 
@@ -152,7 +164,7 @@ async function rodar(conta, modoTeste) {
       try {
         const n = String(ok + 1).padStart(2, '0');
         let link = p.offerLink || p.productLink;
-        if (!modoTeste) {
+        if (!modoTeste && !manual) {
           link = await shopee
             .gerarLinkCurto(chaves, p.productLink || p.offerLink, `maq${hoje.replace(/-/g, '')}`)
             .catch((e) => {

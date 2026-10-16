@@ -58,4 +58,14 @@ async function cacar(config, chaves, historico, modoTeste, avisar = console.log)
   return [...encontrados.values()].sort((a, b) => b.nota - a.nota).slice(0, config.produtosPorDia);
 }
 
-module.exports = { cacar, nota, passaNosFiltros };
+// MODO MANUAL (enquanto a Shopee não libera as chaves): os produtos vêm de contas/<conta>/shopee-manual.json,
+// já escolhidos a dedo, com o link de afiliada pronto. A máquina só pula os que já foram usados.
+function cacarManual(config, lista, historico) {
+  return lista
+    .filter((p) => p && p.itemId && p.productName && (p.offerLink || p.productLink))
+    .filter((p) => !historico.jaUsado(p.itemId, config.naoRepetirPorDias))
+    .map((p) => ({ ...p, nota: nota(p) }))
+    .slice(0, config.produtosPorDia);
+}
+
+module.exports = { cacar, cacarManual, nota, passaNosFiltros };
