@@ -57,7 +57,7 @@ jobs:
           git config user.name "maquina-de-ofertas"
           git config user.email "maquina@users.noreply.github.com"
           git add publico
-          [ -f contas/lusia/historico.json ] && git add contas/lusia/historico.json
+          if [ -f contas/lusia/historico.json ]; then git add contas/lusia/historico.json; fi
           git commit -m "Ofertas de $(date +%F)" || echo "nada novo"
           git push
 
@@ -75,6 +75,6 @@ jobs:
       - name: Salvar o que foi publicado
         if: always()
         run: |
-          [ -f contas/lusia/publicados.json ] && git add contas/lusia/publicados.json
+          if [ -f contas/lusia/publicados.json ]; then git add contas/lusia/publicados.json; fi
           git commit -m "Publicado em $(date '+%F %H:%M')" || echo "nada novo"
           git push || true
