@@ -30,4 +30,4 @@
 
 ## Para testar sem chave
 - `node app/maquina.js lusia --teste`: roda com produtos de mentira.
-- `node app/teste-automatico.js`: confere se está tudo funcionando (19 testes).
+- `node app/teste-automatico.js`: confere se está tudo funcionando (21 testes).

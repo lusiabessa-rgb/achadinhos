@@ -9,6 +9,8 @@ const GANCHOS = {
     'Achadinho que deixa a casa com cara de Natal 🎄',
     'Antes de comprar, olha esse preço 😱',
     'Eu não sabia que precisava disso até ver 🤩',
+    'Ninguém acredita quando eu conto quanto paguei nisso 😱',
+    'O detalhe que deixa a casa com cara de Natal de revista ✨',
   ],
   tiktok: [
     'Achadinho do TikTok Shop que eu amei 👀',
@@ -51,9 +53,12 @@ function resumo(p) {
 function legendasVideo(p, hashtags, loja = 'shopee') {
   const { preco, desc } = resumo(p);
   const semente = String(p.itemId || p.productName).length;
+  const { vendas } = resumo(p);
   const linhaPreco = preco ? `${p.productName} por ${preco}${desc}.` : `${p.productName}.`;
+  // Prova social (aula de copy): número REAL de vendidos, nunca inventado
+  const prova = vendas ? `🔥 ${vendas}` : '';
   return [0, 1, 2].map((i) =>
-    [sorteia(GANCHOS[loja], semente + i), linhaPreco, info(p), sorteia(CHAMADAS_VIDEO[loja], i), comPubli(hashtags)]
+    [sorteia(GANCHOS[loja], semente + i), linhaPreco, info(p), prova, sorteia(CHAMADAS_VIDEO[loja], i), comPubli(hashtags)]
       .filter(Boolean)
       .join('\n')
   );

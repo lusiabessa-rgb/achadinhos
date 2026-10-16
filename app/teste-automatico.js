@@ -282,6 +282,24 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     fs.rmSync(pasta, { recursive: true });
   });
 
+  await teste('lista manual: preço antigo vira desconto e "vendidos" vira prova social', async () => {
+    const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'pv-'));
+    fs.writeFileSync(
+      path.join(pasta, 'shopee-produtos.txt'),
+      [
+        'Capas | 39,50 | | https://s.shopee.com.br/a1 | Nº 1 mais vendido da loja | de 59,90 | 10 mil vendidos',
+        'Bolas | 27,90 | | https://s.shopee.com.br/a2 | 4mil+ vendidos | de R$ 41,90',
+        'Presépio | 19,80 | | https://s.shopee.com.br/a3 | 181 vendidos',
+      ].join('\n')
+    );
+    const l = maquina.lerShopeeManual(pasta);
+    assert.deepStrictEqual(l.map((p) => p.priceDiscountRate), [34, 33, 0]);
+    assert.deepStrictEqual(l.map((p) => p.sales), [10000, 4000, 181]);
+    assert.strictEqual(l[0].info, 'Nº 1 mais vendido da loja', 'frase com "vendido" virou número de vendas');
+    assert(textos.legendasVideo(l[0], [], 'shopee')[0].includes('+10 mil vendidos'));
+    fs.rmSync(pasta, { recursive: true });
+  });
+
   await teste('rodada completa no modo manual (sem chaves da Shopee)', async () => {
     const sharp = require('sharp');
     const raiz = path.join(__dirname, '..');

@@ -108,8 +108,16 @@ function lerShopeeManual(pastaConta, avisar = () => {}) {
       const [nome, preco, comissao, ...extras] = resto;
       // Depois da comissão: o que parece foto (link ou arquivo .jpg/.png/.webp) é a foto; o resto é a frase de benefício
       const ehFoto = (s) => /^https?:\/\//i.test(s) || /\.(jpe?g|png|webp)$/i.test(s);
+      // Também entende (curso, aula de copy): preço âncora "de 59,90" e prova social "10 mil vendidos"
+      const ehAntigo = (s) => /^de\s*(r\$)?\s*[\d.,]+$/i.test(s);
+      const ehVendas = (s) => /^\+?[\d.,]+\s*(mil)?\+?\s*vendid/i.test(s);
       const foto = extras.find(ehFoto);
-      const info = extras.filter((s) => s && !ehFoto(s)).join(' ');
+      const antigo = numeroBR((extras.find(ehAntigo) || '').replace(/^de/i, ''));
+      const vendasTxt = (extras.find(ehVendas) || '').toLowerCase();
+      const vendasNum = numeroBR(vendasTxt.replace(/mil.*/, '')) * (/mil/.test(vendasTxt) ? 1000 : 1);
+      const info = extras.filter((s) => s && !ehFoto(s) && !ehAntigo(s) && !ehVendas(s)).join(' ');
+      const precoNum = numeroBR(preco);
+      const desconto = antigo > precoNum && precoNum > 0 ? Math.round((1 - precoNum / antigo) * 100) : 0;
       if (!nome) {
         avisar(`  aviso: linha ${i + 1} do shopee-produtos.txt sem nome; pulei.`);
         return;
@@ -130,7 +138,10 @@ function lerShopeeManual(pastaConta, avisar = () => {}) {
       lista.push({
         itemId,
         productName: nome,
-        price: numeroBR(preco),
+        price: precoNum,
+        priceDiscountRate: desconto,
+        priceOld: desconto ? antigo : 0,
+        sales: vendasNum,
         commissionRate: numeroBR(comissao) / 100,
         offerLink: link,
         info,
@@ -322,7 +333,8 @@ async function rodar(conta, modoTeste) {
           {
             nome: p.productName,
             preco: info.preco,
-            precoAntigo: descNum > 0 && descNum < 95 ? textos.resumo({ price: precoNum / (1 - descNum / 100) }).preco : '',
+            // Preço antigo de verdade (lista manual) ou calculado pelo desconto da API
+            precoAntigo: Number(p.priceOld) > precoNum ? textos.resumo({ price: p.priceOld }).preco : descNum > 0 && descNum < 95 ? textos.resumo({ price: precoNum / (1 - descNum / 100) }).preco : '',
             desconto: descNum > 0 ? descNum : 0,
             foto: temFoto ? fs.readFileSync(path.join(pasta, 'foto-produto.jpg')) : p.imageUrl,
           },

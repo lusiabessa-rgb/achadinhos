@@ -1,10 +1,11 @@
 # PRODUTOS DA SHOPEE (modo manual, enquanto a Shopee não libera as chaves da API)
 # Uma linha por produto:
-#   nome | preço | comissão % | link de afiliada | foto | frase de benefício
+#   nome | preço | comissão % | link de afiliada | foto | frase de benefício | de PREÇO ANTIGO | N vendidos
 # - O link de afiliada você gera no app da Shopee: produto > Compartilhar > "Link de afiliado"
 #   (ou no site affiliate.shopee.com.br > "Link personalizado").
 # - Foto e frase são opcionais. Foto = link da foto ou nome de um arquivo da pasta "fotos".
 # - Frase de benefício: uma linha curta, ex.: "Liga na tomada e já pisca sozinha" (aparece nas legendas).
+# - "de 59,90" (preço antigo) e "10 mil vendidos" são opcionais: viram o selo de desconto e a prova social.
 # - Linhas que começam com # são ignoradas.
 # - Ou só me mande prints + links que eu preencho para você.
 #
@@ -12,9 +13,9 @@
 # Cortina de LED cascata luz quente | 49,90 | 10 | https://s.shopee.com.br/XXXXXXX | cortina.jpg | Transforma a janela em 5 minutos
 
 # ---- Produtos dos prints de 16/10 (faltam só os LINKS de afiliada: troque LINK_AQUI pelo link) ----
-Kit 4 Capas de Almofada Natalinas 45x45 | 39,50 | | LINK_AQUI | capas-almofada.jpg | Nº 1 mais vendido: a sala fica com cara de Natal na hora
-Kit 30 Bolas de Natal 4cm Vermelho e Dourado | 27,90 | | LINK_AQUI | kit-30-bolas.jpg | 30 bolinhas por menos de R$ 1 cada
-20 Flores de Natal com Glitter e Presilha 14cm | 79,90 | | LINK_AQUI | 20-flores-presilha.jpg | É só prender nos galhos: árvore de vitrine sem esforço
-Kit Maleta com 100 Bolas de Natal Decoradas 4cm | 122,55 | | LINK_AQUI | maleta-100-bolas.jpg | 100 bolinhas decoradas, já vêm organizadas na maleta
+Kit 4 Capas de Almofada Natalinas 45x45 | 39,50 | | LINK_AQUI | capas-almofada.jpg | Nº 1 mais vendido: a sala fica com cara de Natal na hora | de 59,90 | 10 mil vendidos
+Kit 30 Bolas de Natal 4cm Vermelho e Dourado | 27,90 | | LINK_AQUI | kit-30-bolas.jpg | 30 bolinhas por menos de R$ 1 cada | de 41,90 | 4 mil vendidos
+20 Flores de Natal com Glitter e Presilha 14cm | 79,90 | | LINK_AQUI | 20-flores-presilha.jpg | É só prender nos galhos: árvore de vitrine sem esforço | de 200,00 | 2 mil vendidos
+Kit Maleta com 100 Bolas de Natal Decoradas 4cm | 122,55 | | LINK_AQUI | maleta-100-bolas.jpg | 100 bolinhas decoradas, já vêm organizadas na maleta | 1 mil vendidos
 Kit Flores de Natal Artificiais 3 Cores 16cm | 24,99 | | LINK_AQUI | flores-3-cores.jpg | Flor vermelha com detalhes dourados que brilham na árvore
-Presépio de Mesa Minimalista em MDF Preto 20cm | 19,80 | | LINK_AQUI | presepio-mdf.jpg | Presépio delicado que combina com qualquer mesa
+Presépio de Mesa Minimalista em MDF Preto 20cm | 19,80 | | LINK_AQUI | presepio-mdf.jpg | Presépio delicado que combina com qualquer mesa | de 22,00 | 181 vendidos
