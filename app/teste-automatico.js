@@ -104,6 +104,13 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
+  await teste('vídeos de aquecimento do TikTok: legenda curta, sem link e sem misturar plataforma', async () => {
+    const aq = require('./aquecimento-tiktok');
+    const l = aq.legendaTikTok('Ideias de Natal', 0, ['#natal']);
+    assert(!/https?:\/\/|shopee|link na bio/i.test(l) && l.split('\n').length <= 3);
+    assert.throws(() => aq.legendaTikTok('Achei na Shopee', 0, []), /misturou/);
+  });
+
   await teste('todo texto de divulgação leva #publi (regra do CONAR) e a frase de benefício', async () => {
     const p = { itemId: 9, productName: 'Guirlanda', priceMin: '59.9', info: 'Já vem com luz' };
     const textosTodos = [
