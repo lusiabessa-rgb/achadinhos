@@ -154,6 +154,29 @@ function procurar(pasta, nome, fundo) {
   return null;
 }
 
+// A 1ª foto tem que combinar com o gancho (a dona notou "mesa da ceia" abrindo com uma flor).
+// Gancho com tema conhecido: a foto do tema vai para a abertura; se não estiver no vídeo, entra no lugar da 1ª.
+const TEMAS = [
+  [/mesa|ceia/i, /mesa|ceia|biscoit/i],
+  [/árvore|arvore/i, /bola|flor|árvore|arvore|enfeite/i],
+  [/aconcheg|sala|casa|lar/i, /almofada|sala|cortina|varanda|guirlanda|meia/i],
+];
+function abrirComOGancho(gancho, escolha, fotos) {
+  const tema = TEMAS.find(([g]) => g.test(gancho));
+  if (!tema) return escolha;
+  // O nome do arquivo vale mais que a frase (ex.: "presépio ... combina com qualquer mesa" não é foto de mesa)
+  const peloNome = (f) => tema[1].test(path.basename(f.arquivo));
+  const pelaFrase = (f) => tema[1].test(f.texto);
+  for (const combina of [peloNome, pelaFrase]) {
+    if (combina(escolha[0])) return escolha;
+    const dentro = escolha.find(combina);
+    if (dentro) return [dentro, ...escolha.filter((f) => f !== dentro)];
+    const fora = fotos.find(combina);
+    if (fora) return [fora, ...escolha.slice(1).filter((f) => f !== fora)];
+  }
+  return escolha;
+}
+
 // Legenda do TikTok: curta, sem link, sem "Shopee", sem Instagram
 function legendaTikTok(gancho, i, hashtags) {
   const texto = [gancho + ' 🎄', PERGUNTAS[i % PERGUNTAS.length], hashtags.join(' ')].join('\n');
@@ -180,8 +203,8 @@ async function gerar(conta, { dias = 4, porDia = 3, inicio, saida, montar = mont
     fs.mkdirSync(pasta, { recursive: true });
     // Variação: 3 fotos diferentes por vídeo, começando num ponto diferente da lista e pulando de jeitos diferentes
     const passo = 1 + (v % Math.max(1, fotos.length - 1));
-    const escolha = [0, 1, 2].map((k) => fotos[(v * 2 + k * passo) % fotos.length]).filter((f, k, arr) => arr.indexOf(f) === k);
     const gancho = GANCHOS[v % GANCHOS.length];
+    const escolha = abrirComOGancho(gancho, [0, 1, 2].map((k) => fotos[(v * 2 + k * passo) % fotos.length]).filter((f, k, arr) => arr.indexOf(f) === k), fotos);
     const tmp = fs.mkdtempSync(path.join(pasta, '.tmp-'));
     try {
       const quadros = [await quadro(escolha[0], gancho, path.join(tmp, 'q0.jpg'), { cor })];
@@ -219,4 +242,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { gerar, juntarFotos, legendaTikTok, quadro };
+module.exports = { gerar, juntarFotos, legendaTikTok, quadro, abrirComOGancho };

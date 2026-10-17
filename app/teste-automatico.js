@@ -130,6 +130,16 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     fs.rmSync(pasta, { recursive: true, force: true });
   });
 
+  await teste('vídeo de aquecimento abre com a foto que combina com o gancho', async () => {
+    const aq = require('./aquecimento-tiktok');
+    const f = (n, t) => ({ arquivo: '/x/' + n, texto: t || '' });
+    const flor = f('flor.jpg', 'Flor de Natal'), mesa = f('4-mesa.png', 'Mesa de Natal'), bola = f('bolas.jpg');
+    assert.strictEqual(aq.abrirComOGancho('Inspiração para a mesa da ceia', [flor, bola], [flor, bola, mesa])[0], mesa);
+    assert.strictEqual(aq.abrirComOGancho('Inspiração para a mesa da ceia', [flor, mesa], [flor, mesa])[0], mesa);
+    const sem = [flor, bola];
+    assert.strictEqual(aq.abrirComOGancho('Qual dessas você usaria?', sem, sem), sem);
+  });
+
   await teste('vídeos de aquecimento do TikTok: legenda curta, sem link e sem misturar plataforma', async () => {
     const aq = require('./aquecimento-tiktok');
     const l = aq.legendaTikTok('Ideias de Natal', 0, ['#natal']);
