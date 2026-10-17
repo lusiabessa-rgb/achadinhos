@@ -30,7 +30,7 @@
   },
 
   "instagram": {
-    "ativo": false,
+    "ativo": true,
     "modo": "carrossel",
     "postsIndividuaisPorRodada": 0,
     "stories": true
