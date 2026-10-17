@@ -14,7 +14,7 @@ const { quebrar } = require('./conteudo');
 const RAIZ = path.join(__dirname, '..');
 const L = 1080;
 const A = 1920;
-const SEG = 3; // segundos por foto
+const SEG = 2.5; // segundos por foto (ritmo mais animado)
 const FONTE = "'Segoe UI', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif";
 const HORAS = ['12h', '18h', '20h', '21h', '15h'];
 const xml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
@@ -52,9 +52,13 @@ function juntarFotos(conta) {
   // A mesma foto pode estar em duas pastas (ex.: foto de produto copiada para a fila do Instagram):
   // entra uma vez só e fica com a marcação da primeira pasta (foto real não leva rótulo de IA)
   const jaTem = new Set();
-  const add = (pasta, ia, textoDe) => {
+  // contas/<conta>/nao-usar-em-video.txt: palavras; foto com essa palavra no nome fica de fora (ex.: foto cortada)
+  const arqFora = path.join(pastaConta, 'nao-usar-em-video.txt');
+  const fora = fs.existsSync(arqFora) ? fs.readFileSync(arqFora, 'utf8').split(/\r?\n/).map((l) => l.trim().toLowerCase()).filter((l) => l && !l.startsWith('#')) : [];
+  const add = (pasta, ia, textoDe, filtro = () => true) => {
     if (!fs.existsSync(pasta)) return;
-    for (const f of fs.readdirSync(pasta).filter((x) => IMG.test(x)).sort()) {
+    for (const f of fs.readdirSync(pasta).filter((x) => IMG.test(x) && filtro(x)).sort()) {
+      if (fora.some((w) => f.toLowerCase().includes(w))) continue;
       const arquivo = path.join(pasta, f);
       const marca = fs.statSync(arquivo).size;
       if (jaTem.has(marca)) continue;
@@ -85,6 +89,10 @@ function juntarFotos(conta) {
     const txt = path.join(pastaConteudo, f.replace(IMG, '.txt'));
     return fs.existsSync(txt) ? fs.readFileSync(txt, 'utf8').replace(/^﻿/, '').split(/\r?\n/)[0].trim() : bonito(f);
   });
+  // 4) Fotos da cortina de LED feitas com IA (só a luz amarela, igual à da vitrine; as "com neve" ficam numa subpasta e não entram)
+  const CENAS_CORTINA = { sala: 'Cortina de LED deixa a sala com clima de Natal', quarto: 'No quarto fica assim', ceia: 'Luz quente na mesa da ceia', janela: 'Na janela, quem passa na rua vê', produto: 'Cortina de LED 3x3 metros' };
+  const pastaCortina = path.join(RAIZ, '..', 'Cantinho da Alfabetizacao', 'conteudo', 'natal-ia', 'cortina-led');
+  add(pastaCortina, true, (f) => CENAS_CORTINA[Object.keys(CENAS_CORTINA).find((k) => f.includes(k))] || 'Cortina de LED', (f) => f.startsWith('amarela-'));
   return fotos;
 }
 
@@ -111,18 +119,32 @@ async function quadro(foto, titulo, destino, { cor, numero } = {}) {
 }
 
 // Junta os quadros num vídeo com zoom lento (direção muda a cada vídeo: variação)
-function montarVideo(quadros, destino, variacao) {
+function montarVideo(quadros, destino, variacao, musica) {
   const fps = 30;
   const d = SEG * fps;
+  const T = 0.4; // transição entre as fotos (deixa o carrossel mais alegre: pedido da dona em 17/10)
   const args = ['-y', '-loglevel', 'error'];
   quadros.forEach((q) => args.push('-i', q)); // 1 quadro por foto: o zoompan cria os quadros de cada trecho
+  if (musica) args.push('-stream_loop', '-1', '-i', musica);
   const zoom = variacao % 2 ? "if(eq(on,0),1.12,max(zoom-0.0013,1))" : 'min(zoom+0.0013,1.12)';
   const filtros = quadros
     .map((_, i) => `[${i}:v]scale=${L * 2}:${A * 2},zoompan=z='${zoom}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${d}:s=${L}x${A}:fps=${fps},setsar=1[v${i}]`)
     .join(';');
-  const concat = quadros.map((_, i) => `[v${i}]`).join('') + `concat=n=${quadros.length}:v=1:a=0,format=yuv420p[saida]`;
-  // Vídeo sem som: a dona escolhe um som em alta no próprio TikTok (ajuda a entrega)
-  args.push('-filter_complex', `${filtros};${concat}`, '-map', '[saida]', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21', '-movflags', '+faststart', destino);
+  // Transições variadas (deslizar, abrir, círculo), cada vídeo com uma ordem diferente
+  const TIPOS = ['slideleft', 'smoothup', 'circleopen', 'slideright', 'fadewhite', 'wiperight'];
+  let anterior = 'v0';
+  const xf = [];
+  for (let k = 1; k < quadros.length; k++) {
+    const saida = k === quadros.length - 1 ? 'vx' : `x${k}`;
+    xf.push(`[${anterior}][v${k}]xfade=transition=${TIPOS[(variacao + k) % TIPOS.length]}:duration=${T}:offset=${(k * (SEG - T)).toFixed(2)}[${saida}]`);
+    anterior = saida;
+  }
+  const total = quadros.length * SEG - (quadros.length - 1) * T;
+  const video = xf.length ? `${xf.join(';')};[vx]format=yuv420p[saida]` : '[v0]format=yuv420p[saida]';
+  const audio = musica ? `;[${quadros.length}:a]atrim=0:${total.toFixed(2)},afade=t=in:d=0.5,afade=t=out:st=${(total - 1.2).toFixed(2)}:d=1.2,volume=0.8[som]` : '';
+  args.push('-filter_complex', `${filtros};${video}${audio}`, '-map', '[saida]');
+  if (musica) args.push('-map', '[som]', '-c:a', 'aac', '-b:a', '160k');
+  args.push('-t', total.toFixed(2), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21', '-movflags', '+faststart', destino);
   execFileSync(acharFfmpeg(), args, { stdio: 'inherit' });
 }
 
@@ -189,6 +211,9 @@ async function gerar(conta, { dias = 4, porDia = 3, inicio, saida, montar = mont
   const cor = config.corArte || '#b0294a';
   const hashtags = (config.hashtagsTikTok || []).filter((h) => !/shopee/i.test(h));
   const fotos = juntarFotos(conta);
+  // Música de Natal original (feita com IA, sem direito autoral de terceiros) em contas/<conta>/musicas
+  const pastaMusicas = path.join(RAIZ, 'contas', conta, 'musicas');
+  const musicas = fs.existsSync(pastaMusicas) ? fs.readdirSync(pastaMusicas).filter((f) => /.(m4a|mp3|wav)$/i.test(f)).sort().map((f) => path.join(pastaMusicas, f)) : [];
   if (fotos.length < 2) throw new Error('Preciso de pelo menos 2 fotos (coloque em Projeto zero/aquecimento/fotos-dos-produtos).');
   const pastaSaida = saida || path.join(RAIZ, 'POSTAR-HOJE', 'tiktok-aquecimento');
   const comeco = inicio ? new Date(inicio + 'T12:00:00') : new Date();
@@ -213,7 +238,7 @@ async function gerar(conta, { dias = 4, porDia = 3, inicio, saida, montar = mont
       }
       quadros.push(await quadro(escolha[escolha.length - 1], FIM[v % FIM.length], path.join(tmp, 'fim.jpg'), { cor }));
       const nome = `${hora}-video`;
-      montar(quadros, path.join(pasta, nome + '.mp4'), v);
+      montar(quadros, path.join(pasta, nome + '.mp4'), v, musicas.length ? musicas[v % musicas.length] : null);
       // As fotos verticais também ficam, para postar no modo "fotos" do TikTok se ela preferir
       quadros.slice(1, -1).forEach((q, k) => fs.copyFileSync(q, path.join(pasta, `${hora}-foto${k + 1}.jpg`)));
       const ia = escolha.some((f) => f.ia);

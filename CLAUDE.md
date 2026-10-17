@@ -18,7 +18,7 @@ Leia isto antes de mexer no app. Fale com a dona sempre em português simples.
 | `app/cacador.js` | Filtros e nota dos produtos, nos modos API e manual |
 | `app/textos.js` | Todas as legendas e as REGRAS_ORIGINALIDADE |
 | `app/artes.js` | Artes das ofertas (sharp) |
-| `app/aquecimento-tiktok.js` | Vídeos de aquecimento do TikTok (sem link): `node app/aquecimento-tiktok.js lusia --dias 4`. Saída em `POSTAR-HOJE/tiktok-aquecimento/` (precisa do ffmpeg) |
+| `app/aquecimento-tiktok.js` | Vídeos de aquecimento do TikTok (sem link): `node app/aquecimento-tiktok.js lusia --dias 4 [--inicio AAAA-MM-DD]`. Saída em `POSTAR-HOJE/tiktok-aquecimento/` (precisa do ffmpeg). 2,5 s por foto, transições variadas e música de Natal original de `contas/<conta>/musicas` (feita com IA). Fotos de fora: `contas/<conta>/nao-usar-em-video.txt`. Também usa as fotos da cortina de LED (só as amarelas) |
 | `app/conteudo.js` | Posts sem venda: lê `contas/<conta>/conteudo/<nome>.jpg/png` + `.txt` (linha 1 = título) e cria `publico/<conta>/conteudo/fila.json` |
 | `app/publicar.js` | Publica no Instagram e evita repetir post (anota em `contas/<conta>/publicados.json`) |
 | `app/instagram.js` | API do Instagram (graph.instagram.com v25.0; o erro 190 quer dizer token vencido) |
