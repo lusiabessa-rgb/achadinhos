@@ -72,10 +72,14 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
     .filter((o) => !feitos[`${dia}:post:${o.itemId}`])
     .slice(0, individuais)
     .forEach((o) => tarefas.push({ chave: `${dia}:post:${o.itemId}`, tipo: 'post', urls: [urlArte(o)], legenda: o.legendaInstagram }));
-  // Posts de conteúdo (sem venda): um por rodada (ou "conteudoPorRodada" no config), cada um uma vez só
+  // Posts de conteúdo (sem venda): no máximo "conteudoPorDia" por dia (padrão 1), cada um uma vez só, na ordem da fila
+  const hojeBR = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+  const diaDe = (iso) => new Date(iso).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+  const porDia = ig.conteudoPorDia === undefined ? 1 : Number(ig.conteudoPorDia) || 0;
+  const jaHoje = Object.entries(feitos).filter(([k, v]) => k.startsWith('conteudo:') && v && v.quando && diaDe(v.quando) === hojeBR).length;
   filaConteudo
     .filter((c) => c && c.slug && c.arte && c.legenda && !feitos[`conteudo:${c.slug}`])
-    .slice(0, ig.conteudoPorRodada === undefined ? 1 : Number(ig.conteudoPorRodada) || 0)
+    .slice(0, Math.max(0, porDia - jaHoje))
     .forEach((c) => tarefas.push({ chave: `conteudo:${c.slug}`, tipo: 'post', urls: [urlArte(c)], legenda: c.legenda }));
   if (ig.stories) {
     dados.ofertas

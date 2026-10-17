@@ -337,7 +337,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
-  await teste('post de conteúdo: faz a arte, entra na fila e é publicado uma vez só', async () => {
+  await teste('post de conteúdo: faz a arte, entra na fila, 1 por dia e nunca repete', async () => {
     const sharp = require('sharp');
     const { preparar } = require('./conteudo');
     const { publicar } = require('./publicar');
@@ -349,9 +349,11 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       fs.copyFileSync(path.join(raiz, 'contas', 'lusia', 'config.json'), path.join(pastaConta, 'config.json'));
       await sharp({ create: { width: 800, height: 600, channels: 3, background: '#2a6' } }).png().toFile(path.join(pastaConta, 'conteudo', 'Ideia 1.png'));
       fs.writeFileSync(path.join(pastaConta, 'conteudo', 'Ideia 1.txt'), 'Título com emoji 🎄 & <sinais>\nLegenda 🐾\n#natal');
+      fs.copyFileSync(path.join(pastaConta, 'conteudo', 'Ideia 1.png'), path.join(pastaConta, 'conteudo', 'Ideia 2.png'));
+      fs.writeFileSync(path.join(pastaConta, 'conteudo', 'Ideia 2.txt'), 'Segunda ideia\nOutra legenda');
       fs.writeFileSync(path.join(pastaConta, 'conteudo', 'sem-imagem.txt'), 'X\nY');
       const fila = await preparar(conta, () => {});
-      assert.strictEqual(fila.length, 1);
+      assert.strictEqual(fila.length, 2);
       const m = await sharp(path.join(raiz, 'publico', conta, fila[0].arte)).metadata();
       assert.deepStrictEqual([m.format, m.width, m.height], ['jpeg', 1080, 1350]);
       const lerCfg = maquina.lerConfig;
@@ -362,8 +364,19 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       const r2 = await publicar(conta, opcoes);
       maquina.lerConfig = lerCfg;
       assert.strictEqual(r1.publicados, 1, 'não publicou o post de conteúdo');
-      assert.strictEqual(r2.publicados, 0, 'publicou o mesmo post duas vezes');
+      assert.strictEqual(r2.publicados, 0, 'passou de 1 post de conteúdo no mesmo dia');
       assert(reg.some((x) => x.corpo.caption && x.corpo.caption.includes('Legenda')));
+      // No dia seguinte sai o próximo da fila (e nunca o mesmo de novo)
+      const arqPub = path.join(pastaConta, 'publicados.json');
+      const pub = JSON.parse(fs.readFileSync(arqPub, 'utf8'));
+      for (const k of Object.keys(pub)) pub[k].quando = new Date(Date.now() - 86400000 * 2).toISOString();
+      fs.writeFileSync(arqPub, JSON.stringify(pub));
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' } });
+      const r3 = await publicar(conta, opcoes);
+      maquina.lerConfig = lerCfg;
+      assert.strictEqual(r3.publicados, 1, 'não publicou o próximo da fila no outro dia');
+      assert(reg.some((x) => x.corpo.caption === 'Outra legenda'), 'o segundo post não saiu');
+      assert.strictEqual(reg.filter((x) => (x.corpo.caption || '').startsWith('Legenda')).length, 1, 'repetiu o primeiro post');
     } finally {
       for (const p of [pastaConta, path.join(raiz, 'publico', conta)]) fs.rmSync(p, { recursive: true, force: true });
     }
