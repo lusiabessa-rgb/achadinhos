@@ -35,3 +35,15 @@ Pesquisa de 16/10/2026: apps parecidos do Brasil (Achadinhos Pro, AchadinBot, Sh
 - Os bots de WhatsApp não oficiais. O "anti-ban" que eles vendem é promessa do próprio fornecedor, sem garantia.
 
 Fontes: achadinho.pro, achadinhopro.com.br (comparativo 2026), achadinbot.com, iadivulgadora.com.br, blog.instamagic.com.br, inro.social (comentário para direct pela API oficial), crevio.co (Pinterest bloqueia encurtadores), apify.com (campos da Open API Shopee BR).
+
+## Ideias modeladas da Vyral (17/10/2026)
+A Lusia viu no YouTube uma vendedora com placa de mais de 1 milhão em vendas que usa a **Vyral**, uma plataforma de IA para afiliados do TikTok Shop. O que dá para modelar na nossa máquina:
+
+| O que a Vyral faz | Como a nossa pode fazer (sem raspar o TikTok) |
+|---|---|
+| Mostra os produtos e vídeos que mais vendem (GMV) no TikTok Shop | 🔜 **Radar de campeões:** a dona manda prints dos "Mais vendidos" e da aba Oportunidades. A máquina monta um ranking semanal (preço, comissão, vendas) e escolhe os 3 produtos da semana. A tarefa de sexta também olha o TikTok Creative Center, que é público. |
+| Análise de vídeos virais, com transcrição e roteiro para modelar | 🔜 **Modelador de vídeo:** a dona cola o link ou o print de um vídeo que vendeu muito. O roteirista separa a estrutura (gancho → problema → solução → CTA) e escreve uma versão **original** para o nosso produto, só com as mãos. Copia o formato, nunca o vídeo. |
+| IA para ganchos, CTA e imagens do produto sem gravar | ✅ Já temos: roteirista, produto-rapido e Higgsfield. Falta juntar tudo num botão: "produto → 5 ganchos + 3 roteiros + 12 variações". |
+| Métricas de faturamento e engajamento | 🔜 **Placar da semana:** a dona manda o print do TikTok Studio (visualizações, cliques na sacolinha, vendas). A máquina guarda e mostra o que repetir. |
+
+Sinceridade: o "tempo real" da Vyral vem de dados que eles coletam. Nós não podemos raspar o TikTok (risco de banir a conta). Por isso, o radar depende dos prints. Se a Vyral tiver teste grátis, vale testar 7 dias e comparar.
