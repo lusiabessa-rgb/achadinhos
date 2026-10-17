@@ -3,10 +3,10 @@
 name: Maquina de Ofertas
 
 on:
-  # (horários desligados até as chaves estarem no cofre; religar depois)
-  # schedule:
-  #   - cron: "0 10 * * *"   # 7h em Brasília
-  #   - cron: "0 21 * * *"   # 18h em Brasília
+  # Horários automáticos (o GitHub pode atrasar alguns minutos)
+  schedule:
+    - cron: "0 10 * * *"   # 7h em Brasília
+    - cron: "0 21 * * *"   # 18h em Brasília
   workflow_dispatch: {}
 
 permissions:
