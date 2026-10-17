@@ -357,7 +357,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       const m = await sharp(path.join(raiz, 'publico', conta, fila[0].arte)).metadata();
       assert.deepStrictEqual([m.format, m.width, m.height], ['jpeg', 1080, 1350]);
       const lerCfg = maquina.lerConfig;
-      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoAPartirDas: 0 } });
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoAPartirDas: 0, conteudoPorDia: 1, conteudoPorRodada: 1 } });
       const reg = [];
       const opcoes = { ignorarDesligado: true, segredos: { igToken: 't', igUserId: '9' }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} };
       const r1 = await publicar(conta, opcoes);
