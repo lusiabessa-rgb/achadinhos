@@ -29,6 +29,14 @@ function quebrar(texto, porLinha = 26, maxLinhas = 3) {
       break;
     }
   }
+  // Palavrinha solta no fim da linha ("o", "de", "a") desce para a linha de baixo: lê melhor
+  for (let i = 0; i < linhas.length - 1; i++) {
+    const m = linhas[i].match(/^(.+)\s(\S{1,3})$/);
+    if (m && (m[2] + ' ' + linhas[i + 1]).length <= porLinha + 4) {
+      linhas[i] = m[1];
+      linhas[i + 1] = m[2] + ' ' + linhas[i + 1];
+    }
+  }
   return linhas.filter(Boolean);
 }
 
@@ -99,4 +107,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { preparar, fazerArte };
+module.exports = { preparar, fazerArte, quebrar };
