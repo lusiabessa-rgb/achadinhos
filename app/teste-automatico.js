@@ -357,7 +357,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       const m = await sharp(path.join(raiz, 'publico', conta, fila[0].arte)).metadata();
       assert.deepStrictEqual([m.format, m.width, m.height], ['jpeg', 1080, 1350]);
       const lerCfg = maquina.lerConfig;
-      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' } });
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoAPartirDas: 0 } });
       const reg = [];
       const opcoes = { ignorarDesligado: true, segredos: { igToken: 't', igUserId: '9' }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} };
       const r1 = await publicar(conta, opcoes);
@@ -371,7 +371,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       const pub = JSON.parse(fs.readFileSync(arqPub, 'utf8'));
       for (const k of Object.keys(pub)) pub[k].quando = new Date(Date.now() - 86400000 * 2).toISOString();
       fs.writeFileSync(arqPub, JSON.stringify(pub));
-      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' } });
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoAPartirDas: 0 } });
       const r3 = await publicar(conta, opcoes);
       maquina.lerConfig = lerCfg;
       assert.strictEqual(r3.publicados, 1, 'não publicou o próximo da fila no outro dia');

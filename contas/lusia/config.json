@@ -15,12 +15,37 @@
     "notaMinima": 4.3,
     "precoMin": 10,
     "precoMax": 250,
-    "palavrasProibidas": ["réplica", "replica", "arma", "cigarro", "vape"]
+    "palavrasProibidas": [
+      "réplica",
+      "replica",
+      "arma",
+      "cigarro",
+      "vape"
+    ]
   },
-  "hashtags": ["#achadinhosshopee", "#decoracaodenatal", "#natal", "#casadecorada", "#achadinhos"],
-  "hashtagsTikTok": ["#tiktokshop", "#decoracaodenatal", "#natal", "#casadecorada", "#achadinhos"],
-  "hashtagsInstagram": ["#achadinhos", "#achadinhosshopee", "#decoracaodenatal", "#natal", "#casadecorada", "#ofertas", "#shopee"],
-
+  "hashtags": [
+    "#achadinhosshopee",
+    "#decoracaodenatal",
+    "#natal",
+    "#casadecorada",
+    "#achadinhos"
+  ],
+  "hashtagsTikTok": [
+    "#tiktokshop",
+    "#decoracaodenatal",
+    "#natal",
+    "#casadecorada",
+    "#achadinhos"
+  ],
+  "hashtagsInstagram": [
+    "#achadinhos",
+    "#achadinhosshopee",
+    "#decoracaodenatal",
+    "#natal",
+    "#casadecorada",
+    "#ofertas",
+    "#shopee"
+  ],
   "marca": "@achadinhoabessa",
   "corArte": "#b0294a",
   "site": {
@@ -28,11 +53,12 @@
     "subtitulo": "As melhores ofertas para mulheres",
     "urlBase": "https://lusiabessa-rgb.github.io/achadinhos"
   },
-
   "instagram": {
     "ativo": true,
     "modo": "carrossel",
     "postsIndividuaisPorRodada": 0,
-    "stories": true
+    "stories": true,
+    "conteudoPorDia": 1,
+    "conteudoAPartirDas": 19
   }
 }

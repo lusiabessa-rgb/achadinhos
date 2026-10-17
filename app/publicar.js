@@ -75,7 +75,10 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
   // Posts de conteúdo (sem venda): no máximo "conteudoPorDia" por dia (padrão 1), cada um uma vez só, na ordem da fila
   const hojeBR = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
   const diaDe = (iso) => new Date(iso).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
-  const porDia = ig.conteudoPorDia === undefined ? 1 : Number(ig.conteudoPorDia) || 0;
+  // Só no horário de pico (pessoas em casa rolando o feed): a partir de "conteudoAPartirDas" (padrão 19h, Brasília)
+  const horaBR = Number(new Date().toLocaleString('en-GB', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }));
+  const aPartir = ig.conteudoAPartirDas === undefined ? 19 : Number(ig.conteudoAPartirDas);
+  const porDia = horaBR < aPartir ? 0 : ig.conteudoPorDia === undefined ? 1 : Number(ig.conteudoPorDia) || 0;
   const jaHoje = Object.entries(feitos).filter(([k, v]) => k.startsWith('conteudo:') && v && v.quando && diaDe(v.quando) === hojeBR).length;
   filaConteudo
     .filter((c) => c && c.slug && c.arte && c.legenda && !feitos[`conteudo:${c.slug}`])

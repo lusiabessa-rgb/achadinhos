@@ -1,12 +1,13 @@
-# Robô da Máquina de Ofertas: roda sozinho 2x por dia (7h e 18h de Brasília)
+# Robô da Máquina de Ofertas: roda sozinho 3x por dia nos horários de pico (12h, 18h e 20h de Brasília)
 # ou quando você aperta "Run workflow" no GitHub (pelo celular também).
 name: Maquina de Ofertas
 
 on:
   # Horários automáticos (o GitHub pode atrasar alguns minutos)
   schedule:
-    - cron: "0 10 * * *"   # 7h em Brasília
-    - cron: "0 21 * * *"   # 18h em Brasília
+    - cron: "0 15 * * *"   # 12h em Brasília (ofertas)
+    - cron: "0 21 * * *"   # 18h em Brasília (ofertas)
+    - cron: "0 23 * * *"   # 20h em Brasília (post de conteúdo: pessoas em casa no feed)
   workflow_dispatch: {}
 
 permissions:
