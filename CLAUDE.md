@@ -47,6 +47,7 @@ O app aceita várias contas (`contas/<nome>/`) porque a dona pode vender o app c
 - Imagem ou vídeo feito com IA leva o rótulo "conteúdo gerado por IA". A marca d'água nunca é escondida.
 - Nada de rosto da dona e **nunca crianças**.
 - **#publi** em toda legenda de oferta.
+- **Cada plataforma fala do seu jeito:** as mesmas fotos vão para o Instagram e o TikTok, mas os textos são diferentes. No TikTok, nada de "Shopee", "link na bio" ou @achadinhoabessa: lá é "sacolinha" e #tiktokshop. No Instagram, nada de "sacolinha" nem #tiktokshop. A tabela completa está na skill aquecer-contas.
 - **Não raspar** shopee.com.br nem o TikTok (eles bloqueiam robôs e a conta pode ser banida). Só API oficial ou a lista manual.
 - **Senhas: nunca.** Só chaves de API ou autorização oficial.
 - Higgsfield gasta créditos: peça antes, menos a tarefa semanal, que tem limite de 20 créditos por semana.

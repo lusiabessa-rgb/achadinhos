@@ -94,6 +94,16 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
+  await teste('cada plataforma fala do seu jeito: TikTok nunca cita Shopee, link na bio ou o Instagram', async () => {
+    for (let id = 1; id <= 60; id++) {
+      const p = { itemId: 'x'.repeat(id), productName: 'Guirlanda', priceMin: '59.9' };
+      for (const l of textos.legendasVideo(p, ['#tiktokshop'], 'tiktok')) {
+        assert(!/shopee|xopi|link na bio|@achadinhoabessa/i.test(l), 'legenda do TikTok misturou plataforma: ' + l);
+      }
+      assert(!/sacolinha|#tiktokshop/i.test(textos.legendaInstagram(p, 1, ['#natal'])), 'legenda do Instagram falou do TikTok');
+    }
+  });
+
   await teste('todo texto de divulgação leva #publi (regra do CONAR) e a frase de benefício', async () => {
     const p = { itemId: 9, productName: 'Guirlanda', priceMin: '59.9', info: 'Já vem com luz' };
     const textosTodos = [
