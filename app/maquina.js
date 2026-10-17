@@ -49,7 +49,7 @@ function lerConfig(pastaConta) {
 }
 
 // Segredos: no PC vêm do CHAVES.txt; na nuvem (GitHub) vêm dos "Secrets", que viram variáveis de ambiente.
-// Nomes aceitos: APP_ID, SECRET, INSTAGRAM_TOKEN, INSTAGRAM_USER_ID (na nuvem: SHOPEE_APP_ID, SHOPEE_SECRET...).
+// Nomes aceitos: APP_ID, SECRET, INSTAGRAM_TOKEN, INSTAGRAM_USER_ID, TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET (na nuvem: SHOPEE_APP_ID, SHOPEE_SECRET...).
 function lerSegredos(pastaConta) {
   const s = {};
   const arq = path.join(pastaConta, 'CHAVES.txt');
@@ -65,6 +65,8 @@ function lerSegredos(pastaConta) {
     secret: env.SHOPEE_SECRET || s.SECRET,
     igToken: env.INSTAGRAM_TOKEN || s.INSTAGRAM_TOKEN,
     igUserId: env.INSTAGRAM_USER_ID || s.INSTAGRAM_USER_ID,
+    tiktokKey: env.TIKTOK_CLIENT_KEY || s.TIKTOK_CLIENT_KEY,
+    tiktokSecret: env.TIKTOK_CLIENT_SECRET || s.TIKTOK_CLIENT_SECRET,
   };
 }
 

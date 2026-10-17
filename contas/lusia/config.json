@@ -53,6 +53,12 @@
     "subtitulo": "As melhores ofertas para mulheres",
     "urlBase": "https://lusiabessa-rgb.github.io/achadinhos"
   },
+  "tiktok": {
+    "ativo": false,
+    "modo": "rascunho",
+    "porRodada": 1,
+    "pasta": "contas/{conta}/tiktok-fila"
+  },
   "instagram": {
     "ativo": true,
     "modo": "carrossel",

@@ -31,6 +31,8 @@ jobs:
       SHOPEE_SECRET: ${{ secrets.SHOPEE_SECRET }}
       INSTAGRAM_TOKEN: ${{ secrets.INSTAGRAM_TOKEN }}
       INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+      TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+      TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -80,9 +82,18 @@ jobs:
           if [ -z "$INSTAGRAM_TOKEN" ]; then echo "Sem token do Instagram ainda: pulando a publicacao."; exit 0; fi
           node app/publicar.js lusia
 
+      - name: Mandar video para o TikTok
+        if: ${{ !cancelled() }}
+        run: |
+          # So age com "tiktok": { "ativo": true } no config.json (o proprio app confere)
+          if [ -z "$TIKTOK_CLIENT_KEY" ]; then echo "Sem chaves do TikTok ainda: pulando."; exit 0; fi
+          node app/tiktok.js lusia
+
       - name: Salvar o que foi publicado
         if: always()
         run: |
           if [ -f contas/lusia/publicados.json ]; then git add contas/lusia/publicados.json; fi
+          # tiktok-cofre.json vai criptografado (o robo guarda o token novo que o TikTok manda)
+          for f in tiktok-publicados.json tiktok-cofre.json; do if [ -f contas/lusia/$f ]; then git add contas/lusia/$f; fi; done
           git commit -m "Publicado em $(date '+%F %H:%M')" || echo "nada novo"
           (git pull --rebase --autostash -q && git push) || true

@@ -1,5 +1,5 @@
 // VÍDEOS DE AQUECIMENTO DO TIKTOK (sem link, sem sacolinha, sem venda).
-// Uso:  node app/aquecimento-tiktok.js <conta> [--dias 4] [--por-dia 3] [--inicio AAAA-MM-DD]
+// Uso:  node app/aquecimento-tiktok.js <conta> [--dias 4] [--por-dia 3] [--inicio AAAA-MM-DD] [--saida contas/lusia/tiktok-fila]
 // Pega as fotos (primeiro as da dona, em Projeto zero/aquecimento/fotos-dos-produtos; depois as da máquina),
 // faz vídeos verticais 1080x1920 com movimento e texto, cada um com gancho, ordem e fotos diferentes,
 // e a legenda do TikTok (nunca cita a Shopee nem o Instagram).
@@ -49,9 +49,18 @@ const FIM = ['Segue para mais ideias de Natal', 'Salva e segue para a parte 2', 
 function juntarFotos(conta) {
   const pastaConta = path.join(RAIZ, 'contas', conta);
   const fotos = [];
+  // A mesma foto pode estar em duas pastas (ex.: foto de produto copiada para a fila do Instagram):
+  // entra uma vez só e fica com a marcação da primeira pasta (foto real não leva rótulo de IA)
+  const jaTem = new Set();
   const add = (pasta, ia, textoDe) => {
     if (!fs.existsSync(pasta)) return;
-    for (const f of fs.readdirSync(pasta).filter((x) => IMG.test(x)).sort()) fotos.push({ arquivo: path.join(pasta, f), texto: textoDe(f), ia });
+    for (const f of fs.readdirSync(pasta).filter((x) => IMG.test(x)).sort()) {
+      const arquivo = path.join(pasta, f);
+      const marca = fs.statSync(arquivo).size;
+      if (jaTem.has(marca)) continue;
+      jaTem.add(marca);
+      fotos.push({ arquivo, texto: textoDe(f), ia: typeof ia === 'function' ? ia(f) : ia });
+    }
   };
   const bonito = (f) => f.replace(IMG, '').replace(/^\d+-/, '').replace(/[-_]+/g, ' ').trim();
   // 1) Fotos da dona (reais)
@@ -66,7 +75,10 @@ function juntarFotos(conta) {
       if (c[4]) frases[c[4]] = c[5] || c[0];
     }
   }
-  add(path.join(pastaConta, 'fotos'), false, (f) => frases[f] || bonito(f));
+  // Foto de produto refeita com IA (ex.: a do print veio cortada) fica listada em fotos/feitas-com-ia.txt e leva o rótulo
+  const arqIa = path.join(pastaConta, 'fotos', 'feitas-com-ia.txt');
+  const feitasComIa = new Set(fs.existsSync(arqIa) ? fs.readFileSync(arqIa, 'utf8').split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#')) : []);
+  add(path.join(pastaConta, 'fotos'), (f) => feitasComIa.has(f), (f) => frases[f] || bonito(f));
   // 3) Imagens de conteúdo feitas com IA (título = 1ª linha do .txt)
   const pastaConteudo = path.join(pastaConta, 'conteudo');
   add(pastaConteudo, true, (f) => {
@@ -76,9 +88,9 @@ function juntarFotos(conta) {
   return fotos;
 }
 
-// Um quadro 1080x1920: fundo desfocado, foto inteira no meio, texto em cima e rótulo de IA
+// Um quadro 1080x1920: fundo liso claro (nada desfocado: a dona pediu em 17/10), foto inteira, nítida e centralizada, texto em cima e rótulo de IA
 async function quadro(foto, titulo, destino, { cor, numero } = {}) {
-  const fundo = await sharp(foto.arquivo).resize(L, A, { fit: 'cover' }).blur(40).modulate({ brightness: 0.7 }).toBuffer();
+  const fundo = await sharp({ create: { width: L, height: A, channels: 3, background: '#f7f0ea' } }).png().toBuffer();
   const meio = await sharp(foto.arquivo).resize(L - 80, 1250, { fit: 'inside' }).toBuffer();
   const m = await sharp(meio).metadata();
   const linhas = titulo ? quebrar(semEmoji(titulo), 22, 3) : [];
@@ -86,7 +98,7 @@ async function quadro(foto, titulo, destino, { cor, numero } = {}) {
   ${linhas.length ? `<rect x="50" y="150" rx="28" width="${L - 100}" height="${50 + linhas.length * 74}" fill="${cor}" opacity="0.92"/>` : ''}
   ${linhas.map((l, i) => `<text x="${L / 2}" y="${222 + i * 74}" text-anchor="middle" font-family="${FONTE}" font-size="60" font-weight="800" fill="#fff">${xml(l)}</text>`).join('')}
   ${numero ? `<circle cx="110" cy="${A - 330}" r="56" fill="${cor}"/><text x="110" y="${A - 310}" text-anchor="middle" font-family="${FONTE}" font-size="60" font-weight="800" fill="#fff">${numero}</text>` : ''}
-  ${foto.ia ? `<text x="${L / 2}" y="${A - 230}" text-anchor="middle" font-family="${FONTE}" font-size="30" fill="#fff" opacity="0.9">Conteúdo gerado por IA</text>` : ''}
+  ${foto.ia ? `<text x="${L / 2}" y="${A - 230}" text-anchor="middle" font-family="${FONTE}" font-size="30" fill="#6b5a52">Conteúdo gerado por IA</text>` : ''}
 </svg>`);
   await sharp(fundo)
     .composite([
@@ -201,10 +213,10 @@ if (require.main === module) {
   const a = process.argv.slice(2);
   const val = (n, padrao) => (a.includes(n) ? a[a.indexOf(n) + 1] : padrao);
   const conta = a[0] && !a[0].startsWith('--') ? a[0] : 'lusia';
-  gerar(conta, { dias: Number(val('--dias', 4)), porDia: Number(val('--por-dia', 3)), inicio: val('--inicio') }).catch((e) => {
+  gerar(conta, { dias: Number(val('--dias', 4)), porDia: Number(val('--por-dia', 3)), inicio: val('--inicio'), saida: val('--saida') && path.resolve(val('--saida')) }).catch((e) => {
     console.error('ERRO: ' + e.message);
     process.exitCode = 1;
   });
 }
 
-module.exports = { gerar, juntarFotos, legendaTikTok };
+module.exports = { gerar, juntarFotos, legendaTikTok, quadro };

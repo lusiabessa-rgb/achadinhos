@@ -104,6 +104,32 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
+  await teste('padrão de qualidade (olhar de consumidora): fundo liso sem desfoque, foto centralizada e nítida, rótulo de IA só em IA', async () => {
+    const aq = require('./aquecimento-tiktok');
+    const sharp = require('sharp');
+    const os = require('os');
+    const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'q-'));
+    const foto = path.join(pasta, 'f.png');
+    await sharp({ create: { width: 800, height: 800, channels: 3, background: '#d00000' } }).png().toFile(foto);
+    const saida = path.join(pasta, 'q.jpg');
+    await aq.quadro({ arquivo: foto, ia: false }, 'Teste', saida, { cor: '#b0294a' });
+    const { data, info } = await sharp(saida).raw().toBuffer({ resolveWithObject: true });
+    const px = (x, y) => { const i = (y * info.width + x) * info.channels; return [data[i], data[i + 1], data[i + 2]]; };
+    const perto = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 12);
+    // canto de baixo = fundo liso claro (nada de foto desfocada atrás)
+    assert(perto(px(20, info.height - 20), [0xf7, 0xf0, 0xea]), 'fundo não é liso: ' + px(20, info.height - 20));
+    // centro = a foto, inteira e nítida (vermelho puro, sem borrão)
+    assert(perto(px(info.width / 2, info.height / 2 + 60), [0xd0, 0, 0]), 'foto não está no centro');
+    // foto repetida em duas pastas entra uma vez só, sem virar "IA"
+    const fotos = aq.juntarFotos('lusia');
+    const tamanhos = fotos.map((f) => fs.statSync(f.arquivo).size);
+    assert.strictEqual(new Set(tamanhos).size, tamanhos.length, 'foto repetida no vídeo');
+    const listaIa = path.join(__dirname, '..', 'contas', 'lusia', 'fotos', 'feitas-com-ia.txt');
+    const comIa = fs.existsSync(listaIa) ? fs.readFileSync(listaIa, 'utf8') : '';
+    assert(fotos.filter((f) => /[\/]fotos[\/]/.test(f.arquivo)).every((f) => f.ia === comIa.includes(path.basename(f.arquivo))), 'rótulo de IA errado em foto de produto');
+    fs.rmSync(pasta, { recursive: true, force: true });
+  });
+
   await teste('vídeos de aquecimento do TikTok: legenda curta, sem link e sem misturar plataforma', async () => {
     const aq = require('./aquecimento-tiktok');
     const l = aq.legendaTikTok('Ideias de Natal', 0, ['#natal']);
@@ -496,6 +522,175 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       assert(reg.some((x) => x.u.endsWith('/C1/replies')), 'faltou a resposta pública');
     } finally {
       for (const p of [pastaConta, path.join(raiz, 'publico', conta)]) fs.rmSync(p, { recursive: true, force: true });
+    }
+  });
+
+  // ---------- TikTok (Content Posting API) ----------
+  const tiktok = require('./tiktok');
+  const SEG_TT = { tiktokKey: 'chave-tt', tiktokSecret: 'segredo-tt' };
+
+  await teste('TikTok: pedaços seguem a regra oficial (5 a 64 MB, sobra no último)', async () => {
+    const MB = 1024 * 1024;
+    const p1 = tiktok.planoDePedacos(4 * MB);
+    assert.deepStrictEqual([p1.total, p1.chunkSize], [1, 4 * MB], 'abaixo de 5 MB vai inteiro');
+    const p2 = tiktok.planoDePedacos(50000123, 10000000);
+    assert.strictEqual(p2.total, 5);
+    assert.strictEqual(p2.pedacos[4].fim - p2.pedacos[4].inicio + 1, 10000123, 'a sobra vai no último pedaço');
+    assert.strictEqual(p2.pedacos[4].fim, 50000122);
+    const p3 = tiktok.planoDePedacos(23 * MB);
+    assert(p3.pedacos.every((x, i) => i === 0 || x.inicio === p3.pedacos[i - 1].fim + 1), 'pedaços com buraco');
+    assert.throws(() => tiktok.planoDePedacos(0), /vazio/);
+  });
+
+  await teste('TikTok: cofre guarda o token criptografado e só abre com o segredo certo', async () => {
+    const c = tiktok.trancar({ access_token: 'AT-secreto', refresh_token: 'RT' }, 'segredo-tt');
+    assert(!JSON.stringify(c).includes('AT-secreto'), 'token apareceu sem criptografia');
+    assert.strictEqual(tiktok.destrancar(c, 'segredo-tt').access_token, 'AT-secreto');
+    assert.throws(() => tiktok.destrancar(c, 'outro'), tiktok.ErroFatal);
+  });
+
+  await teste('TikTok: link de autorização tem os campos oficiais', async () => {
+    const u = new URL(tiktok.linkDeAutorizacao({ clientKey: 'ck', redirectUri: 'https://x.github.io/a/tiktok-retorno.html', estado: 'e1' }));
+    assert.strictEqual(u.origin + u.pathname, 'https://www.tiktok.com/v2/auth/authorize/');
+    assert.strictEqual(u.searchParams.get('client_key'), 'ck');
+    assert.strictEqual(u.searchParams.get('response_type'), 'code');
+    assert(u.searchParams.get('scope').includes('video.upload'));
+    assert.strictEqual(u.searchParams.get('redirect_uri'), 'https://x.github.io/a/tiktok-retorno.html');
+  });
+
+  await teste('TikTok: renova o token vencido e guarda o refresh token novo', async () => {
+    const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'tt-'));
+    const agora = Date.UTC(2026, 9, 17, 15);
+    tiktok.salvarCofre(pasta, 'segredo-tt', { access_token: 'velho', refresh_token: 'RT1', expira_em: agora - 1000, refresh_expira_em: agora + 1e10 });
+    let corpo;
+    const fake = async (url, opt) => {
+      assert(url.endsWith('/v2/oauth/token/'));
+      corpo = new URLSearchParams(String(opt.body));
+      return resposta(200, { access_token: 'novo', refresh_token: 'RT2', expires_in: 86400, refresh_expires_in: 31536000, open_id: 'o', scope: 'video.upload' });
+    };
+    assert.strictEqual(await tiktok.tokenValido(pasta, SEG_TT, fake, agora), 'novo');
+    assert.strictEqual(corpo.get('grant_type'), 'refresh_token');
+    assert.strictEqual(corpo.get('refresh_token'), 'RT1');
+    assert.strictEqual(corpo.get('client_secret'), 'segredo-tt');
+    assert.strictEqual(tiktok.lerCofre(pasta, 'segredo-tt').refresh_token, 'RT2', 'não guardou o refresh token novo');
+    // token ainda bom: não chama a internet
+    assert.strictEqual(await tiktok.tokenValido(pasta, SEG_TT, async () => assert.fail('não devia renovar'), agora), 'novo');
+    fs.rmSync(pasta, { recursive: true, force: true });
+  });
+
+  await teste('TikTok: autorização tirada para na hora com aviso claro', async () => {
+    const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'tt-'));
+    tiktok.salvarCofre(pasta, 'segredo-tt', { access_token: 'a', refresh_token: 'r', expira_em: 0, refresh_expira_em: Date.now() + 1e9 });
+    let n = 0;
+    const fake = async () => (n++, resposta(400, { error: 'invalid_grant', error_description: 'x' }));
+    await assert.rejects(tiktok.tokenValido(pasta, SEG_TT, fake), /Autorize de novo/);
+    assert.strictEqual(n, 1, 'ficou tentando à toa');
+    await assert.rejects(tiktok.tokenValido(fs.mkdtempSync(path.join(os.tmpdir(), 'tt-')), SEG_TT), /ainda não foi autorizado/);
+    await assert.rejects(tiktok.tokenValido(pasta, {}), /TIKTOK_CLIENT_KEY/);
+    fs.rmSync(pasta, { recursive: true, force: true });
+  });
+
+  // fetch falso do TikTok: registra tudo e responde como a API oficial
+  const fakeTikTok = (reg, { statusFinal = 'SEND_TO_USER_INBOX', initErro } = {}) => async (url, opt = {}) => {
+    const u = String(url);
+    reg.push({ u, opt });
+    if (u.startsWith('https://upload.fake/')) {
+      const [, , total] = opt.headers['Content-Range'].match(/bytes (\d+)-(\d+)\/(\d+)/).slice(1).map(Number);
+      const fim = Number(opt.headers['Content-Range'].match(/-(\d+)\//)[1]);
+      return { ok: true, status: fim === total - 1 ? 201 : 206, json: async () => ({}) };
+    }
+    const corpo = JSON.parse(opt.body || '{}');
+    if (u.endsWith('/creator_info/query/')) return resposta(200, { data: { creator_username: 'shopabessa', privacy_level_options: ['SELF_ONLY'], max_video_post_duration_sec: 600 }, error: { code: 'ok' } });
+    if (u.endsWith('/video/init/')) {
+      if (initErro) return resposta(403, { error: { code: initErro, message: 'x' } });
+      return resposta(200, { data: { publish_id: 'v_pub_' + reg.length, upload_url: 'https://upload.fake/' + corpo.source_info.total_chunk_count }, error: { code: 'ok' } });
+    }
+    if (u.endsWith('/status/fetch/')) {
+      const vezes = reg.filter((x) => x.u.endsWith('/status/fetch/')).length;
+      return resposta(200, { data: { status: vezes < 2 ? 'PROCESSING_UPLOAD' : statusFinal, fail_reason: 'duration_check_failed' }, error: { code: 'ok' } });
+    }
+    return resposta(404, { error: { code: 'nao_existe', message: u } });
+  };
+
+  await teste('TikTok: rascunho vai para a caixa de entrada com o passo a passo oficial', async () => {
+    const arq = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tt-')), '12h-video.mp4');
+    fs.writeFileSync(arq, Buffer.alloc(1234, 7));
+    const reg = [];
+    const r = await tiktok.enviarVideo('TOKEN', arq, 'legenda', { modo: 'rascunho' }, fakeTikTok(reg), 1);
+    assert.strictEqual(r.status, 'SEND_TO_USER_INBOX');
+    const init = reg.find((x) => x.u.endsWith('/video/init/'));
+    assert(init.u.endsWith('/v2/post/publish/inbox/video/init/'), 'rascunho devia usar a caixa de entrada');
+    assert.strictEqual(init.opt.headers.Authorization, 'Bearer TOKEN');
+    assert.deepStrictEqual(JSON.parse(init.opt.body).source_info, { source: 'FILE_UPLOAD', video_size: 1234, chunk_size: 1234, total_chunk_count: 1 });
+    const put = reg.find((x) => x.opt.method === 'PUT');
+    assert.strictEqual(put.opt.headers['Content-Range'], 'bytes 0-1233/1234');
+    assert.strictEqual(put.opt.headers['Content-Type'], 'video/mp4');
+    assert(!reg.some((x) => x.u.endsWith('/creator_info/query/')), 'rascunho não precisa ler o perfil');
+  });
+
+  await teste('TikTok: modo direto confere a privacidade, marca IA e envia em vários pedaços', async () => {
+    const MB = 1024 * 1024;
+    const arq = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tt-')), '18h-video.mp4');
+    fs.writeFileSync(arq, Buffer.alloc(23 * MB, 1));
+    const reg = [];
+    const r = await tiktok.enviarVideo('T', arq, 'Ideias de Natal #tiktokshop', { modo: 'direto', ia: true }, fakeTikTok(reg, { statusFinal: 'PUBLISH_COMPLETE' }), 1);
+    assert.strictEqual(r.status, 'PUBLISH_COMPLETE');
+    const init = JSON.parse(reg.find((x) => x.u.endsWith('/v2/post/publish/video/init/')).opt.body);
+    assert.strictEqual(init.post_info.privacy_level, 'SELF_ONLY');
+    assert.strictEqual(init.post_info.is_aigc, true, 'faltou o rótulo de IA');
+    assert.strictEqual(init.post_info.title, 'Ideias de Natal #tiktokshop');
+    const puts = reg.filter((x) => x.opt.method === 'PUT');
+    assert.strictEqual(puts.length, init.source_info.total_chunk_count);
+    assert.strictEqual(puts.length, 2);
+    assert.strictEqual(puts[1].opt.headers['Content-Range'], `bytes ${10 * MB}-${23 * MB - 1}/${23 * MB}`);
+    await assert.rejects(
+      tiktok.enviarVideo('T', arq, 'x', { modo: 'direto', privacidade: 'PUBLIC_TO_EVERYONE' }, fakeTikTok([])),
+      (e) => e instanceof tiktok.ErroFatal && /não aceita a privacidade/.test(e.message)
+    );
+    await assert.rejects(tiktok.enviarVideo('T', arq, 'x', { modo: 'direto' }, fakeTikTok([], { initErro: 'unaudited_client_can_only_post_to_private_accounts' })), /conta PRIVADA/);
+    await assert.rejects(tiktok.enviarVideo('T', arq, 'x', { modo: 'rascunho' }, fakeTikTok([], { statusFinal: 'FAILED' }), 1), /duração do vídeo/);
+  });
+
+  await teste('TikTok: legenda tira o lembrete de IA e barra "Shopee"', async () => {
+    const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'tt-'));
+    fs.writeFileSync(path.join(pasta, 'a.txt'), 'Ideias 🎄\n#natal\n\n(Ao postar: ligar "Conteúdo gerado por IA")\n');
+    assert.deepStrictEqual(tiktok.lerLegenda(path.join(pasta, 'a.txt')), { legenda: 'Ideias 🎄\n#natal', ia: true });
+    fs.writeFileSync(path.join(pasta, 'b.txt'), 'Achei na Shopee');
+    assert.throws(() => tiktok.lerLegenda(path.join(pasta, 'b.txt')), /misturou/);
+  });
+
+  await teste('TikTok: robô completo manda 1 vídeo por rodada, só na hora certa, e nunca repete', async () => {
+    const conta = 'teste-tiktok-' + process.pid;
+    const raiz = path.join(__dirname, '..');
+    const pastaConta = path.join(raiz, 'contas', conta);
+    const fila = path.join(pastaConta, 'tiktok-fila', '2026-10-17');
+    fs.mkdirSync(fila, { recursive: true });
+    try {
+      for (const h of ['12h', '18h', '20h']) {
+        fs.writeFileSync(path.join(fila, `${h}-video.mp4`), Buffer.alloc(100, 2));
+        fs.writeFileSync(path.join(fila, `${h}-legenda.txt`), `Vídeo das ${h}\n#natal\n`);
+      }
+      const cfg = { palavrasChave: ['natal'], tiktok: { ativo: false, modo: 'rascunho', porRodada: 1 } };
+      const gravarCfg = () => fs.writeFileSync(path.join(pastaConta, 'config.json'), JSON.stringify(cfg));
+      gravarCfg();
+      const agora = new Date('2026-10-17T21:30:00Z'); // 18h30 em Brasília
+      tiktok.salvarCofre(pastaConta, 'segredo-tt', { access_token: 'AT', refresh_token: 'RT', expira_em: agora.getTime() + 3600e3, refresh_expira_em: agora.getTime() + 1e10 });
+      const reg = [];
+      const op = { fetchFn: fakeTikTok(reg), agora, segredos: SEG_TT, log: () => {}, intervalo: 1 };
+      const r0 = await tiktok.publicar(conta, op);
+      assert.strictEqual(r0.enviados, 0, 'desligado não pode mandar nada');
+      assert.strictEqual(reg.length, 0);
+      cfg.tiktok.ativo = true;
+      gravarCfg();
+      const r1 = await tiktok.publicar(conta, op);
+      const r2 = await tiktok.publicar(conta, op);
+      const r3 = await tiktok.publicar(conta, op);
+      assert.deepStrictEqual([r1.enviados, r2.enviados, r3.enviados], [1, 1, 0], 'o das 20h ainda não devia ir');
+      const feitos = JSON.parse(fs.readFileSync(path.join(pastaConta, 'tiktok-publicados.json'), 'utf8'));
+      assert.deepStrictEqual(Object.keys(feitos).sort(), ['2026-10-17/12h-video.mp4', '2026-10-17/18h-video.mp4']);
+      assert.strictEqual(reg.filter((x) => x.opt.method === 'PUT').length, 2);
+    } finally {
+      fs.rmSync(pastaConta, { recursive: true, force: true });
     }
   });
 
