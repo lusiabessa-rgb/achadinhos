@@ -20,9 +20,13 @@ Leia isto antes de mexer no app. Fale com a dona sempre em português simples.
 | `app/conteudo.js` | Posts sem venda: lê `contas/<conta>/conteudo/<nome>.jpg/png` + `.txt` (linha 1 = título) e cria `publico/<conta>/conteudo/fila.json` |
 | `app/publicar.js` | Publica no Instagram e evita repetir post (anota em `contas/<conta>/publicados.json`) |
 | `app/instagram.js` | API do Instagram (graph.instagram.com v25.0; o erro 190 quer dizer token vencido) |
+| `app/campanhas.js` | Calendário de campanhas (11.11, Black Friday, 12.12, Natal, Dia das Mães...): título e cor da arte, frase, hashtags e buscas mudam sozinhos. Desligar ou criar campanhas: `"campanhas": { "desligadas": [...], "extras": [...] }` no config |
+| `app/respostas.js` | "Comentou QUERO, recebe o link no direct": resposta privada oficial (até 7 dias) e resposta pública. Anota em `contas/<conta>/respondidos.json`. Liga com `instagram.respostas.ativo` |
 | `app/painel.js`, `app/vitrine.js` | Painel do dia e site link na bio |
 | `app/teste-automatico.js` | Testes. **Rode sempre depois de mexer** (`node app/teste-automatico.js`) |
 | `.github/workflows/maquina.yml` | Robô na nuvem: 12h e 18h (ofertas) e 20h (conteúdo), no horário de Brasília |
+| `.github/workflows/respostas.yml` | Robô de respostas: a cada 15 min (só age se `respostas.ativo`) |
+| `publico/privacidade.html` | Política de privacidade, exigida pela Meta: https://lusiabessa-rgb.github.io/achadinhos/privacidade.html |
 | `contas/lusia/config.json` | Palavras de busca, filtros, hashtags, marca, cor e opções do Instagram |
 | `contas/lusia/shopee-produtos.txt` | Lista manual: `nome \| preço \| comissão % \| link \| foto \| frase \| de PREÇO ANTIGO \| N vendidos` (as fotos ficam em `contas/lusia/fotos`) |
 | `contas/lusia/tiktok-produtos.txt` | Produtos do TikTok Shop (`nome \| preço \| comissão`) |
@@ -50,6 +54,8 @@ O app aceita várias contas (`contas/<nome>/`) porque a dona pode vender o app c
 
 ## Situação atual (atualize sempre que algo mudar)
 - **Instagram:** ligado (`"ativo": true`). O token vence por volta de **meados de dez/2026**; renove antes com `renovarToken` em instagram.js.
+- **Resposta QUERO:** pronta e testada, mas **desligada** (`"ativo": false`). Falta: (1) no app da Meta "Maquina Achadinhos", adicionar as permissões instagram_business_manage_comments e instagram_business_manage_messages; (2) gerar um token novo e trocar o secret INSTAGRAM_TOKEN e o CHAVES.txt; (3) no Instagram: Configurações > Mensagens > Ferramentas conectadas > permitir acesso às mensagens; (4) testar com uma conta testadora; (5) para funcionar com qualquer pessoa: revisão do app pela Meta (Acesso Avançado), usando a página de privacidade. Ao ligar, as legendas e artes passam a dizer "Comente QUERO".
+- **Campanhas:** ligadas. Próximas: Natal (01/11), 11.11 (05/11), Black Friday (23/11–30/11), 12.12 (06/12).
 - **Shopee:** a conta de afiliada foi aprovada, mas a **Open API ainda está bloqueada** e o **link de afiliada não está funcionando**. A dona está resolvendo com o suporte do Effata. Os 6 produtos de Natal estão na lista manual com `LINK_AQUI`.
 - **TikTok Shop:** não há API de produtos para afiliados no Brasil. A dona manda prints dos "Mais vendidos".
 - **Fila de conteúdo:** os posts de salsichinha saem 1 por dia, às 20h.
