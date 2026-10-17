@@ -82,7 +82,8 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
   const jaHoje = Object.entries(feitos).filter(([k, v]) => k.startsWith('conteudo:') && v && v.quando && diaDe(v.quando) === hojeBR).length;
   filaConteudo
     .filter((c) => c && c.slug && c.arte && c.legenda && !feitos[`conteudo:${c.slug}`])
-    .slice(0, Math.max(0, porDia - jaHoje))
+    // "conteudoPorRodada": no máximo N por rodada (12h, 18h, 20h), para espalhar os posts ao longo do dia
+    .slice(0, Math.max(0, Math.min(porDia - jaHoje, ig.conteudoPorRodada === undefined ? Infinity : Number(ig.conteudoPorRodada) || 0)))
     .forEach((c) => tarefas.push({ chave: `conteudo:${c.slug}`, tipo: 'post', urls: [urlArte(c)], legenda: c.legenda }));
   if (ig.stories) {
     dados.ofertas

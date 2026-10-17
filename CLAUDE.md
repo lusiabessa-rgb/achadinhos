@@ -58,7 +58,7 @@ O app aceita várias contas (`contas/<nome>/`) porque a dona pode vender o app c
 - **Campanhas:** ligadas. Próximas: Natal (01/11), 11.11 (05/11), Black Friday (23/11–30/11), 12.12 (06/12).
 - **Shopee:** a conta de afiliada foi aprovada, mas a **Open API ainda está bloqueada** e o **link de afiliada não está funcionando**. A dona está resolvendo com o suporte do Effata. Os 6 produtos de Natal estão na lista manual com `LINK_AQUI`.
 - **TikTok Shop:** não há API de produtos para afiliados no Brasil. A dona manda prints dos "Mais vendidos".
-- **Fila de conteúdo:** os posts de salsichinha saem 1 por dia, às 20h.
+- **Fila de conteúdo:** aquecimento (17 a 20/10): 3 posts por dia, 1 em cada rodada (12h, 18h, 20h) — `conteudoPorDia: 3`, `conteudoPorRodada: 1`, `conteudoAPartirDas: 12`. Depois, voltar para 1 por dia às 20h se a dona quiser.
 - **Tarefa semanal** "posts-semanais-achadinhos": toda sexta às 9h, pesquisa tendências e completa a fila até 7 posts.
 
 ## Atalhos (skills na pasta `.claude/skills` do Projeto zero)
