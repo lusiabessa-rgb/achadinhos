@@ -16,6 +16,7 @@ const shopee = require('./shopee');
 const painel = require('./painel');
 const artes = require('./artes');
 const vitrine = require('./vitrine');
+const campanhas = require('./campanhas');
 
 const RAIZ = path.join(__dirname, '..');
 
@@ -204,7 +205,13 @@ async function rodar(conta, modoTeste) {
   const salvarDiario = () => fs.appendFileSync(path.join(pastaDia, 'diario.txt'), diario.join('\n') + '\n');
 
   try {
-    const config = lerConfig(pastaConta);
+    // Campanha da semana (11.11, Black Friday, Natal...): muda título e cor da arte, frase, hashtags e buscas
+    const campanha = campanhas.ativa(hoje, lerConfig(pastaConta));
+    const config = campanhas.aplicar(lerConfig(pastaConta), campanha);
+    if (campanha) log(`Campanha da semana: ${campanha.nome} (até ${campanhas.dataBR(campanha.ate)}).`);
+    // "Comente QUERO": só aparece nas legendas quando a resposta automática no direct está ligada
+    const comenteQuero = !!(config.instagram && config.instagram.respostas && config.instagram.respostas.ativo);
+    const extra = { campanha, comenteQuero };
     // Sem as chaves da Shopee ainda? Usa o modo manual (produtos escolhidos em shopee-manual.json)
     const seg = lerSegredos(pastaConta);
     const manual = !modoTeste && !(seg.appId && seg.secret);
@@ -247,6 +254,11 @@ async function rodar(conta, modoTeste) {
       '> Melhores horários para postar: 12h, 18h e 20h (se não der, poste quando puder: constância vale mais).',
       '> Shopee Vídeos: não poste tudo de uma vez; espalhe ao longo do dia. Remova os metadados antes.',
       '',
+      ...(campanha ? [`## 📣 Campanha da semana: ${campanha.nome} (até ${campanhas.dataBR(campanha.ate)})`, '', `> ${campanha.frase}`, '> A máquina já colocou a frase, as hashtags e o título da campanha nas artes e legendas.', ''] : []),
+      ...(() => {
+        const prox = campanhas.proximas(hoje, config);
+        return prox.length ? ['## Próximas campanhas (prepare conteúdo antes)', '', ...prox.map((k) => `- ${campanhas.dataBR(k.de)}: ${k.nome}`), ''] : [];
+      })(),
       '## Regras de conteúdo (sempre)',
       '',
       ...textos.REGRAS_ORIGINALIDADE.map((r) => `- ${r}`),
@@ -288,10 +300,10 @@ async function rodar(conta, modoTeste) {
             temFoto ? 'Foto: foto-produto.jpg (nesta pasta)' : 'Foto: não baixada',
             '',
             '=== SHOPEE VÍDEOS (sem link: marque o produto no vídeo) ===',
-            ...textos.legendasVideo(p, config.hashtags, 'shopee').map((l, k) => `\n--- Variação ${k + 1} ---\n${l}`),
+            ...textos.legendasVideo(p, config.hashtags, 'shopee', extra).map((l, k) => `\n--- Variação ${k + 1} ---\n${l}`),
             '',
             '=== TELEGRAM / WHATSAPP (com link) ===',
-            textos.postComLink(p, link),
+            textos.postComLink(p, link, extra),
             '',
             '=== PINTEREST (use a arte-oferta.jpg desta pasta) ===',
             ...(() => {
@@ -309,7 +321,7 @@ async function rodar(conta, modoTeste) {
             })(),
           ].join('\n')
         );
-        mensagens.push(textos.postComLink(p, link));
+        mensagens.push(textos.postComLink(p, link, extra));
         cartoesShopee.push({
           nome: p.productName,
           preco: info.preco + info.desc,
@@ -318,8 +330,8 @@ async function rodar(conta, modoTeste) {
           link,
           // Foto do computador não abre no celular: o painel usa a arte publicada no site
           foto: /^https?:\/\//i.test(p.imageUrl || '') ? p.imageUrl : config.site.urlBase ? `${config.site.urlBase}/${conta}/${diaPublico}/${n}.jpg` : '',
-          legendas: textos.legendasVideo(p, config.hashtags, 'shopee'),
-          textoGrupo: textos.postComLink(p, link),
+          legendas: textos.legendasVideo(p, config.hashtags, 'shopee', extra),
+          textoGrupo: textos.postComLink(p, link, extra),
         });
         resumo.push([`${n}. ${p.productName}`, info.preco, comissaoTxt ? `comissão ${comissaoTxt}` : '', info.vendas].filter(Boolean).join(' | '));
 
@@ -339,7 +351,12 @@ async function rodar(conta, modoTeste) {
             foto: temFoto ? fs.readFileSync(path.join(pasta, 'foto-produto.jpg')) : p.imageUrl,
           },
           arteArq,
-          { marca: config.marca, cor: config.corArte, chamada: `Link na bio  ·  oferta nº ${ok + 1}` }
+          {
+            marca: config.marca,
+            cor: config.corArte,
+            titulo: campanha ? campanha.titulo : undefined,
+            chamada: `${comenteQuero ? 'Comente QUERO' : 'Link na bio'}  ·  oferta nº ${ok + 1}`,
+          }
         );
         fs.copyFileSync(arteArq, path.join(pasta, 'arte-oferta.jpg'));
         ofertas.push({
@@ -349,7 +366,7 @@ async function rodar(conta, modoTeste) {
           preco: info.preco + info.desc,
           link,
           arte: arteRel,
-          legendaInstagram: textos.legendaInstagram(p, ok + 1, config.hashtagsInstagram),
+          legendaInstagram: textos.legendaInstagram(p, ok + 1, config.hashtagsInstagram, extra),
         });
         produtosDoDia.push(p);
         hist.marcar(p.itemId);
@@ -376,7 +393,7 @@ async function rodar(conta, modoTeste) {
           `PRODUTO: ${p.productName}`,
           '',
           '=== TIKTOK SHOP (sem link: anexe o produto no carrinho) ===',
-          ...textos.legendasVideo(p, config.hashtagsTikTok, 'tiktok').map((l, k) => `\n--- Variação ${k + 1} ---\n${l}`),
+          ...textos.legendasVideo(p, config.hashtagsTikTok, 'tiktok', extra).map((l, k) => `\n--- Variação ${k + 1} ---\n${l}`),
         ].join('\n')
       );
       resumo.push(`${n}. ${p.productName}`);
@@ -384,7 +401,7 @@ async function rodar(conta, modoTeste) {
         nome: p.productName,
         preco: textos.resumo(p).preco,
         comissao: p.commissionRate ? `${Math.round(p.commissionRate * 100)}%` : '',
-        legendas: textos.legendasVideo(p, config.hashtagsTikTok, 'tiktok'),
+        legendas: textos.legendasVideo(p, config.hashtagsTikTok, 'tiktok', extra),
       });
     });
     if (tiktok.length) log(`TikTok Shop: ${tiktok.length} produto(s) prontos.`);
@@ -406,14 +423,14 @@ async function rodar(conta, modoTeste) {
       fs.writeFileSync(
         path.join(pastaPublica, diaPublico, 'dados.json'),
         JSON.stringify(
-          { data: hoje, conta, ofertas, legendaCarrossel: textos.legendaCarrossel(produtosDoDia, config.hashtagsInstagram) },
+          { data: hoje, conta, ofertas, legendaCarrossel: textos.legendaCarrossel(produtosDoDia, config.hashtagsInstagram, extra) },
           null,
           2
         )
       );
       fs.writeFileSync(
         path.join(pastaPublica, `index${sufixo}.html`),
-        vitrine.gerar({ titulo: config.site.titulo, subtitulo: config.site.subtitulo, data: hoje, ofertas })
+        vitrine.gerar({ titulo: config.site.titulo, subtitulo: campanha ? campanha.frase : config.site.subtitulo, data: hoje, ofertas })
       );
       fs.writeFileSync(path.join(pastaPublica, `painel${sufixo}.html`), html);
       if (!modoTeste) fs.writeFileSync(path.join(pastaPublica, 'hoje.txt'), diaPublico);

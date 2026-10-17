@@ -25,11 +25,11 @@ function quebrar(texto, porLinha = 30, maxLinhas = 2) {
   return linhas.filter(Boolean);
 }
 
-function svgFundo({ cor, corEscura, marca }) {
+function svgFundo({ cor, corEscura, marca, titulo = 'ACHADINHO DO DIA' }) {
   return Buffer.from(`<svg width="${L}" height="${A}" xmlns="http://www.w3.org/2000/svg">
   <rect width="100%" height="100%" fill="#fff7f3"/>
   <rect width="100%" height="120" fill="${cor}"/>
-  <text x="60" y="80" font-family="${FONTE}" font-size="46" font-weight="800" fill="#fff">ACHADINHO DO DIA</text>
+  <text x="60" y="80" font-family="${FONTE}" font-size="46" font-weight="800" fill="#fff">${xml(titulo)}</text>
   <text x="${L - 60}" y="78" text-anchor="end" font-family="${FONTE}" font-size="34" font-weight="600" fill="#fff">${xml(marca)}</text>
   <rect x="60" y="160" width="${L - 120}" height="760" rx="40" fill="#ffffff" stroke="${corEscura}" stroke-opacity="0.12" stroke-width="3"/>
 </svg>`);
@@ -73,6 +73,7 @@ async function baixar(url) {
 }
 
 // p: { nome, preco, precoAntigo, desconto, foto (url ou Buffer) }
+// opcoes: { cor, marca, chamada, titulo (faixa de cima; nas campanhas vira "BLACK FRIDAY", "OFERTAS 11.11"...) }
 async function fazerArte(p, destino, opcoes = {}) {
   const cor = opcoes.cor || '#ee4d2d';
   const marca = opcoes.marca || '';
@@ -94,7 +95,7 @@ async function fazerArte(p, destino, opcoes = {}) {
   }
   camadas.push({ input: svgTextos({ ...p, cor, chamada }), left: 0, top: 0 });
 
-  await sharp(svgFundo({ cor, corEscura: '#000', marca }))
+  await sharp(svgFundo({ cor, corEscura: '#000', marca, titulo: opcoes.titulo || undefined }))
     .composite(camadas)
     .jpeg({ quality: 88 })
     .toFile(destino);

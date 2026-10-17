@@ -5,7 +5,12 @@ const HOST = 'https://graph.instagram.com';
 const VERSAO = 'v25.0';
 const TEMPO_LIMITE_MS = 30000;
 
-class ErroFatal extends Error {}
+class ErroFatal extends Error {
+  constructor(msg, codigo) {
+    super(msg);
+    this.codigo = codigo;
+  }
+}
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function chamar(cred, metodo, caminho, params = {}, fetchFn = fetch) {
@@ -26,7 +31,8 @@ async function chamar(cred, metodo, caminho, params = {}, fetchFn = fetch) {
         throw new ErroFatal(
           e.code === 190
             ? 'O token do Instagram venceu ou está errado. Gere um novo e troque no CHAVES.txt.'
-            : 'O Instagram negou permissão para publicar. Confira se a conta é profissional e se o app tem a permissão de publicar.'
+            : `O Instagram negou permissão (código ${e.code}${e.error_subcode ? '/' + e.error_subcode : ''}). Confira se a conta é profissional e se o app tem as permissões de publicar, comentários e mensagens.`,
+          e.code
         );
       }
       ultimoErro = new Error(`Instagram: ${e.message || 'HTTP ' + resp.status}${e.code ? ` (código ${e.code})` : ''}`);
@@ -111,4 +117,35 @@ async function renovarToken(cred, fetchFn = fetch) {
   return { token: json.access_token, expiraEmDias: Math.floor((json.expires_in || 0) / 86400) };
 }
 
-module.exports = { publicarImagem, publicarCarrossel, publicarStory, limiteDeHoje, renovarToken, ErroFatal };
+// ---------- Comentários e direct (resposta automática "comentou QUERO, recebe o link") ----------
+// Precisam das permissões instagram_business_manage_comments e instagram_business_manage_messages.
+
+// Posts recentes da conta: [{ id, timestamp, caption }]
+async function postsRecentes(cred, limite = 25, fetchFn = fetch) {
+  const r = await chamar(cred, 'GET', `${cred.userId}/media`, { fields: 'id,timestamp,caption', limit: String(limite) }, fetchFn);
+  return r.data || [];
+}
+
+// Comentários de um post: [{ id, text, timestamp, from: { id, username } }]
+async function comentarios(cred, idPost, fetchFn = fetch) {
+  const r = await chamar(cred, 'GET', `${idPost}/comments`, { fields: 'id,text,timestamp,username,from', limit: '50' }, fetchFn);
+  return r.data || [];
+}
+
+// "Resposta privada": manda 1 mensagem no direct de quem comentou (vale até 7 dias depois do comentário)
+async function responderNoDirect(cred, idComentario, texto, fetchFn = fetch) {
+  return chamar(
+    cred,
+    'POST',
+    `${cred.userId}/messages`,
+    { recipient: JSON.stringify({ comment_id: idComentario }), message: JSON.stringify({ text: texto }) },
+    fetchFn
+  );
+}
+
+// Resposta pública embaixo do comentário ("Te mandei no direct! 💌")
+async function responderComentario(cred, idComentario, texto, fetchFn = fetch) {
+  return chamar(cred, 'POST', `${idComentario}/replies`, { message: texto }, fetchFn);
+}
+
+module.exports = { postsRecentes, comentarios, responderNoDirect, responderComentario, publicarImagem, publicarCarrossel, publicarStory, limiteDeHoje, renovarToken, ErroFatal };

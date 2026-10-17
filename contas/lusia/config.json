@@ -59,6 +59,17 @@
     "postsIndividuaisPorRodada": 0,
     "stories": true,
     "conteudoPorDia": 1,
-    "conteudoAPartirDas": 19
+    "conteudoAPartirDas": 19,
+    "respostas": {
+      "ativo": false,
+      "palavras": [
+        "quero",
+        "eu quero",
+        "link",
+        "manda",
+        "me manda",
+        "eu"
+      ]
+    }
   }
 }

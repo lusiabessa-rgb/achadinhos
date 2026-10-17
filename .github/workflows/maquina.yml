@@ -66,7 +66,8 @@ jobs:
           git add publico
           if [ -f contas/lusia/historico.json ]; then git add contas/lusia/historico.json; fi
           git commit -m "Ofertas de $(date +%F)" || echo "nada novo"
-          git push
+          # o robô de respostas também salva coisas: junta antes de enviar
+          git pull --rebase --autostash -q && git push
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
@@ -84,4 +85,4 @@ jobs:
         run: |
           if [ -f contas/lusia/publicados.json ]; then git add contas/lusia/publicados.json; fi
           git commit -m "Publicado em $(date '+%F %H:%M')" || echo "nada novo"
-          git push || true
+          (git pull --rebase --autostash -q && git push) || true

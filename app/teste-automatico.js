@@ -382,6 +382,106 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
+  await teste('campanhas: datas certas (Black Friday, Páscoa, 11.11) e a mais específica ganha', async () => {
+    const campanhas = require('./campanhas');
+    assert.strictEqual(campanhas.pascoa(2027).toISOString().slice(0, 10), '2027-03-28');
+    assert.strictEqual(campanhas.pascoa(2026).toISOString().slice(0, 10), '2026-04-05');
+    const bf = campanhas.doAno(2026).find((k) => k.id === 'black-friday');
+    assert(bf.de <= '2026-11-27' && '2026-11-27' <= bf.ate, 'Black Friday 2026 é 27/11');
+    assert.strictEqual(campanhas.ativa('2026-11-27').id, 'black-friday', 'Black Friday ganha do Natal');
+    assert.strictEqual(campanhas.ativa('2026-11-11').id, '11-11');
+    assert.strictEqual(campanhas.ativa('2026-12-01').id, 'natal');
+    assert.strictEqual(campanhas.ativa('2026-10-20'), null);
+    assert.strictEqual(campanhas.ativa('2026-11-11', { campanhas: { desligadas: ['11-11'] } }).id, 'natal');
+    const extra = { campanhas: { extras: [{ id: 'niver', nome: 'Aniversário da loja', de: '2026-10-19', ate: '2026-10-21', frase: '🎂 Aniversário!' }] } };
+    assert.strictEqual(campanhas.ativa('2026-10-20', extra).titulo, 'ANIVERSÁRIO DA LOJA');
+    assert.deepStrictEqual(campanhas.proximas('2026-10-25').map((k) => k.id), ['natal', '11-11', 'black-friday']);
+    const cfg = campanhas.aplicar({ palavrasChave: ['natal'], hashtags: ['#natal'], hashtagsTikTok: [], hashtagsInstagram: ['#a'], corArte: '#b0294a' }, bf);
+    assert.strictEqual(cfg.corArte, '#111111');
+    assert(cfg.hashtagsInstagram[0] === '#blackfriday' && cfg.hashtags.filter((h) => h === '#natal').length === 1);
+  });
+
+  await teste('legendas da campanha e "Comente QUERO" (só quando a resposta automática está ligada)', async () => {
+    const p = { productName: 'Pisca LED', price: 20, itemId: '1' };
+    const campanha = { frase: '🖤 BLACK FRIDAY: teste' };
+    const ig = textos.legendaInstagram(p, 1, ['#a'], { campanha, comenteQuero: true });
+    assert(ig.startsWith('🖤 BLACK FRIDAY') && ig.includes('Comente QUERO') && ig.includes('#publi'));
+    assert(!/\n\n\n/.test(ig) && !/🛍️ Pisca LED\n\n/.test(ig), 'linha vazia sobrando');
+    assert(!textos.legendaInstagram(p, 1, ['#a']).includes('QUERO'));
+    assert(textos.legendaCarrossel([p], [], { comenteQuero: true }).includes('Comente QUERO'));
+    assert(textos.postComLink(p, 'http://x', { campanha }).startsWith('🖤'));
+    assert(textos.legendasVideo(p, [], 'shopee', { campanha }).every((l) => l.includes('BLACK FRIDAY')));
+  });
+
+  await teste('resposta automática: entende "QUERO" de vários jeitos e não confunde', async () => {
+    const { pedeLink } = require('./respostas');
+    const palavras = ['quero', 'eu quero', 'link', 'eu'];
+    for (const t of ['QUERO', 'Quéééro!!! 😍', 'eu quero 🙋', 'me passa o link?', 'Eu']) assert(pedeLink(t, palavras), t);
+    for (const t of ['lindo demais', 'requerimento', 'eu amei', '', '😍😍']) assert(!pedeLink(t, palavras), t);
+  });
+
+  await teste('resposta automática: mensagem do direct com os links certos e até 1000 letras', async () => {
+    const { mensagem } = require('./respostas');
+    const ofertas = Array.from({ length: 10 }, (_, i) => ({ numero: i + 1, itemId: 'p' + i, nome: 'Produto de Natal com nome bem comprido número ' + i, preco: 'R$ 29,90', link: 'https://s.shopee.com.br/abcdefgh' + i }));
+    const vitrine = 'https://teste.github.io/x/lusia/';
+    const todos = mensagem({ chave: '2026-11-27:carrossel', dados: { ofertas }, vitrine });
+    assert(todos.length <= 1000 && todos.includes(ofertas[0].link) && todos.includes('comissão'), 'carrossel');
+    const um = mensagem({ chave: '2026-11-27:post:p3', dados: { ofertas }, vitrine });
+    assert(um.includes(ofertas[3].link) && !um.includes(ofertas[0].link), 'post de 1 produto');
+    assert(mensagem({ chave: 'conteudo:salsichinha', dados: null, vitrine }).includes(vitrine), 'post sem venda manda a vitrine');
+    assert(mensagem({ chave: undefined, dados: null, vitrine }).includes(vitrine), 'post desconhecido manda a vitrine');
+  });
+
+  await teste('resposta automática completa: manda 1 direct por comentário e nunca repete', async () => {
+    const { responder } = require('./respostas');
+    const raiz = path.join(__dirname, '..');
+    const conta = 'teste-respostas-' + process.pid;
+    const pastaConta = path.join(raiz, 'contas', conta);
+    const agora = Date.parse('2026-11-27T20:00:00Z');
+    try {
+      fs.mkdirSync(path.join(raiz, 'publico', conta, '2026-11-27'), { recursive: true });
+      fs.mkdirSync(pastaConta, { recursive: true });
+      fs.copyFileSync(path.join(raiz, 'contas', 'lusia', 'config.json'), path.join(pastaConta, 'config.json'));
+      fs.writeFileSync(path.join(pastaConta, 'publicados.json'), JSON.stringify({ '2026-11-27:carrossel': { id: 'M1' } }));
+      fs.writeFileSync(path.join(raiz, 'publico', conta, '2026-11-27', 'dados.json'), JSON.stringify({ ofertas: [{ numero: 1, itemId: 'a', nome: 'Pisca', preco: 'R$ 10,00', link: 'https://s.shopee.com.br/xyz' }] }));
+      const lerCfg = maquina.lerConfig;
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), instagram: { ...lerCfg(p).instagram, respostas: { ativo: true } } });
+      const reg = [];
+      const fake = async (url, opt = {}) => {
+        const u = String(url);
+        const corpo = opt.body ? Object.fromEntries(new URLSearchParams(String(opt.body))) : {};
+        reg.push({ u, corpo });
+        if (u.includes('/9/media?')) return resposta(200, { data: [{ id: 'M1', timestamp: '2026-11-27T15:00:00+0000' }, { id: 'VELHO', timestamp: '2026-11-01T15:00:00+0000' }] });
+        if (u.includes('/M1/comments')) {
+          return resposta(200, {
+            data: [
+              { id: 'C1', text: 'QUERO!!', timestamp: '2026-11-27T16:00:00+0000', username: 'ana', from: { id: '55' } },
+              { id: 'C2', text: 'que lindo', timestamp: '2026-11-27T16:01:00+0000', username: 'bia', from: { id: '56' } },
+              { id: 'C3', text: 'quero', timestamp: '2026-11-27T16:02:00+0000', username: 'eu', from: { id: '9' } },
+            ],
+          });
+        }
+        if (u.includes('/VELHO/')) throw new Error('não devia ler post velho');
+        if (u.endsWith('/9/messages')) return resposta(200, { recipient_id: '55', message_id: 'X' });
+        if (u.endsWith('/C1/replies')) return resposta(200, { id: 'R1' });
+        return resposta(400, { error: { message: 'inesperado ' + u, code: 100 } });
+      };
+      const opcoes = { segredos: { igToken: 't', igUserId: '9' }, fetchFn: fake, agora, log: () => {} };
+      const r1 = await responder(conta, opcoes);
+      const r2 = await responder(conta, opcoes);
+      maquina.lerConfig = lerCfg;
+      assert.strictEqual(r1.respondidos, 1, 'devia responder só a Ana');
+      assert.strictEqual(r2.respondidos, 0, 'respondeu de novo o mesmo comentário');
+      const dm = reg.filter((x) => x.u.endsWith('/9/messages'));
+      assert.strictEqual(dm.length, 1);
+      assert.strictEqual(JSON.parse(dm[0].corpo.recipient).comment_id, 'C1');
+      assert(JSON.parse(dm[0].corpo.message).text.includes('https://s.shopee.com.br/xyz'), 'link errado no direct');
+      assert(reg.some((x) => x.u.endsWith('/C1/replies')), 'faltou a resposta pública');
+    } finally {
+      for (const p of [pastaConta, path.join(raiz, 'publico', conta)]) fs.rmSync(p, { recursive: true, force: true });
+    }
+  });
+
   console.log(`\nResultado: ${passou} ok, ${falhou} falhou.`);
   process.exitCode = falhou ? 1 : 0;
 })();

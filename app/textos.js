@@ -37,6 +37,12 @@ const CHAMADAS_VIDEO = {
 // #publi: o CONAR pede para marcar post de divulgação (o curso reforça isso). Sempre vai na frente.
 const comPubli = (hashtags = []) => ['#publi', ...hashtags.filter((h) => h.toLowerCase() !== '#publi')].join(' ');
 
+// extra (opcional) em todas as funções de legenda:
+//   campanha: a campanha da semana (campanhas.js), que ganha a frase de abertura
+//   comenteQuero: true quando a resposta automática no direct está ligada (respostas.js)
+const fraseCampanha = (extra = {}) => (extra.campanha && extra.campanha.frase) || '';
+const CTA_QUERO = '💬 Comente QUERO que eu te mando o link no direct!';
+
 // Frase de benefício que a dona escreveu na lista (opcional): "Liga na tomada e acende sozinha"
 const info = (p) => String(p.info || '').trim();
 
@@ -50,7 +56,7 @@ function resumo(p) {
 }
 
 // TikTok Shop e Shopee Vídeos: SEM link (o produto vai na sacolinha/carrinho).
-function legendasVideo(p, hashtags, loja = 'shopee') {
+function legendasVideo(p, hashtags, loja = 'shopee', extra = {}) {
   const { preco, desc } = resumo(p);
   const semente = String(p.itemId || p.productName).length;
   const { vendas } = resumo(p);
@@ -58,16 +64,17 @@ function legendasVideo(p, hashtags, loja = 'shopee') {
   // Prova social (aula de copy): número REAL de vendidos, nunca inventado
   const prova = vendas ? `🔥 ${vendas}` : '';
   return [0, 1, 2].map((i) =>
-    [sorteia(GANCHOS[loja], semente + i), linhaPreco, info(p), prova, sorteia(CHAMADAS_VIDEO[loja], i), comPubli(hashtags)]
+    [sorteia(GANCHOS[loja], semente + i), fraseCampanha(extra), linhaPreco, info(p), prova, sorteia(CHAMADAS_VIDEO[loja], i), comPubli(hashtags)]
       .filter(Boolean)
       .join('\n')
   );
 }
 
 // Telegram / WhatsApp / Pinterest: COM link de afiliada.
-function postComLink(p, link) {
+function postComLink(p, link, extra = {}) {
   const { preco, desc, vendas } = resumo(p);
-  const linhas = [`🎄 ${p.productName}`];
+  const linhas = fraseCampanha(extra) ? [fraseCampanha(extra), ''] : [];
+  linhas.push(`🎄 ${p.productName}`);
   if (info(p)) linhas.push(`✨ ${info(p)}`);
   if (preco) linhas.push(`💰 ${preco}${desc}`);
   const extras = [p.ratingStar ? `⭐ ${p.ratingStar}` : '', vendas ? `🔥 ${vendas}` : ''].filter(Boolean);
@@ -85,33 +92,36 @@ const GANCHOS_INSTA = [
   'Preço bom assim não dura muito 😱',
 ];
 
-function legendaInstagram(p, numero, hashtags) {
+function legendaInstagram(p, numero, hashtags, extra = {}) {
   const { preco, desc, vendas } = resumo(p);
   const semente = String(p.itemId || p.productName).length + numero;
   return [
-    sorteia(GANCHOS_INSTA, semente),
+    fraseCampanha(extra) || sorteia(GANCHOS_INSTA, semente),
     '',
     `🛍️ ${p.productName}`,
-    info(p) ? `✨ ${info(p)}` : '',
-    preco ? `💰 ${preco}${desc}` : '',
-    vendas ? `🔥 ${vendas}` : '',
+    info(p) ? `✨ ${info(p)}` : null,
+    preco ? `💰 ${preco}${desc}` : null,
+    vendas ? `🔥 ${vendas}` : null,
     '',
-    `👉 Link na bio: oferta nº ${numero}`,
+    extra.comenteQuero ? CTA_QUERO : null,
+    `👉 ${extra.comenteQuero ? 'Ou pelo link' : 'Link'} na bio: oferta nº ${numero}`,
     '_Preço pode mudar a qualquer momento._',
     '',
     comPubli(hashtags),
   ]
+    .filter((l) => l !== null)
     .filter((l, i, arr) => l !== '' || (arr[i - 1] !== '' && i > 0))
     .join('\n');
 }
 
-function legendaCarrossel(produtos, hashtags) {
+function legendaCarrossel(produtos, hashtags, extra = {}) {
   return [
-    'Achadinhos do dia 🛍️✨ Arraste para ver todos 👉',
+    fraseCampanha(extra) ? `${fraseCampanha(extra)} Arraste para ver todos 👉` : 'Achadinhos do dia 🛍️✨ Arraste para ver todos 👉',
     '',
     ...produtos.map((p, i) => `${i + 1}. ${p.productName} | ${resumo(p).preco}`),
     '',
-    '👉 Os links estão na bio, é só procurar o número da oferta.',
+    ...(extra.comenteQuero ? [CTA_QUERO] : []),
+    `👉 ${extra.comenteQuero ? 'Ou na bio:' : 'Os links estão na bio,'} é só procurar o número da oferta.`,
     '_Preços podem mudar a qualquer momento._',
     '',
     comPubli(hashtags),
@@ -185,5 +195,6 @@ module.exports = {
   pinterest,
   comPubli,
   videoIA,
+  CTA_QUERO,
   REGRAS_ORIGINALIDADE,
 };
