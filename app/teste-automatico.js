@@ -292,7 +292,8 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       const reg = [];
       const opcoes = { dia, ignorarDesligado: true, segredos: { igToken: 't', igUserId: '9' }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} };
       const lerCfg = maquina.lerConfig;
-      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' } });
+      // 1 conteúdo por dia no teste: com mais, a 2ª rodada publica o próximo da fila (o que é certo)
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoPorDia: 1 } });
       const r1 = await publicar('lusia', opcoes);
       const r2 = await publicar('lusia', opcoes);
       maquina.lerConfig = lerCfg;

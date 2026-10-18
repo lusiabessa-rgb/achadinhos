@@ -72,7 +72,7 @@ O app aceita várias contas (`contas/<nome>/`) porque a dona pode vender o app c
   - Falta (com a dona, `PASSO-A-PASSO-TIKTOK.md`): criar o app no portal (Login Kit com redirect `https://lusiabessa-rgb.github.io/achadinhos/tiktok-retorno.html` + Content Posting API), sandbox com @shopabessa, colar as chaves no CHAVES.txt (`TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`) e nos Secrets do GitHub, `--link` + `--codigo`, 1 vídeo de teste com o OK dela e só então `ativo: true`.
   - **Fila na nuvem:** `POSTAR-HOJE` não vai para o GitHub, então os vídeos ficam em `contas/lusia/tiktok-fila` (gere com `node app/aquecimento-tiktok.js lusia --dias 4 --saida contas/lusia/tiktok-fila`). São cerca de 10 MB por dia no repositório público; apague as pastas de dias passados.
   - `maquina.yml` já tem o passo "Mandar video para o TikTok" (pula se não houver TIKTOK_CLIENT_KEY) e salva `tiktok-publicados.json` e `tiktok-cofre.json`.
-- **Fila de conteúdo:** aquecimento (17 a 20/10): 3 posts por dia, 1 em cada rodada (12h, 18h, 20h) — `conteudoPorDia: 3`, `conteudoPorRodada: 1`, `conteudoAPartirDas: 12`. Depois, voltar para 1 por dia às 20h se a dona quiser.
+- **Fila de conteúdo:** desde 18/10, 2 posts por dia (18h e 20h), 1 por rodada — `conteudoPorDia: 2`, `conteudoPorRodada: 1`, `conteudoAPartirDas: 18` (pedido da dona). O teste "publicador completo" força 1 por dia.
 - **Tarefa semanal** "posts-semanais-achadinhos": toda sexta às 9h, pesquisa tendências e completa a fila até 7 posts.
 
 ## Atalhos (skills na pasta `.claude/skills` do Projeto zero)

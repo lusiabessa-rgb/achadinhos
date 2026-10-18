@@ -64,9 +64,9 @@
     "modo": "carrossel",
     "postsIndividuaisPorRodada": 0,
     "stories": true,
-    "conteudoPorDia": 3,
+    "conteudoPorDia": 2,
     "conteudoPorRodada": 1,
-    "conteudoAPartirDas": 12,
+    "conteudoAPartirDas": 18,
     "respostas": {
       "ativo": false,
       "palavras": [
