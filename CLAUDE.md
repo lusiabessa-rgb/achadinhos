@@ -31,6 +31,9 @@ Leia isto antes de mexer no app. Fale com a dona sempre em português simples.
 | `app/painel.js`, `app/vitrine.js` | Painel do dia e site link na bio |
 | `app/teste-automatico.js` | Testes. **Rode sempre depois de mexer** (`node app/teste-automatico.js`) |
 | `.github/workflows/maquina.yml` | Robô na nuvem: 12h e 18h (ofertas) e 20h (conteúdo), no horário de Brasília |
+| `app/conferencia.js` | Conferência das 21h30: publicados de hoje (publicados.json + API do Instagram), dias de fila, dias até o token vencer (`instagram.tokenVenceEm` no config), rodadas que falharam em 24 h (API do GitHub) e "TikTok: conferir no app". Manda o resumo pelo Telegram (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID); sem eles, só imprime. `--simular` não envia; `--ligar-telegram` (no PC, uma vez) descobre o CHAT_ID e grava os 2 secrets |
+| `.github/workflows/conferencia.yml` | Robô da conferência: todo dia 21h30 de Brasília (00:30 UTC). Substitui a tarefa do PC "olho-nas-postagens" |
+| `TELEGRAM-PASSO-A-PASSO.md` | O que a dona faz no @BotFather |
 | `.github/workflows/respostas.yml` | Robô de respostas: a cada 15 min (só age se `respostas.ativo`) |
 | `publico/privacidade.html` | Política de privacidade, exigida pela Meta e pelo TikTok: https://lusiabessa-rgb.github.io/achadinhos/privacidade.html |
 | `contas/lusia/config.json` | Palavras de busca, filtros, hashtags, marca, cor e opções do Instagram |
@@ -44,7 +47,7 @@ O app aceita várias contas (`contas/<nome>/`) porque a dona pode vender o app c
 - **Testes antes de tudo:** `node app/teste-automatico.js`. Só envie para o GitHub com todos os testes passando.
 - **Commit:** `git -c user.name="Lusia" -c user.email="lusiabessa@gmail.com" commit -m "..."` (o PC não tem identidade git global). Depois, `git push`.
 - **Rodar na nuvem agora:** `"C:\Program Files\GitHub CLI\gh.exe" workflow run maquina.yml`. Ver o resultado: `gh run list --limit 3`.
-- **Segredos do GitHub:** SHOPEE_APP_ID, SHOPEE_SECRET, INSTAGRAM_TOKEN, INSTAGRAM_USER_ID, TIKTOK_CLIENT_KEY e TIKTOK_CLIENT_SECRET. A dona cola as chaves. O Claude nunca digita nem mostra segredo; quando precisar, lê da área de transferência sem imprimir.
+- **Segredos do GitHub:** SHOPEE_APP_ID, SHOPEE_SECRET, INSTAGRAM_TOKEN, INSTAGRAM_USER_ID, TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID (os 2 do Telegram ainda não existem). A dona cola as chaves. O Claude nunca digita nem mostra segredo; quando precisar, lê da área de transferência sem imprimir.
 - **Teste local sem chave:** `node app/maquina.js lusia --teste`. Gera saídas `*-teste`, que o .gitignore ignora.
 - **Ao mexer em texto, legenda ou arte:** confira as regras abaixo e rode os testes.
 
@@ -54,7 +57,7 @@ O app aceita várias contas (`contas/<nome>/`) porque a dona pode vender o app c
 - Nada de rosto da dona e **nunca crianças**.
 - **#publi** em toda legenda de oferta.
 - **Padrão de qualidade (olhar de consumidora, pedido da dona em 17/10):** imagem sempre **nítida e centralizada**, **nada desfocado** (desfoque "dá agonia" e a pessoa perde o interesse). Fundo liso claro quando a foto não preenche a tela. Rótulo de IA **só** no que é IA (foto real de produto não leva). Foto repetida não aparece duas vezes no mesmo vídeo. Antes de entregar, olhe um quadro de cada vídeo como se fosse uma cliente: está bonito, dá vontade de assistir? Se não, refaça. O teste "padrão de qualidade" trava isso.
-- **Cada plataforma fala do seu jeito:** as mesmas fotos vão para o Instagram e o TikTok, mas os textos são diferentes. No TikTok, nada de "Shopee", "link na bio" ou @achadinhoabessa: lá é "sacolinha" e #tiktokshop. No Instagram, nada de "sacolinha" nem #tiktokshop. A tabela completa está na skill aquecer-contas.
+- **Cada plataforma fala do seu jeito:** as mesmas fotos vão para o Instagram e o TikTok, mas os textos são diferentes. No TikTok, nada de "Shopee", "link na bio" ou @achadinhoabessa: lá é "carrinho"/"link" e #tiktokshop. **Desde 19/10 a palavra "sacolinha" não aparece em nenhum texto público** (fala, tela, legenda); use "Link no carrinho 🛒", "Clica no link 🛒", "Toca no carrinho 🛒" (o teste trava isso). No Instagram, nada de "sacolinha" nem #tiktokshop. A tabela completa está na skill aquecer-contas.
 - **Não raspar** shopee.com.br nem o TikTok (eles bloqueiam robôs e a conta pode ser banida). Só API oficial ou a lista manual.
 - **Senhas: nunca.** Só chaves de API ou autorização oficial.
 - Higgsfield gasta créditos: peça antes, menos a tarefa semanal, que tem limite de 20 créditos por semana.
@@ -76,6 +79,7 @@ O app aceita várias contas (`contas/<nome>/`) porque a dona pode vender o app c
 - **Fila de conteúdo:** desde 18/10, 2 posts por dia (18h e 20h), 1 por rodada — `conteudoPorDia: 2`, `conteudoPorRodada: 1`, `conteudoAPartirDas: 18` (pedido da dona). O teste "publicador completo" força 1 por dia e, desde 19/10, usa um `publicados.json` **temporário** (opção `arqPublicados` do publicar.js): nunca lê nem mexe no arquivo real, então não quebra mais na rodada das 20h.
 - **Vídeos do TikTok:** todos são de aquecimento até existir clipe .mp4 de produto. Com 1 clipe de IA por produto, a máquina faz várias variações "com sacolinha".
 - **Placar do TikTok:** pronto; a dona cola os números em `contas/lusia/metricas-tiktok.txt` e roda `node app/placar.js`.
+- **Conferência das 21h30 (desde 19/10):** na nuvem (`conferencia.yml`). Falta a dona criar o bot (`TELEGRAM-PASSO-A-PASSO.md`); até lá o resumo fica só no registro da rodada. Depois do Telegram funcionando, desligar a tarefa do PC "olho-nas-postagens". A data do token fica em `instagram.tokenVenceEm` (atualize ao renovar).
 - **Tarefa semanal** "posts-semanais-achadinhos": toda sexta às 9h, pesquisa tendências e completa a fila até 7 posts.
 
 ## Atalhos (skills na pasta `.claude/skills` do Projeto zero)

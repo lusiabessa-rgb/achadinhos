@@ -57,7 +57,7 @@ const PERGUNTAS = [
 ];
 // O final volta para a foto/trecho do começo: o vídeo "emenda" e a pessoa assiste de novo
 const FIM = ['Volta e escolhe a sua favorita', 'Assiste de novo e salva', 'Qual foi a sua? Volta e vê'];
-const FRASES_SACOLINHA = ['Olha esse detalhe de perto', 'Fica lindo em qualquer cantinho', 'Toque na sacolinha para ver o preço'];
+const FRASES_SACOLINHA = ['Olha esse detalhe de perto', 'Fica lindo em qualquer cantinho', 'Toca no carrinho e vê o preço'];
 
 // Lê as fotos disponíveis: { arquivo, texto, ia, clipes: [mp4 do mesmo produto] }
 function juntarFotos(conta) {
@@ -360,7 +360,7 @@ function legendaTikTok(gancho, i, hashtags, busca) {
 // Legenda do vídeo com sacolinha: é oferta, então leva #publi (regra do CONAR). No máximo 5 hashtags no total.
 function legendaSacolinha(gancho, busca, produto, hashtags) {
   const tags = ['#publi', ...hashtags.filter((h) => h.toLowerCase() !== '#publi')].slice(0, 5);
-  const texto = [gancho + ' 🎄', busca + '.', produto ? semEmoji(produto).replace(/[.!]*$/, '.') : '', 'Toque na sacolinha para ver o preço 🛍️', tags.join(' ')].filter(Boolean).join('\n');
+  const texto = [gancho + ' 🎄', busca + '.', produto ? semEmoji(produto).replace(/[.!]*$/, '.') : '', ['Link no carrinho 🛒', 'Clica no link 🛒', 'Toca no carrinho 🛒'][semEmoji(gancho).length % 3], tags.join(' ')].filter(Boolean).join('\n');
   if (MISTURA.test(texto)) throw new Error('legenda do TikTok misturou plataforma: ' + texto);
   return texto;
 }

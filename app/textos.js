@@ -23,9 +23,9 @@ const GANCHOS = {
 
 const CHAMADAS_VIDEO = {
   shopee: [
-    'Toca na sacolinha para ver o preço de hoje 🛍️',
-    'Está na sacolinha laranja aqui embaixo 🧡',
-    'Corre na sacolinha antes de acabar 🛒',
+    'Link no carrinho 🛒 Veja o preço de hoje',
+    'Clica no link 🛒 antes de acabar',
+    'Toca no carrinho 🛒 aqui embaixo',
   ],
   tiktok: [
     'Toca no carrinho laranja para ver o preço de hoje 🛍️',
@@ -164,7 +164,7 @@ const nomeCurto = (nome) => String(nome).split(/\s+/).slice(0, 5).join(' ');
 // Prompts em inglês porque as ferramentas de vídeo entendem melhor; a fala é em português e curta (cabe em 8 segundos).
 function videoIA(p, cena = 'a cozy Brazilian living room decorated for Christmas') {
   const nome = nomeCurto(p.productName);
-  const fala = [`Gente, olha que lindo esse ${nome.toLowerCase()}!`, info(p) ? info(p) + '.' : '', 'Tá na sacolinha com preço ótimo.']
+  const fala = [`Gente, olha que lindo esse ${nome.toLowerCase()}!`, info(p) ? info(p) + '.' : '', 'Toca no carrinho e vê o preço.']
     .filter(Boolean)
     .join(' ')
     .replace(/\.\./g, '.');

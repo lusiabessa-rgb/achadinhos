@@ -154,13 +154,13 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     assert(l.includes('Como encher a árvore de natal'), 'sem a frase de busca');
     assert(l.split('\n').length <= 4);
     assert((l.match(/#/g) || []).length <= 5, 'hashtag demais: ' + l);
-    assert(!/sacolinha|#publi/i.test(l), 'aquecimento não vende');
+    assert(!/sacolinha|carrinho|#publi/i.test(l), 'aquecimento não vende');
     // todo gancho tem frase de busca com palavras de natal
     assert(aq.GANCHOS.every((g) => g.texto && /natal/i.test(g.busca)));
     const s = aq.legendaSacolinha('Sua árvore fica com cara de vazia?', 'Como encher a árvore de natal', 'Flor com glitter', tags);
     assert.strictEqual((s.match(/#publi/g) || []).length, 1);
     assert((s.match(/#/g) || []).length <= 5, 'hashtag demais: ' + s);
-    assert(/sacolinha/i.test(s) && !/shopee|link na bio|https?:/i.test(s));
+    assert(/carrinho|link/i.test(s) && !/sacolinha/i.test(s) && !/shopee|link na bio|https?:/i.test(s));
   });
 
   await teste('TikTok: texto só na área segura (nada embaixo, na direita nem no topo) e gancho grande no 1º quadro', async () => {
@@ -900,6 +900,113 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       assert.strictEqual(reg.filter((x) => x.opt.method === 'PUT').length, 2);
     } finally {
       fs.rmSync(pastaConta, { recursive: true, force: true });
+    }
+  });
+
+  // ---------- Pedido da dona (19/10): "sacolinha" nunca aparece no que o público vê ----------
+  await teste('nenhum texto público fala "sacolinha" (usa carrinho/link)', async () => {
+    const aq = require('./aquecimento-tiktok');
+    const publicos = [];
+    for (let id = 1; id <= 30; id++) {
+      const p = { itemId: 'x'.repeat(id), productName: 'Guirlanda de Natal', priceMin: '59.9', priceDiscountRate: 20, sales: 120 };
+      for (const loja of ['shopee', 'tiktok']) publicos.push(...textos.legendasVideo(p, ['#natal'], loja));
+      publicos.push(textos.legendaInstagram(p, 1, ['#natal']), textos.postComLink(p, 'https://s.shopee.com.br/x'), textos.videoIA(p).fala, textos.videoIA(p).video);
+      publicos.push(aq.legendaSacolinha('Gancho ' + 'a'.repeat(id), 'Como decorar', 'Guirlanda', ['#natal']));
+    }
+    publicos.push(textos.legendaCarrossel([{ itemId: '1', productName: 'Guirlanda', priceMin: '59.9' }], ['#natal']));
+    publicos.push(...aq.GANCHOS.map((g) => JSON.stringify(g)));
+    // frases que vão na tela dos vídeos (constante interna do aquecimento)
+    const fonte = fs.readFileSync(path.join(__dirname, 'aquecimento-tiktok.js'), 'utf8');
+    publicos.push(fonte.match(/const FRASES_SACOLINHA = \[[^\]]*\]/)[0].replace('FRASES_SACOLINHA', ''));
+    for (const t of publicos) assert(!/sacolinha/i.test(t), 'texto público com "sacolinha": ' + t);
+    assert(publicos.some((t) => /carrinho/i.test(t)) && publicos.some((t) => /Clica no link/.test(t)), 'faltou a chamada nova (carrinho/link)');
+  });
+
+  // ---------- Conferência das 21h30 (resumo pelo Telegram) ----------
+  await teste('conferência: resumo do dia sem internet e sem mexer no publicados.json real', async () => {
+    const conf = require('./conferencia');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'conf-'));
+    try {
+      const arqPublicados = path.join(tmp, 'publicados.json');
+      const arqFila = path.join(tmp, 'fila.json');
+      fs.writeFileSync(arqPublicados, JSON.stringify({
+        '2026-10-19:carrossel': { id: '1', quando: '2026-10-19T15:05:00Z' },
+        '2026-10-19:story:a': { id: '2', quando: '2026-10-19T15:06:00Z' },
+        'conteudo:x': { id: '3', quando: '2026-10-19T23:02:00Z' },
+        'conteudo:velho': { id: '4', quando: '2026-10-17T23:02:00Z' },
+      }));
+      fs.writeFileSync(arqFila, JSON.stringify(['x', 'velho', 'a', 'b', 'c', 'd', 'e'].map((slug) => ({ slug }))));
+      const agora = new Date('2026-10-20T00:30:00Z'); // 21h30 do dia 19 em Brasília
+      const config = { instagram: { ativo: true, conteudoPorDia: 2, tokenVenceEm: '2026-12-15' } };
+      const d = conf.conferirArquivos('lusia', { agora, arqPublicados, arqFila, config });
+      assert.strictEqual(d.hoje, '2026-10-19');
+      assert.deepStrictEqual(d.publicadosHoje, { carrossel: 1, story: 1, post: 0, conteudo: 1 });
+      assert.strictEqual(d.filaRestante, 5);
+      assert.strictEqual(d.tokenDias, 57);
+      const ok = conf.montarResumo({ ...d, insta: { feedHoje: 2 }, robo: { total: 4, falhas: [] } });
+      const linhas = ok.split('\n');
+      assert.ok(linhas.length <= 8, 'resumo comprido demais: ' + linhas.length);
+      assert.ok(linhas[0].includes('19/10'));
+      assert.ok(/✅ Instagram: 3 publica/.test(ok), ok);
+      assert.ok(ok.includes('5 post(s), dá para 2 dia(s)') && ok.includes('⚠️ Fila'), 'fila curta tem que avisar');
+      assert.ok(ok.includes('✅ Token do Instagram: vence em 57 dia(s)'));
+      assert.ok(ok.includes('✅ Robô: nenhuma falha'));
+      assert.ok(ok.includes('TikTok: conferir no app'));
+      assert.ok(ok.includes('1 ponto(s)'));
+      // dia ruim: nada publicado, token perto de vencer, robô falhou, fila vazia
+      const ruim = conf.montarResumo({ hoje: '2026-12-10', instagramLigado: true, publicadosHoje: { carrossel: 0, story: 0, post: 0, conteudo: 0 }, filaRestante: 0, porDia: 2, tokenDias: 5, insta: { feedHoje: 0 }, robo: { total: 3, falhas: ['Maquina de Ofertas', 'Maquina de Ofertas'] } });
+      assert.ok(ruim.includes('⚠️ Instagram: nada publicado hoje'));
+      assert.ok(ruim.includes('VAZIA'));
+      assert.ok(ruim.includes('⚠️ Token do Instagram: vence em 5 dia(s). Renovar já'));
+      assert.ok(ruim.includes('2 rodada(s) falharam') && ruim.includes('(Maquina de Ofertas)'));
+      assert.ok(ruim.split('\n').length <= 8);
+      const vencido = conf.montarResumo({ ...d, insta: { erro: 'token vencido' }, robo: null });
+      assert.ok(vencido.includes('VENCEU') && vencido.includes('não consegui conferir'));
+      // a conferência só lê: o arquivo continua igual
+      assert.strictEqual(Object.keys(JSON.parse(fs.readFileSync(arqPublicados, 'utf8'))).length, 4);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  await teste('conferência: Telegram e GitHub de mentira; sem segredos só imprime', async () => {
+    const conf = require('./conferencia');
+    const pedidos = [];
+    const falso = async (url, opt = {}) => {
+      const u = String(url);
+      pedidos.push({ u, opt });
+      if (u.includes('api.telegram.org')) return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      if (u.includes('api.github.com')) return { ok: true, status: 200, json: async () => ({ workflow_runs: [
+        { id: 1, name: 'Maquina de Ofertas', conclusion: 'success' },
+        { id: 2, name: 'Respostas QUERO', conclusion: 'failure' },
+        { id: 3, name: 'Conferencia 21h30', conclusion: null },
+      ] }) };
+      return { ok: false, status: 404, json: async () => ({}) };
+    };
+    const robo = await conf.conferirRobo({ fetchFn: falso, ghToken: 'gh', repo: 'dona/repo', runAtual: '3' });
+    assert.deepStrictEqual(robo, { total: 2, falhas: ['Respostas QUERO'] });
+    assert.ok(pedidos[0].u.includes('/repos/dona/repo/actions/runs'));
+    assert.strictEqual(await conf.conferirRobo({ fetchFn: falso, ghToken: '', repo: '' }), null);
+    await conf.enviarTelegram('oi', { token: 'TK', chatId: '42', fetchFn: falso });
+    const tg = pedidos.find((p) => p.u.includes('telegram'));
+    assert.ok(tg.u.endsWith('/botTK/sendMessage'));
+    assert.strictEqual(JSON.parse(tg.opt.body).chat_id, '42');
+    // Telegram recusou: o erro não mostra o token
+    const recusa = async () => ({ ok: false, status: 401, json: async () => ({ ok: false, description: 'Unauthorized' }) });
+    await assert.rejects(conf.enviarTelegram('oi', { token: 'SEGREDO123', chatId: '1', fetchFn: recusa }), (e) => !e.message.includes('SEGREDO123'));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'conf-'));
+    try {
+      const arqPublicados = path.join(tmp, 'publicados.json');
+      fs.writeFileSync(arqPublicados, '{}');
+      const antes = pedidos.length;
+      const r = await conf.conferir('lusia', { fetchFn: falso, segredos: {}, arqPublicados, log: () => {} });
+      assert.strictEqual(r.enviado, false);
+      assert.ok(r.resumo.includes('Conferência'));
+      assert.ok(!pedidos.slice(antes).some((p) => p.u.includes('sendMessage')), 'sem segredo não pode mandar');
+      const r2 = await conf.conferir('lusia', { fetchFn: recusa, segredos: { telegramToken: 'x', telegramChatId: '1' }, arqPublicados, log: () => {} });
+      assert.strictEqual(r2.enviado, false, 'Telegram fora do ar não quebra o robô');
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
     }
   });
 

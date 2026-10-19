@@ -1,0 +1,33 @@
+# Conferência das 21h30: olha o que a máquina publicou hoje e manda um resumo curto pelo Telegram.
+# Substitui a tarefa do PC "olho-nas-postagens" (assim funciona mesmo com o PC desligado).
+# Sem os segredos TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID: o resumo fica só no registro da rodada.
+name: Conferencia 21h30
+
+on:
+  schedule:
+    - cron: "30 0 * * *"   # 21h30 em Brasília (o GitHub pode atrasar alguns minutos)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  conferir:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      TZ: America/Sao_Paulo
+      INSTAGRAM_TOKEN: ${{ secrets.INSTAGRAM_TOKEN }}
+      INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      # A conferência só usa o Node (sem sharp): não precisa de npm ci
+      - name: Conferir o dia e mandar o resumo
+        run: node app/conferencia.js lusia

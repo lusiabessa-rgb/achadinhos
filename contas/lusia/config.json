@@ -67,6 +67,7 @@
     "conteudoPorDia": 2,
     "conteudoPorRodada": 1,
     "conteudoAPartirDas": 18,
+    "tokenVenceEm": "2026-12-15",
     "respostas": {
       "ativo": false,
       "palavras": [
