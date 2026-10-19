@@ -23,7 +23,7 @@ async function arteNoAr(url, fetchFn, tentativas = 10, intervalo = 30000) {
   return false;
 }
 
-async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr, intervaloStatus, log = console.log, dia: diaForcado, ignorarDesligado = false, segredos } = {}) {
+async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr, intervaloStatus, log = console.log, dia: diaForcado, ignorarDesligado = false, segredos, arqPublicados: arqForcado } = {}) {
   const pastaConta = path.join(RAIZ, 'contas', conta);
   const config = maquina.lerConfig(pastaConta);
   const ig = config.instagram || {};
@@ -51,7 +51,8 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
   if (!base && !simular) throw new Error('Falta o endereço do site ("urlBase" no config.json).');
   const urlArte = (o) => `${base}/${encodeURI(conta)}/${o.arte}`;
 
-  const arqPublicados = path.join(pastaConta, 'publicados.json');
+  // arqPublicados (opção): o teste usa um arquivo temporário e nunca mexe no publicados.json de verdade
+  const arqPublicados = arqForcado || path.join(pastaConta, 'publicados.json');
   let feitos = {};
   try {
     feitos = JSON.parse(fs.readFileSync(arqPublicados, 'utf8')) || {};

@@ -147,6 +147,181 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     assert.throws(() => aq.legendaTikTok('Achei na Shopee', 0, []), /misturou/);
   });
 
+  await teste('TikTok: legenda com frase de busca, no máximo 5 hashtags; sacolinha leva #publi', async () => {
+    const aq = require('./aquecimento-tiktok');
+    const tags = ['#tiktokshop', '#decoracaodenatal', '#natal', '#casadecorada', '#achadinhos', '#extra1', '#extra2'];
+    const l = aq.legendaTikTok('Sua árvore fica com cara de vazia?', 0, tags, 'Como encher a árvore de natal gastando pouco');
+    assert(l.includes('Como encher a árvore de natal'), 'sem a frase de busca');
+    assert(l.split('\n').length <= 4);
+    assert((l.match(/#/g) || []).length <= 5, 'hashtag demais: ' + l);
+    assert(!/sacolinha|#publi/i.test(l), 'aquecimento não vende');
+    // todo gancho tem frase de busca com palavras de natal
+    assert(aq.GANCHOS.every((g) => g.texto && /natal/i.test(g.busca)));
+    const s = aq.legendaSacolinha('Sua árvore fica com cara de vazia?', 'Como encher a árvore de natal', 'Flor com glitter', tags);
+    assert.strictEqual((s.match(/#publi/g) || []).length, 1);
+    assert((s.match(/#/g) || []).length <= 5, 'hashtag demais: ' + s);
+    assert(/sacolinha/i.test(s) && !/shopee|link na bio|https?:/i.test(s));
+  });
+
+  await teste('TikTok: texto só na área segura (nada embaixo, na direita nem no topo) e gancho grande no 1º quadro', async () => {
+    const aq = require('./aquecimento-tiktok');
+    const sharp = require('sharp');
+    const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'zs-'));
+    // foto da cor do fundo: tudo que não for fundo é texto/selo
+    const foto = path.join(pasta, 'f.png');
+    await sharp({ create: { width: 800, height: 1200, channels: 3, background: aq.FUNDO } }).png().toFile(foto);
+    const saida = path.join(pasta, 'q.jpg');
+    await aq.quadro({ arquivo: foto, ia: true }, 'Sua árvore de Natal fica com cara de vazia mesmo depois de montar tudo?', saida, { cor: '#b0294a', numero: 3, grande: true });
+    const { data, info } = await sharp(saida).raw().toBuffer({ resolveWithObject: true });
+    const fundo = [0xf7, 0xf0, 0xea];
+    const limpo = (x0, y0, x1, y1) => {
+      for (let y = y0; y < y1; y += 4) for (let x = x0; x < x1; x += 4) {
+        const i = (y * info.width + x) * info.channels;
+        if ([data[i], data[i + 1], data[i + 2]].some((v, k) => Math.abs(v - fundo[k]) > 14)) return `${x},${y}`;
+      }
+      return '';
+    };
+    assert.strictEqual(limpo(0, info.height - aq.ZONA.baixo, info.width, info.height), '', 'texto na parte de baixo (legenda/sacolinha do TikTok)');
+    assert.strictEqual(limpo(info.width - aq.ZONA.direita, 0, info.width, info.height), '', 'texto na direita (botões do TikTok)');
+    assert.strictEqual(limpo(0, 0, info.width, aq.ZONA.topo), '', 'texto no topo (abas do TikTok)');
+    // o gancho existe (faixa colorida) logo abaixo do topo
+    const i = ((aq.ZONA.topo + 40) * info.width + 200) * info.channels;
+    assert(Math.abs(data[i] - 0xb0) < 20 && data[i + 1] < 80, 'gancho não aparece no 1º quadro');
+    fs.rmSync(pasta, { recursive: true, force: true });
+  });
+
+  await teste('TikTok: vídeo de 12 a 18 s, cena nova a cada ~2 s, gancho de problema no início e final que emenda no começo', async () => {
+    const aq = require('./aquecimento-tiktok');
+    const fotos = Array.from({ length: 10 }, (_, k) => ({ arquivo: `/x/foto${k}.jpg`, texto: 'Produto ' + k, ia: false, clipes: [] }));
+    for (const lista of [fotos, fotos.slice(0, 3)]) {
+      for (let v = 0; v < 12; v++) {
+        const p = aq.planoDoVideo(v, lista, { duracaoDe: () => 0 });
+        assert(p.total >= aq.DURACAO.min && p.total <= aq.DURACAO.max, `duração fora: ${p.total}s`);
+        if (lista.length >= 7) assert(p.seg <= 2.5, 'cena longa demais: ' + p.seg);
+        assert(p.cenas[0].grande && p.cenas[0].texto === p.gancho.texto, '1ª cena sem gancho');
+        assert.strictEqual(p.cenas[p.cenas.length - 1].foto, p.cenas[0].foto, 'o final não emenda no começo');
+        const meio = p.cenas.slice(0, -1).map((c) => c.foto);
+        assert.strictEqual(new Set(meio).size, meio.length, 'foto repetida no vídeo');
+        assert.strictEqual(p.tipo, 'aquecimento');
+        assert(!p.sacolinha, 'slideshow de fotos não pode ir com sacolinha');
+      }
+    }
+    // ganchos de problema: perguntas ou dor que a pessoa reconhece
+    assert(aq.GANCHOS.filter((g) => g.texto.includes('?')).length >= aq.GANCHOS.length / 2);
+  });
+
+  await teste('TikTok: clipe de vídeo do produto vira cenas (trechos diferentes) e só vídeo de clipe pode ir com sacolinha', async () => {
+    const aq = require('./aquecimento-tiktok');
+    const fotos = Array.from({ length: 5 }, (_, k) => ({ arquivo: `/x/foto${k}.jpg`, texto: 'Produto ' + k, ia: false, clipes: [] }));
+    fotos[1].clipes = ['/x/foto1.mp4'];
+    const dur = () => 8;
+    // aquecimento: onde há clipe, usa o clipe no lugar da foto parada (e marca IA)
+    const p = aq.planoDoVideo(0, fotos, { duracaoDe: dur });
+    const c = p.cenas.find((x) => x.foto === fotos[1]);
+    assert(c && c.clipe === '/x/foto1.mp4' && c.ia, 'não usou o clipe');
+    assert.strictEqual(p.tipo, 'aquecimento');
+    // sacolinha: tudo clipe, 1 produto, trechos diferentes, final = trecho logo antes do começo (loop)
+    const vistos = new Set();
+    for (let v = 0; v < 3; v++) {
+      const s = aq.planoSacolinha(v, fotos[1], { duracaoDe: dur });
+      assert(s.sacolinha && s.tipo === 'sacolinha' && s.cenas.every((x) => x.clipe));
+      assert(s.total >= aq.DURACAO.min && s.total <= aq.DURACAO.max, 'duração fora: ' + s.total);
+      const fim = s.cenas[s.cenas.length - 1];
+      assert(Math.abs(fim.inicio + s.seg - s.cenas[0].inicio) < 0.01, 'o final não emenda no começo');
+      s.cenas.forEach((x) => assert(x.inicio >= 0 && x.inicio + s.seg <= 8 + 0.01, 'trecho fora do clipe'));
+      vistos.add(s.cenas.map((x) => x.inicio).join(','));
+    }
+    assert.strictEqual(vistos.size, 3, '1 clipe devia virar vídeos diferentes');
+    assert.throws(() => aq.planoSacolinha(0, fotos[0]), /clipe/);
+    // clipe com "-real" no nome é filmado de verdade: sem rótulo de IA
+    const real = aq.planoSacolinha(0, { ...fotos[1], clipes: ['/x/foto1-real.mp4'] }, { duracaoDe: dur });
+    assert(real.cenas.every((x) => !x.ia));
+  });
+
+  await teste('TikTok: clipe .mp4 na pasta de fotos é ligado à foto certa; nomes e LEIA marcam aquecimento x sacolinha', async () => {
+    const aq = require('./aquecimento-tiktok');
+    const sharp = require('sharp');
+    const conta = 'teste-clipes-' + process.pid;
+    const pastaConta = path.join(__dirname, '..', 'contas', conta);
+    const pf = path.join(pastaConta, 'fotos');
+    fs.mkdirSync(pf, { recursive: true });
+    try {
+      fs.writeFileSync(path.join(pastaConta, 'config.json'), JSON.stringify({ palavrasChave: ['natal'], hashtagsTikTok: ['#natal', '#tiktokshop'] }));
+      const cores = ['#aa0000', '#00aa00', '#0000aa'];
+      const nomes = ['flores.jpg', 'flores-3-cores.jpg', 'bola.jpg'];
+      for (let k = 0; k < 3; k++) await sharp({ create: { width: 300 + k * 10, height: 300, channels: 3, background: cores[k] } }).jpeg().toFile(path.join(pf, nomes[k]));
+      for (const v of ['flores-3-cores.mp4', 'flores-3-cores-2.mp4', 'flores.mp4', 'sem-foto.mp4']) fs.writeFileSync(path.join(pf, v), 'x');
+      const minhas = aq.juntarFotos(conta).filter((f) => f.arquivo.startsWith(pf));
+      const de = (n) => minhas.find((f) => path.basename(f.arquivo) === n).clipes.map((c) => path.basename(c)).sort();
+      assert.deepStrictEqual(de('flores-3-cores.jpg'), ['flores-3-cores-2.mp4', 'flores-3-cores.mp4']);
+      assert.deepStrictEqual(de('flores.jpg'), ['flores.mp4']);
+      assert.deepStrictEqual(de('bola.jpg'), []);
+      // gera 1 dia com montagem falsa (sem ffmpeg)
+      const saida = path.join(pastaConta, 'saida');
+      const feitos = [];
+      await aq.gerar(conta, { dias: 1, porDia: 3, inicio: '2026-11-01', saida, duracaoDe: () => 6, log: () => {}, montar: (cenas, destino) => { feitos.push(cenas); fs.writeFileSync(destino, 'v'); } });
+      const arqs = fs.readdirSync(path.join(saida, '2026-11-01'));
+      assert(arqs.includes('12h-video-sacolinha.mp4'), 'faltou o vídeo de sacolinha: ' + arqs);
+      assert(arqs.includes('18h-video-aquecimento.mp4') && arqs.includes('20h-video-aquecimento.mp4'));
+      assert(feitos[0].every((c) => c.clipe), 'vídeo de sacolinha com foto parada');
+      const leia = fs.readFileSync(path.join(saida, 'LEIA.txt'), 'utf8');
+      assert(/12h \[COM SACOLINHA/.test(leia) && /18h \[AQUECIMENTO \(sem sacolinha\)\]/.test(leia));
+      const leg = fs.readFileSync(path.join(saida, '2026-11-01', '12h-legenda.txt'), 'utf8');
+      assert(leg.includes('#publi') && leg.includes('Conteúdo gerado por IA'));
+      assert(!fs.readFileSync(path.join(saida, '2026-11-01', '18h-legenda.txt'), 'utf8').includes('#publi'));
+      // o robô do TikTok reconhece os nomes novos
+      const tiktok = require('./tiktok');
+      const fila = tiktok.videosDaVez(saida, new Date('2026-11-01T23:30:00Z'), {}, 5);
+      assert.deepStrictEqual(fila.map((v) => v.nome), ['12h-video-sacolinha.mp4', '18h-video-aquecimento.mp4', '20h-video-aquecimento.mp4']);
+    } finally {
+      fs.rmSync(pastaConta, { recursive: true, force: true });
+    }
+  });
+
+  await teste('placar do TikTok: lê o arquivo colado, acha os 3 vencedores e os piores e sugere variações', async () => {
+    const pl = require('./placar');
+    assert.strictEqual(pl.numero('1.250'), 1250);
+    assert.strictEqual(pl.numero('1,2 mil'), 1200);
+    assert.strictEqual(pl.numero('3,4K'), 3400);
+    assert.strictEqual(pl.numero(''), 0);
+    assert.deepStrictEqual(pl.conclusao('22%'), { pct: 22, estimado: false });
+    assert.strictEqual(pl.conclusao('4,5s').estimado, true);
+    const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'pl-'));
+    const arq = path.join(pasta, 'metricas-tiktok.txt');
+    fs.writeFileSync(
+      arq,
+      pl.CABECALHO +
+        [
+          '2026-10-20 | Árvore vazia? | 1.000 | 30% | 50 | 10 | 20 | 5 | 1',
+          '2026-10-20 | Mesa sem graça? | 800 | 10% | 5 | 0 | 1 | 0 | 0',
+          '2026-10-21 | Casa sem clima? | 2.000 | 25% | 40 | 4 | 6 | 2 | 0',
+          '2026-10-21 | Apartamento pequeno | 500 | 5% | 1 | 0 | 0 | 0 | 0',
+          '2026-10-22 | Gastando pouco? | 1,2 mil | 6s | 30 | 3 | 9 | 9 | 3',
+          '2026-10-22 | Sala sem graça? | 300 | 8% | 2 | 0 | 0 | 0 | 0',
+          'linha quebrada',
+        ].join('\n')
+    );
+    const avisos = [];
+    const linhas = pl.lerMetricas(arq, (m) => avisos.push(m));
+    assert.strictEqual(linhas.length, 6);
+    assert.strictEqual(avisos.length, 1);
+    const p = pl.placar(linhas);
+    assert.deepStrictEqual(p.vencedores.map((l) => l.titulo), ['Árvore vazia?', 'Gastando pouco?', 'Casa sem clima?']);
+    assert.deepStrictEqual(p.piores.map((l) => l.titulo), ['Apartamento pequeno', 'Sala sem graça?', 'Mesa sem graça?']);
+    assert(p.sugestoes[0].includes('3 variações') && p.sugestoes[0].includes('Árvore vazia?'));
+    assert(p.sugestoes[1].includes('Gastando pouco?') && p.sugestoes[1].includes('3 venda'), 'não destacou o que mais vendeu');
+    assert.strictEqual(p.totais.vendas, 4);
+    assert(pl.relatorio(p).includes('Os 3 vencedores'));
+    // fonte da API oficial (quando ligada): entra no placar sem repetir o que já foi colado
+    const api = pl.linhasDaApi([{ title: 'Árvore vazia?', view_count: 9, share_count: 1 }, { title: 'Novo vídeo\n#natal', view_count: 400, like_count: 3, share_count: 8, create_time: 1792000000 }]);
+    const juntas = pl.juntar(linhas, api);
+    assert.strictEqual(juntas.length, 7);
+    assert.strictEqual(juntas[6].titulo, 'Novo vídeo');
+    assert.strictEqual(juntas[6].conclusao, null);
+    assert(pl.relatorio(pl.placar([])).includes('vazio'));
+    fs.rmSync(pasta, { recursive: true, force: true });
+  });
+
   await teste('todo texto de divulgação leva #publi (regra do CONAR) e a frase de benefício', async () => {
     const p = { itemId: 9, productName: 'Guirlanda', priceMin: '59.9', info: 'Já vem com luz' };
     const textosTodos = [
@@ -283,26 +458,49 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     const { publicar } = require('./publicar');
     const r = await maquina.rodar('lusia', true);
     const dia = path.basename(r.pastaDia).toLowerCase();
-    const arqPub = path.join(__dirname, '..', 'contas', 'lusia', 'publicados.json');
-    const antes = fs.existsSync(arqPub) ? fs.readFileSync(arqPub, 'utf8') : null;
+    // Arquivo de "já publicado" TEMPORÁRIO: o publicados.json de verdade nunca é lido nem mexido
+    // (antes, às 20h, o post das 18h já anotado lá quebrava a conta do teste e o robô parava)
+    const real = path.join(__dirname, '..', 'contas', 'lusia', 'publicados.json');
+    const antesReal = fs.existsSync(real) ? fs.readFileSync(real, 'utf8') : null;
+    const pastaTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pub-'));
+    const arqPublicados = path.join(pastaTmp, 'publicados.json');
+    const lerCfg = maquina.lerConfig;
     try {
-      const sim = await publicar('lusia', { simular: true, dia, log: () => {} });
+      // 1 conteúdo por dia no teste: com mais, a 2ª rodada publica o próximo da fila (o que é certo)
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoPorDia: 1 } });
+      const sim = await publicar('lusia', { simular: true, dia, arqPublicados, log: () => {} });
       assert.strictEqual(sim.tarefas.filter((t) => t.tipo === 'carrossel').length, 1);
       assert(sim.tarefas[0].legenda.includes('bio'));
       const reg = [];
-      const opcoes = { dia, ignorarDesligado: true, segredos: { igToken: 't', igUserId: '9' }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} };
-      const lerCfg = maquina.lerConfig;
-      // 1 conteúdo por dia no teste: com mais, a 2ª rodada publica o próximo da fila (o que é certo)
-      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoPorDia: 1 } });
+      const opcoes = { dia, arqPublicados, ignorarDesligado: true, segredos: { igToken: 't', igUserId: '9' }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} };
       const r1 = await publicar('lusia', opcoes);
       const r2 = await publicar('lusia', opcoes);
-      maquina.lerConfig = lerCfg;
       assert.strictEqual(r1.publicados, sim.tarefas.length);
       assert.strictEqual(r2.publicados, 0, 'publicou de novo o que já tinha publicado');
       assert(reg.some((x) => x.corpo.image_url && x.corpo.image_url.startsWith('https://teste.github.io/ofertas/lusia/')));
+      assert(fs.existsSync(arqPublicados), 'não anotou no arquivo temporário');
+      assert.strictEqual(fs.existsSync(real) ? fs.readFileSync(real, 'utf8') : null, antesReal, 'o teste mexeu no publicados.json de verdade');
     } finally {
-      if (antes === null) fs.rmSync(arqPub, { force: true });
-      else fs.writeFileSync(arqPub, antes);
+      maquina.lerConfig = lerCfg;
+      fs.rmSync(pastaTmp, { recursive: true, force: true });
+    }
+  });
+
+  await teste('publicador às 20h com post já feito no dia: o teste não depende do publicados.json real', async () => {
+    // Simula o dia real: o 1º conteúdo de hoje já saiu (anotado só no arquivo temporário).
+    const { publicar } = require('./publicar');
+    const pastaTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pub20-'));
+    const arqPublicados = path.join(pastaTmp, 'publicados.json');
+    fs.writeFileSync(arqPublicados, JSON.stringify({ 'conteudo:ja-saiu': { id: '1', quando: new Date().toISOString() } }));
+    const lerCfg = maquina.lerConfig;
+    try {
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), instagram: { ...lerCfg(p).instagram, conteudoPorDia: 1, conteudoAPartirDas: 0 } });
+      const sim = await publicar('lusia', { simular: true, dia: 'nao-existe', arqPublicados, log: () => {} });
+      // limite de 1 por dia já usado: nada de conteúdo (e sem ofertas nesse dia)
+      assert(!(sim.tarefas || []).some((t) => t.chave.startsWith('conteudo:')), 'passou do limite do dia');
+    } finally {
+      maquina.lerConfig = lerCfg;
+      fs.rmSync(pastaTmp, { recursive: true, force: true });
     }
   });
 

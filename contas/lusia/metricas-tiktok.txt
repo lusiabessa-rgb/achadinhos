@@ -1,0 +1,6 @@
+# PLACAR DO TIKTOK @shopabessa: cole aqui os números de cada vídeo (TikTok Studio > Análises > o vídeo).
+# Uma linha por vídeo, separando com | (a ordem importa). Linha com # é comentário.
+# data | título/gancho | visualizações | % assistido completo (ou tempo médio, ex.: 4,5s) | curtidas | compartilhamentos | salvos | cliques no produto | vendas
+# Exemplo:
+# 2026-10-20 | Sua árvore fica com cara de vazia? | 1.250 | 22% | 48 | 6 | 15 | 4 | 1
+# Depois rode:  node app/placar.js

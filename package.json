@@ -5,7 +5,8 @@
   "description": "Acha ofertas da Shopee, faz as artes e publica.",
   "scripts": {
     "rodar": "node app/maquina.js lusia",
-    "teste": "node app/teste-automatico.js"
+    "teste": "node app/teste-automatico.js",
+    "placar": "node app/placar.js lusia"
   },
   "dependencies": {
     "sharp": "0.34.4"

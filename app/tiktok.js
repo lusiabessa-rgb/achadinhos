@@ -303,7 +303,7 @@ async function enviarVideo(token, arquivo, legenda, opcoes = {}, fetchFn = fetch
 }
 
 // ---------- Fila: quais vídeos mandar agora ----------
-// Pasta: <pasta>/<AAAA-MM-DD>/<hora>-video.mp4 + <hora>-legenda.txt (saída do aquecimento-tiktok.js).
+// Pasta: <pasta>/<AAAA-MM-DD>/<hora>-video[-aquecimento|-sacolinha].mp4 + <hora>-legenda.txt (saída do aquecimento-tiktok.js).
 // Manda só os de HOJE cuja hora já chegou e que ainda não foram mandados (vídeo atrasado de outro dia não vai).
 const AVISO_IA = /\n*\(Ao postar: ligar "Conteúdo gerado por IA"\)\s*$/;
 function lerLegenda(arq) {
@@ -321,7 +321,7 @@ function videosDaVez(pastaFila, agora = new Date(), feitos = {}, limite = 1) {
   if (!fs.existsSync(pastaDia)) return [];
   return fs
     .readdirSync(pastaDia)
-    .map((f) => f.match(/^(\d{1,2})h-video\.mp4$/))
+    .map((f) => f.match(/^(\d{1,2})h-video(?:-(?:aquecimento|sacolinha))?\.mp4$/))
     .filter(Boolean)
     .map((m) => ({ hora: Number(m[1]), nome: m[0], chave: `${data}/${m[0]}` }))
     .filter((v) => v.hora <= horaAgora && !feitos[v.chave])
