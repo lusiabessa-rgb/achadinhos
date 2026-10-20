@@ -1,0 +1,16 @@
+# PRODUTOS EM ALTA NO TIKTOK SHOP BRASIL (dados do FastMoss, preenchido pela skill "cacar-produtos-tiktok")
+# data | id do produto | nome | preço | comissão % (vazio se não aparece) | vendas 7 dias | crescimento 7 dias % | afiliados | nota | categoria (natal/casa)
+2026-10-19 | 1737462444515296670 | Cortina LED 3x3 300 LEDs | 28,00 | | 4700 | 48,43 | 489 | 4,4 | natal
+2026-10-19 | 1737222873287657464 | Kit 4 capas de almofada Natal 45x45 | 35,92 | | 1500 | 100 | 11 | | natal
+2026-10-19 | 1737893320014268229 | Árvore de Natal 1,20 m | 19,99 | | 3600 | 18,72 | 235 | | natal
+2026-10-19 | 1737951469350061414 | Pisca-pisca LED com controle 100 LEDs | 9,99 | | 2800 | 45,87 | 327 | | natal
+2026-10-19 | 1737243523960440284 | Cascata 400 LEDs 10 m | 56,00 | | 1300 | 27,49 | 469 | | natal
+2026-10-19 | 1737049125992171355 | Pisca-pisca solar 300 LED | 22,99 | 8 | 1100 | 29,13 | 267 | | natal
+2026-10-19 | 1731916337736221947 | Pisca-pisca 100 LED 9 m 8 funções | 15,92 | 10 | 10200 | 52,92 | 5400 | 4,7 | natal
+2026-10-19 | 1737784701064873531 | Mini Jesus decorativo 4 cm | 20,37 | 10 | 3200 | 30 | | | natal
+2026-10-19 | 1736938603475797331 | Painel adesivo efeito mármore 60x300 | 42,99 | 10 | 1900 | 70 | | 4,7 | casa
+2026-10-19 | 1736474319813444968 | Organizador dobrável roupas e edredom 60x35x40 visor | 14,68 | 12 | 9000 | 37,16 | | 4,4 | casa
+2026-10-19 | 1737681903007991039 | Organizador de maquiagem com espelho e gavetas | 45,99 | 10 | 1700 | 31,33 | | 4,6 | casa
+2026-10-19 | 1734384887235512194 | Kit 100 clips organizador de fios autoadesivo | 9,99 | 12 | 1800 | 100 | 186 | 4,6 | casa
+2026-10-19 | 1736571737883509843 | Cesto de roupa dobrável pop-up | 16,49 | | 1800 | 68 | 225 | 4,8 | casa
+2026-10-19 | 1737340520841118743 | Porta-ovos rolante 4 andares 30 ovos | 11,76 | | 2500 | 37,66 | 432 | | casa

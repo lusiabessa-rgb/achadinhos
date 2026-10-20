@@ -1020,6 +1020,32 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
+  await teste('produtos da semana: no máximo 4, marca o que vende nas duas e diz o que a dona faz', async () => {
+    const ps = require('./produtos-semana');
+    const t = (nome, vendas, categoria, extra = {}) => ({ nome, vendas, cresc: 30, afiliados: 100, comissao: 10, preco: 20, categoria, ...extra });
+    const tiktok = [
+      t('Kit 4 capas de almofada Natal 45x45', 1500, 'natal'),
+      t('Árvore de Natal 1,20 m', 3600, 'natal'),
+      t('Pisca-pisca 100 LED 9 m', 9000, 'natal'),
+      t('Organizador de edredom', 9000, 'casa'),
+      t('Porta-ovos rolante', 2500, 'casa'),
+      t('Cesto de roupa pop-up', 1800, 'casa'),
+    ];
+    const shopee = [
+      { nome: 'Kit Feliz Natal 4 Capas de Almofada 45x45', link: 'https://s.shopee.com.br/x' },
+      { nome: 'Presépio de Mesa MDF', link: null },
+    ];
+    const { lista, soShopee } = ps.escolher({ tiktok, shopee, vitrine: ['Kit 4 Capas de Almofada Natal'] });
+    assert.ok(lista.length <= 4, 'nunca mais de 4 (ela fica confusa)');
+    const capas = lista.find((p) => /capas/.test(p.nome));
+    assert.ok(capas && capas.nasDuas && capas.naVitrine, 'capas vendem nas duas e já estão na vitrine');
+    assert.ok(lista.filter((p) => p.categoria === 'casa').length >= 1 && lista.filter((p) => p.categoria === 'natal').length >= 1, 'mistura Natal e casa');
+    assert.ok(!ps.parecidos('Árvore de Natal 1,20 m', 'Presépio de Mesa MDF'));
+    const msg = ps.montarMensagem({ data: '2026-10-19', lista, soShopee });
+    assert.ok(/só \d\)/.test(msg) && msg.includes('vende nas DUAS') && msg.includes('Você só faz'));
+    assert.ok(!/sacolinha/i.test(msg) && !/[a-z]+ing\b/.test(msg), 'sem "sacolinha" e sem inglês');
+  });
+
   console.log(`\nResultado: ${passou} ok, ${falhou} falhou.`);
   process.exitCode = falhou ? 1 : 0;
 })();

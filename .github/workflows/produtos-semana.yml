@@ -1,0 +1,28 @@
+# Produtos da semana: toda segunda às 10h (Brasília) manda UMA mensagem no Telegram com no máximo 4 produtos
+# (o que vende no TikTok, na Shopee e nas duas) e o que a dona faz em cada um. Pedido dela em 20/10.
+# A lista do TikTok vem de contas/lusia/tiktok-em-alta.txt (a skill cacar-produtos-tiktok atualiza e envia ao GitHub).
+name: Produtos da semana
+
+on:
+  schedule:
+    - cron: "0 13 * * 1"   # segunda, 10h em Brasília
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  produtos:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      TZ: America/Sao_Paulo
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Montar e mandar a lista da semana
+        run: node app/produtos-semana.js lusia
