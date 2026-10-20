@@ -208,6 +208,16 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
     // ganchos de problema: perguntas ou dor que a pessoa reconhece
     assert(aq.GANCHOS.filter((g) => g.texto.includes('?')).length >= aq.GANCHOS.length / 2);
+    // 4 dias x 3 vídeos sem repetir gancho (a dona não quer vídeo repetido em sequência, 20/10)
+    assert.strictEqual(new Set(aq.GANCHOS.map((g) => g.texto)).size, aq.GANCHOS.length, 'gancho duplicado');
+    assert(aq.GANCHOS.length >= 12, 'precisa de 12+ ganchos para 4 dias sem repetir');
+    // dois vídeos seguidos nunca abrem com a mesma foto
+    let antes = null;
+    for (let v = 0; v < 12; v++) {
+      const p = aq.planoDoVideo(v, fotos, { duracaoDe: () => 0, evitar: antes });
+      assert.notStrictEqual(p.cenas[0].foto, antes, `vídeo ${v} abre igual ao anterior`);
+      antes = p.cenas[0].foto;
+    }
   });
 
   await teste('TikTok: clipe de vídeo do produto vira cenas (trechos diferentes) e só vídeo de clipe pode ir com sacolinha', async () => {

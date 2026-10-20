@@ -6,3 +6,4 @@ capas-almofada
 almofadas
 bolinhas
 maleta
+kit-24-flores

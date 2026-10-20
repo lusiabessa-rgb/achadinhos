@@ -47,7 +47,14 @@ const GANCHOS = [
   { texto: 'Árvore pequena com cara de árvore cheia?', busca: 'Árvore de natal pequena decorada' },
   { texto: 'Natal bonito sem gastar muito? Salva!', busca: 'Decoração de natal barata e simples' },
   { texto: 'Cansou da decoração de sempre?', busca: 'Tendências de decoração de natal 2026' },
+  { texto: 'Sua varanda fica apagada no Natal?', busca: 'Decoração de natal para varanda' },
+  { texto: 'Visita chegando e a casa sem Natal?', busca: 'Decoração de natal rápida e fácil' },
+  { texto: 'Seu quarto também pode ter Natal', busca: 'Decoração de natal para quarto' },
+  { texto: 'Quer uma casa de Natal de revista?', busca: 'Casa decorada para o natal ideias' },
+  { texto: 'Falta aquele brilho na sua decoração?', busca: 'Luzes de natal para decorar a casa' },
+  { texto: 'Decoração de Natal que cabe no bolso', busca: 'Enfeites de natal baratos' },
 ];
+// Com 16 ganchos, 4 dias x 3 vídeos (12) nunca repetem o mesmo gancho (pedido da dona em 20/10).
 const PERGUNTAS = [
   'Qual você escolheria? Comenta aqui 👇',
   'Você já começou a decorar? 🎄',
@@ -197,7 +204,8 @@ function finalizar(cenas, v, duracaoDe, extra) {
 }
 
 // Vídeo de AQUECIMENTO: gancho de problema + até 6 produtos diferentes (clipe quando tiver) + final igual ao começo
-function planoDoVideo(v, fotos, { duracaoDe = duracaoClipe } = {}) {
+// evitar = foto que abriu o vídeo anterior: dois vídeos seguidos nunca abrem com a mesma foto (pedido da dona em 20/10)
+function planoDoVideo(v, fotos, { duracaoDe = duracaoClipe, evitar = null } = {}) {
   const g = GANCHOS[v % GANCHOS.length];
   const m = Math.min(CENAS_MEIO, fotos.length - 1);
   const passo = 1 + (v % Math.max(1, fotos.length - 1));
@@ -207,7 +215,12 @@ function planoDoVideo(v, fotos, { duracaoDe = duracaoClipe } = {}) {
     if (!candidatos.includes(f)) candidatos.push(f);
   }
   for (const f of fotos) if (candidatos.length < m + 1 && !candidatos.includes(f)) candidatos.push(f);
-  const escolha = [...new Set(abrirComOGancho(g.texto, candidatos, fotos))].slice(0, m + 1);
+  let escolha = [...new Set(abrirComOGancho(g.texto, candidatos, fotos))].slice(0, m + 1);
+  if (evitar && escolha[0] === evitar) {
+    const resto = fotos.filter((f) => f !== evitar);
+    const outra = abrirComOGancho(g.texto, [...escolha.slice(1), ...resto.filter((f) => !escolha.includes(f))], resto)[0];
+    if (outra) escolha = [outra, ...escolha.filter((f) => f !== outra)].slice(0, m + 1);
+  }
   const cena = (foto, texto, k, extra = {}) => {
     const clipe = foto.clipes && foto.clipes.length ? foto.clipes[(v + k) % foto.clipes.length] : null;
     return { foto, clipe, texto, ia: iaDaCena(foto, clipe), ...extra };
@@ -379,6 +392,7 @@ async function gerar(conta, { dias = 4, porDia = 3, sacolinhaPorDia = 1, inicio,
   const comeco = inicio ? new Date(inicio + 'T12:00:00') : new Date();
   const total = dias * porDia;
   const agenda = [];
+  let aberturaAnterior = null;
   for (let v = 0; v < total; v++) {
     const dia = new Date(comeco);
     dia.setDate(dia.getDate() + Math.floor(v / porDia));
@@ -391,7 +405,8 @@ async function gerar(conta, { dias = 4, porDia = 3, sacolinhaPorDia = 1, inicio,
     const plano =
       comClipe.length && vaga < sacolinhaPorDia
         ? planoSacolinha(v, comClipe[(Math.floor(v / porDia) * sacolinhaPorDia + vaga) % comClipe.length], { duracaoDe })
-        : planoDoVideo(v, fotos, { duracaoDe });
+        : planoDoVideo(v, fotos, { duracaoDe, evitar: aberturaAnterior });
+    aberturaAnterior = plano.cenas[0].foto;
     const tmp = fs.mkdtempSync(path.join(pasta, '.tmp-'));
     try {
       const nome = `${hora}-video-${plano.tipo}`;
