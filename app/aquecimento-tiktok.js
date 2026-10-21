@@ -24,7 +24,8 @@ const TRANS = 0.3; // transição entre as cenas
 const DURACAO = { min: 12, max: 18 }; // segundos
 const CENAS_MEIO = 6; // cenas entre o gancho e o final
 // Área segura do TikTok: em cima ficam as abas, embaixo a legenda e a sacolinha, na direita os botões
-const ZONA = { topo: 150, baixo: 480, esquerda: 60, direita: 150 };
+// topo 270 (21/10): pesquisa mostrou que os ~14% de cima ficam sob as abas "Seguindo / Para você"
+const ZONA = { topo: 270, baixo: 480, esquerda: 60, direita: 150 };
 const FUNDO = '#f7f0ea';
 const FONTE = "'Segoe UI', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif";
 const HORAS = ['12h', '18h', '20h', '21h', '15h'];
@@ -143,7 +144,7 @@ const ESTILOS = {
   elegante: { fundo: '#f6f1ea', serif: true, alinhar: 'middle', tinta: '#2f2a26', dourado: '#b8975a' },
   moderno: { fundo: '#fbfaf8', serif: false, alinhar: 'start', tinta: '#1f1f1f', dourado: '#9c7b4c' },
 };
-const FOTO_TOPO = 440;
+const FOTO_TOPO = 560;
 const SERIF = "Georgia, 'DejaVu Serif', 'Liberation Serif', serif";
 const FINA = "'Segoe UI Light', 'Segoe UI', 'DejaVu Sans', Arial, sans-serif";
 function camadaRefinada(titulo, { estilo, numero = 0, ia = false, grande = false }) {
