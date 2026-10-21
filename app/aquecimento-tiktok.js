@@ -98,7 +98,10 @@ function juntarFotos(conta) {
       fotos.push({ arquivo, texto: textoDe(f), ia: typeof ia === 'function' ? ia(f) : ia, clipes: clipesDe[f] || [] });
     }
   };
-  const bonito = (f) => f.replace(IMG, '').replace(/^\d+-/, '').replace(/[-_]+/g, ' ').trim();
+  const bonito = (f) => {
+    const t = f.replace(IMG, '').replace(/^\d+-/, '').replace(/[-_]+/g, ' ').trim();
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  };
   // 1) Fotos da dona (reais)
   add(path.join(RAIZ, '..', 'aquecimento', 'fotos-dos-produtos'), false, () => '');
   // 2) Produtos da lista manual (frase de benefício como texto)
@@ -133,7 +136,49 @@ const iaDaCena = (foto, clipe) => (clipe ? !/(^|[-_])real([-_.]|$)/i.test(path.b
 
 // Camada de texto transparente 1080x1920, SEMPRE dentro da área segura do TikTok.
 // grande = gancho do 1º quadro (letra maior, até 4 linhas)
-async function camadaTexto(titulo, { cor = '#b0294a', numero = 0, ia = false, grande = false } = {}) {
+// Estilos refinados (pedido da dona em 20/10: "sem cara de loja popular", sem o vermelho atrás do texto).
+// elegante = creme, letra serifada escura, linha e número dourados; moderno = branco, letra fina, etiqueta dourada.
+// Texto sempre ACIMA da foto (a foto fica de FOTO_TOPO para baixo, inteira) e dentro da área segura.
+const ESTILOS = {
+  elegante: { fundo: '#f6f1ea', serif: true, alinhar: 'middle', tinta: '#2f2a26', dourado: '#b8975a' },
+  moderno: { fundo: '#fbfaf8', serif: false, alinhar: 'start', tinta: '#1f1f1f', dourado: '#9c7b4c' },
+};
+const FOTO_TOPO = 440;
+const SERIF = "Georgia, 'DejaVu Serif', 'Liberation Serif', serif";
+const FINA = "'Segoe UI Light', 'Segoe UI', 'DejaVu Sans', Arial, sans-serif";
+function camadaRefinada(titulo, { estilo, numero = 0, ia = false, grande = false }) {
+  const e = ESTILOS[estilo];
+  // Texto longo: letra um pouco menor para caber em 2 linhas (3 linhas encostavam no rótulo de IA e na foto)
+  let fonte = grande ? 62 : 48;
+  let linhas = titulo ? quebrar(semEmoji(titulo), grande ? 21 : 27, 3) : [];
+  if (linhas.length > 2) {
+    fonte = grande ? 50 : 40;
+    linhas = quebrar(semEmoji(titulo), grande ? 26 : 33, 3);
+  }
+  const altLinha = Math.round(fonte * 1.18);
+  const x = e.alinhar === 'middle' ? (ZONA.esquerda + L - ZONA.direita) / 2 + 45 : ZONA.esquerda + 30;
+  const etiqueta = e.serif ? (numero ? `0${numero}` : '') : numero ? `IDEIA ${numero}` : grande ? 'NATAL 2026' : '';
+  let y = ZONA.topo + 40;
+  const partes = [];
+  if (etiqueta) {
+    partes.push(
+      e.serif
+        ? `<text x="${x}" y="${y + 34}" text-anchor="middle" font-family="${SERIF}" font-style="italic" font-size="40" fill="${e.dourado}">${etiqueta}</text>`
+        : `<text x="${x}" y="${y + 26}" font-family="${FONTE}" font-size="26" font-weight="600" letter-spacing="6" fill="${e.dourado}">${etiqueta}</text>`
+    );
+    y += e.serif ? 50 : 44;
+  }
+  linhas.forEach((l, i) =>
+    partes.push(`<text x="${x}" y="${y + fonte + i * altLinha}" text-anchor="${e.alinhar}" font-family="${e.serif ? SERIF : FINA}" font-weight="${e.serif ? 400 : 300}" font-size="${fonte}" fill="${e.tinta}">${xml(l)}</text>`)
+  );
+  y += linhas.length ? fonte + (linhas.length - 1) * altLinha + 30 : 0;
+  if (e.serif && linhas.length) partes.push(`<line x1="${x - 70}" x2="${x + 70}" y1="${y}" y2="${y}" stroke="${e.dourado}" stroke-width="3"/>`);
+  if (ia) partes.push(`<text x="${x}" y="${FOTO_TOPO - 14}" text-anchor="${e.alinhar}" font-family="${FONTE}" font-size="24" letter-spacing="2" fill="#8a7f76">conteúdo gerado por IA</text>`);
+  return `<svg width="${L}" height="${A}" xmlns="http://www.w3.org/2000/svg">${partes.join('')}</svg>`;
+}
+
+async function camadaTexto(titulo, { cor = '#b0294a', numero = 0, ia = false, grande = false, estilo } = {}) {
+  if (ESTILOS[estilo]) return sharp(Buffer.from(camadaRefinada(titulo, { estilo, numero, ia, grande }))).png().toBuffer();
   const fonte = grande ? 76 : 58;
   const altLinha = grande ? 90 : 72;
   const linhas = titulo ? quebrar(semEmoji(titulo), grande ? 17 : 22, grande ? 4 : 3) : [];
@@ -153,19 +198,22 @@ async function camadaTexto(titulo, { cor = '#b0294a', numero = 0, ia = false, gr
 }
 
 // Fundo liso claro (nada desfocado: a dona pediu em 17/10) com a foto inteira, nítida e centralizada
-async function fundoComFoto(arquivo) {
+// Estilo refinado: fundo creme e foto logo abaixo do texto (nunca por baixo dele)
+async function fundoComFoto(arquivo, estilo) {
+  const e = ESTILOS[estilo];
   const meio = await sharp(arquivo).resize(L - 80, 1250, { fit: 'inside' }).toBuffer();
   const m = await sharp(meio).metadata();
-  return sharp({ create: { width: L, height: A, channels: 3, background: FUNDO } })
-    .composite([{ input: meio, left: Math.round((L - m.width) / 2), top: Math.round((A - m.height) / 2) + 60 }])
+  const topo = e ? FOTO_TOPO + 20 + Math.max(0, Math.round((A - ZONA.baixo - FOTO_TOPO - 20 - m.height) / 2)) : Math.round((A - m.height) / 2) + 60;
+  return sharp({ create: { width: L, height: A, channels: 3, background: e ? e.fundo : FUNDO } })
+    .composite([{ input: meio, left: Math.round((L - m.width) / 2), top: topo }])
     .jpeg({ quality: 92 })
     .toBuffer();
 }
 
 // Um quadro pronto (foto + texto), para o modo "fotos" do TikTok e para o teste de qualidade
-async function quadro(foto, titulo, destino, { cor, numero, grande, ia } = {}) {
-  const texto = await camadaTexto(titulo, { cor, numero, grande, ia: ia === undefined ? foto.ia : ia });
-  await sharp(await fundoComFoto(foto.arquivo)).composite([{ input: texto, left: 0, top: 0 }]).jpeg({ quality: 90 }).toFile(destino);
+async function quadro(foto, titulo, destino, { cor, numero, grande, ia, estilo } = {}) {
+  const texto = await camadaTexto(titulo, { cor, numero, grande, estilo, ia: ia === undefined ? foto.ia : ia });
+  await sharp(await fundoComFoto(foto.arquivo, estilo)).composite([{ input: texto, left: 0, top: 0 }]).jpeg({ quality: 90 }).toFile(destino);
   return destino;
 }
 
@@ -250,24 +298,26 @@ function planoSacolinha(v, foto, { duracaoDe = duracaoClipe } = {}) {
 }
 
 // Prepara os arquivos de cada cena: fundo com foto (foto) ou o próprio clipe, e a camada de texto
-async function prepararCenas(plano, tmp, cor) {
+async function prepararCenas(plano, tmp, cor, estilo) {
+  const e = ESTILOS[estilo];
   const bases = {};
   const prontas = [];
   for (let i = 0; i < plano.cenas.length; i++) {
     const c = plano.cenas[i];
     const png = path.join(tmp, `t${i}.png`);
-    fs.writeFileSync(png, await camadaTexto(c.texto, { cor, numero: c.numero, ia: c.ia, grande: c.grande }));
+    fs.writeFileSync(png, await camadaTexto(c.texto, { cor, numero: c.numero, ia: c.ia, grande: c.grande, estilo }));
     let base = null;
     if (!c.clipe) {
       if (!bases[c.foto.arquivo]) {
         bases[c.foto.arquivo] = path.join(tmp, `b${i}.jpg`);
-        fs.writeFileSync(bases[c.foto.arquivo], await fundoComFoto(c.foto.arquivo));
+        fs.writeFileSync(bases[c.foto.arquivo], await fundoComFoto(c.foto.arquivo, estilo));
       }
       base = bases[c.foto.arquivo];
     }
     // 1ª cena aproxima (começa em zoom 1) e a última afasta (termina em zoom 1): o fim emenda no começo
     const zoom = i === 0 ? 'entra' : c.final ? 'sai' : i % 2 ? 'sai' : 'entra';
-    prontas.push({ base, clipe: c.clipe, inicio: c.inicio || 0, png, zoom });
+    // Clipe no estilo refinado: fica abaixo do texto, com o fundo creme em volta
+    prontas.push({ base, clipe: c.clipe, inicio: c.inicio || 0, png, zoom, topo: e ? FOTO_TOPO + 20 : 0, fundo: e ? e.fundo : FUNDO });
   }
   return prontas;
 }
@@ -286,7 +336,7 @@ function montarVideo(cenas, destino, { seg = SEG, variacao = 0, musica = null } 
   const filtros = cenas.map((c, i) => {
     const z = c.zoom === 'sai' ? `1.06-0.06*on/${d}` : `1+0.06*on/${d}`;
     const fundo = c.clipe
-      ? `[${2 * i}:v]scale=${L}:${A}:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=${L}:${A}:(ow-iw)/2:(oh-ih)/2:color=0x${FUNDO.slice(1)},setsar=1,fps=${fps},tpad=stop_mode=clone:stop_duration=${seg},trim=duration=${seg},setpts=PTS-STARTPTS[b${i}]`
+      ? `[${2 * i}:v]scale=${L}:${A - (c.topo || 0)}:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=${L}:${A}:(ow-iw)/2:${c.topo || '(oh-ih)/2'}:color=0x${(c.fundo || FUNDO).slice(1)},setsar=1,fps=${fps},tpad=stop_mode=clone:stop_duration=${seg},trim=duration=${seg},setpts=PTS-STARTPTS[b${i}]`
       : `[${2 * i}:v]scale=${L * 2}:${A * 2},zoompan=z='${z}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${d}:s=${L}x${A}:fps=${fps},setsar=1[b${i}]`;
     return `${fundo};[${2 * i + 1}:v]format=rgba,fps=${fps}[t${i}];[b${i}][t${i}]overlay=0:0:shortest=1,format=yuv420p,trim=duration=${seg},setpts=PTS-STARTPTS,settb=1/${fps}[v${i}]`;
   });
@@ -381,6 +431,8 @@ function legendaSacolinha(gancho, busca, produto, hashtags) {
 async function gerar(conta, { dias = 4, porDia = 3, sacolinhaPorDia = 1, inicio, saida, montar = montarVideo, duracaoDe = duracaoClipe, log = console.log } = {}) {
   const config = maquina.lerConfig(path.join(RAIZ, 'contas', conta));
   const cor = config.corArte || '#b0294a';
+  // Estilo do texto nos vídeos: "elegante" (escolha da dona em 21/10), "moderno" ou "antigo" (caixa colorida)
+  const estilo = config.estiloVideo || 'elegante';
   const hashtags = (config.hashtagsTikTok || []).filter((h) => !/shopee/i.test(h));
   const fotos = juntarFotos(conta);
   // Música de Natal original (feita com IA, sem direito autoral de terceiros) em contas/<conta>/musicas
@@ -410,12 +462,12 @@ async function gerar(conta, { dias = 4, porDia = 3, sacolinhaPorDia = 1, inicio,
     const tmp = fs.mkdtempSync(path.join(pasta, '.tmp-'));
     try {
       const nome = `${hora}-video-${plano.tipo}`;
-      montar(await prepararCenas(plano, tmp, cor), path.join(pasta, nome + '.mp4'), { seg: plano.seg, variacao: v, musica: musicas.length ? musicas[v % musicas.length] : null });
+      montar(await prepararCenas(plano, tmp, cor, estilo), path.join(pasta, nome + '.mp4'), { seg: plano.seg, variacao: v, musica: musicas.length ? musicas[v % musicas.length] : null });
       const ia = plano.cenas.some((c) => c.ia);
       if (plano.tipo === 'aquecimento') {
         // As fotos verticais também ficam, para postar no modo "fotos" do TikTok se ela preferir (aquecimento, sem sacolinha)
         let k = 0;
-        for (const c of plano.cenas.slice(1, -1)) if (!c.clipe) await quadro(c.foto, c.texto, path.join(pasta, `${hora}-foto${++k}.jpg`), { cor, numero: c.numero, ia: c.ia });
+        for (const c of plano.cenas.slice(1, -1)) if (!c.clipe) await quadro(c.foto, c.texto, path.join(pasta, `${hora}-foto${++k}.jpg`), { cor, numero: c.numero, ia: c.ia, estilo });
       }
       const legenda = plano.tipo === 'sacolinha' ? legendaSacolinha(plano.gancho.texto, plano.gancho.busca, plano.produto.texto, hashtags) : legendaTikTok(plano.gancho.texto, v, hashtags, plano.gancho.busca);
       fs.writeFileSync(path.join(pasta, `${hora}-legenda.txt`), legenda + (ia ? '\n\n(Ao postar: ligar "Conteúdo gerado por IA")' : '') + '\n');
