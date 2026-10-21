@@ -148,32 +148,23 @@ const SERIF = "Georgia, 'DejaVu Serif', 'Liberation Serif', serif";
 const FINA = "'Segoe UI Light', 'Segoe UI', 'DejaVu Sans', Arial, sans-serif";
 function camadaRefinada(titulo, { estilo, numero = 0, ia = false, grande = false }) {
   const e = ESTILOS[estilo];
-  // Texto longo: letra um pouco menor para caber em 2 linhas (3 linhas encostavam no rótulo de IA e na foto)
-  let fonte = grande ? 62 : 48;
-  let linhas = titulo ? quebrar(semEmoji(titulo), grande ? 21 : 27, 3) : [];
-  if (linhas.length > 2) {
-    fonte = grande ? 50 : 40;
-    linhas = quebrar(semEmoji(titulo), grande ? 26 : 33, 3);
-  }
+  // Todas as letras iguais (pedido da dona em 21/10): mesma fonte, tamanho e cor no gancho, nas cenas e no número.
+  // O número entra no próprio texto ("2. ..."); até 3 linhas cabem acima do rótulo de IA e da foto.
+  const fonte = 48;
   const altLinha = Math.round(fonte * 1.18);
+  const texto = titulo ? (numero ? `${numero}. ` : '') + semEmoji(titulo) : '';
+  const linhas = texto ? quebrar(texto, 27, 3) : [];
   const x = e.alinhar === 'middle' ? (ZONA.esquerda + L - ZONA.direita) / 2 + 45 : ZONA.esquerda + 30;
-  const etiqueta = e.serif ? (numero ? `0${numero}` : '') : numero ? `IDEIA ${numero}` : grande ? 'NATAL 2026' : '';
+  const familia = e.serif ? SERIF : FINA;
   let y = ZONA.topo + 40;
   const partes = [];
-  if (etiqueta) {
-    partes.push(
-      e.serif
-        ? `<text x="${x}" y="${y + 34}" text-anchor="middle" font-family="${SERIF}" font-style="italic" font-size="40" fill="${e.dourado}">${etiqueta}</text>`
-        : `<text x="${x}" y="${y + 26}" font-family="${FONTE}" font-size="26" font-weight="600" letter-spacing="6" fill="${e.dourado}">${etiqueta}</text>`
-    );
-    y += e.serif ? 50 : 44;
-  }
   linhas.forEach((l, i) =>
-    partes.push(`<text x="${x}" y="${y + fonte + i * altLinha}" text-anchor="${e.alinhar}" font-family="${e.serif ? SERIF : FINA}" font-weight="${e.serif ? 400 : 300}" font-size="${fonte}" fill="${e.tinta}">${xml(l)}</text>`)
+    partes.push(`<text x="${x}" y="${y + fonte + i * altLinha}" text-anchor="${e.alinhar}" font-family="${familia}" font-weight="400" font-size="${fonte}" fill="${e.tinta}">${xml(l)}</text>`)
   );
   y += linhas.length ? fonte + (linhas.length - 1) * altLinha + 30 : 0;
   if (e.serif && linhas.length) partes.push(`<line x1="${x - 70}" x2="${x + 70}" y1="${y}" y2="${y}" stroke="${e.dourado}" stroke-width="3"/>`);
-  if (ia) partes.push(`<text x="${x}" y="${FOTO_TOPO - 14}" text-anchor="${e.alinhar}" font-family="${FONTE}" font-size="24" letter-spacing="2" fill="#8a7f76">conteúdo gerado por IA</text>`);
+  // Rótulo de IA: mesma fonte e cor, só menor (é aviso obrigatório, não título)
+  if (ia) partes.push(`<text x="${x}" y="${FOTO_TOPO - 14}" text-anchor="${e.alinhar}" font-family="${familia}" font-size="26" fill="${e.tinta}">conteúdo gerado por IA</text>`);
   return `<svg width="${L}" height="${A}" xmlns="http://www.w3.org/2000/svg">${partes.join('')}</svg>`;
 }
 
