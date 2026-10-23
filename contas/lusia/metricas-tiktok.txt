@@ -4,3 +4,4 @@
 # Exemplo:
 # 2026-10-20 | Sua árvore fica com cara de vazia? | 1.250 | 22% | 48 | 6 | 15 | 4 | 1
 # Depois rode:  node app/placar.js
+2026-10-17 | Personagem IA + cortina LED (Minha sala já entrou no clima) | 3.495 | 14,3% | 14 | 0 | 1 | 0 | 0
