@@ -13,6 +13,7 @@ const maquina = require('./maquina');
 const RAIZ = path.join(__dirname, '..');
 const L = 1080;
 const A = 1350;
+const FUNDO = '#f6f1e9';
 const FONTE = "'Segoe UI', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif";
 const xml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 // Emoji não aparece em todo computador: some da arte (continua na legenda)
@@ -43,21 +44,35 @@ function quebrar(texto, porLinha = 26, maxLinhas = 3) {
 async function fazerArte(imagem, titulo, destino, { marca = '', cor = '#b0294a' } = {}) {
   const linhas = quebrar(semEmoji(titulo));
   const alturaFaixa = 70 + linhas.length * 66;
+  // NADA CORTADO (pedido de 23/10): só preenche a tela cortando se a foto já for quase 4:5;
+  // senão a foto entra inteira, centralizada acima do título, sobre fundo creme liso (título escuro)
+  const { width = L, height = A } = await sharp(imagem).metadata();
+  const inteira = Math.abs(width / height - L / A) > 0.03;
   const textos = linhas
-    .map((l, i) => `<text x="60" y="${A - alturaFaixa + 82 + i * 66}" font-family="${FONTE}" font-size="56" font-weight="800" fill="#fff">${xml(l)}</text>`)
+    .map((l, i) => `<text x="60" y="${A - alturaFaixa + 82 + i * 66}" font-family="${FONTE}" font-size="56" font-weight="800" fill="${inteira ? '#3a2e26' : '#fff'}">${xml(l)}</text>`)
     .join('');
   const svg = Buffer.from(`<svg width="${L}" height="${A}" xmlns="http://www.w3.org/2000/svg">
   <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
     <stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.55"/>
   </linearGradient></defs>
-  <rect x="0" y="${A - alturaFaixa - 160}" width="${L}" height="${alturaFaixa + 160}" fill="url(#g)"/>
+  ${inteira ? '' : `<rect x="0" y="${A - alturaFaixa - 160}" width="${L}" height="${alturaFaixa + 160}" fill="url(#g)"/>`}
   <rect x="60" y="${A - alturaFaixa - 10}" width="12" height="${linhas.length * 66}" fill="${cor}"/>
   ${textos.replace(/x="60"/g, 'x="92"')}
   ${marca ? `<rect x="${L - 60 - (marca.length * 19 + 48)}" y="44" rx="28" width="${marca.length * 19 + 48}" height="56" fill="${cor}"/>
   <text x="${L - 60 - (marca.length * 19 + 48) / 2}" y="82" text-anchor="middle" font-family="${FONTE}" font-size="32" font-weight="700" fill="#fff">${xml(marca)}</text>` : ''}
 </svg>`);
-  await sharp(imagem)
-    .resize(L, A, { fit: 'cover', position: 'attention' })
+  let base;
+  if (inteira) {
+    const area = A - alturaFaixa - 40;
+    const foto = await sharp(imagem).resize(L, area, { fit: 'inside' }).toBuffer({ resolveWithObject: true });
+    base = sharp({ create: { width: L, height: A, channels: 3, background: FUNDO } }).composite([
+      { input: foto.data, left: Math.round((L - foto.info.width) / 2), top: Math.round((area - foto.info.height) / 2) },
+    ]);
+    base = sharp(await base.png().toBuffer());
+  } else {
+    base = sharp(imagem).resize(L, A, { fit: 'cover', position: 'centre' });
+  }
+  await base
     .composite([{ input: svg, left: 0, top: 0 }])
     .flatten({ background: '#ffffff' })
     .jpeg({ quality: 88 })
