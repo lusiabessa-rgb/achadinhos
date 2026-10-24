@@ -130,6 +130,36 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     fs.rmSync(pasta, { recursive: true, force: true });
   });
 
+  await teste('Instagram: NADA CORTADO, foto de produto entra inteira no post (presépio, flor e almofadas saíram cortados em 19 a 22/10)', async () => {
+    const conteudo = require('./conteudo');
+    const sharp = require('sharp');
+    const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'corte-'));
+    // foto deitada, quadrada e em pé, com moldura vermelha: a moldura tem que aparecer inteira na arte
+    for (const [w, h] of [[1000, 600], [800, 800], [600, 1000]]) {
+      const foto = path.join(pasta, `f-${w}x${h}.png`);
+      const moldura = Buffer.from(`<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg"><rect width="${w}" height="${h}" fill="#fff"/><rect x="0" y="0" width="${w}" height="${h}" fill="none" stroke="#d00000" stroke-width="40"/></svg>`);
+      await sharp(moldura).png().toFile(foto);
+      const saida = path.join(pasta, `a-${w}x${h}.jpg`);
+      await conteudo.fazerArte(foto, 'Troque só as capas e a sala vira Natal', saida, { marca: '@achadinhoabessa' });
+      const { data, info } = await sharp(saida).raw().toBuffer({ resolveWithObject: true });
+      let x0 = info.width, x1 = -1, y0 = info.height, y1 = -1;
+      for (let y = 0; y < info.height; y++) for (let x = 0; x < info.width; x++) {
+        const i = (y * info.width + x) * info.channels;
+        if (data[i] > 180 && data[i + 1] < 60 && data[i + 2] < 60) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+      }
+      assert(x1 > 0, `${w}x${h}: a foto sumiu da arte`);
+      const proporcao = (x1 - x0 + 1) / (y1 - y0 + 1);
+      assert(Math.abs(proporcao - w / h) < 0.03, `${w}x${h}: foto CORTADA (proporção ${proporcao.toFixed(2)} em vez de ${(w / h).toFixed(2)})`);
+      assert(x0 >= 0 && x1 <= info.width - 1 && y0 >= 0, `${w}x${h}: foto encostando fora da tela`);
+    }
+    // as artes que estão na fila agora: todas 1080x1350, para o Instagram não cortar de novo
+    for (const f of fs.readdirSync(path.join(__dirname, '..', 'publico', 'lusia', 'conteudo')).filter((n) => /\.(jpg|png)$/.test(n))) {
+      const m = await sharp(path.join(__dirname, '..', 'publico', 'lusia', 'conteudo', f)).metadata();
+      assert(m.width === 1080 && m.height === 1350, `${f} não está em 1080x1350 (o Instagram corta)`);
+    }
+    fs.rmSync(pasta, { recursive: true, force: true });
+  });
+
   await teste('vídeo de aquecimento abre com a foto que combina com o gancho', async () => {
     const aq = require('./aquecimento-tiktok');
     const f = (n, t) => ({ arquivo: '/x/' + n, texto: t || '' });
