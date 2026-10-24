@@ -85,7 +85,7 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
     .filter((c) => c && c.slug && c.arte && c.legenda && !feitos[`conteudo:${c.slug}`])
     // "conteudoPorRodada": no máximo N por rodada (12h, 18h, 20h), para espalhar os posts ao longo do dia
     .slice(0, Math.max(0, Math.min(porDia - jaHoje, ig.conteudoPorRodada === undefined ? Infinity : Number(ig.conteudoPorRodada) || 0)))
-    .forEach((c) => tarefas.push({ chave: `conteudo:${c.slug}`, tipo: 'post', urls: [urlArte(c)], legenda: c.legenda }));
+    .forEach((c) => tarefas.push({ chave: `conteudo:${c.slug}`, tipo: 'post', urls: [urlArte(c)], legenda: c.legenda, local: path.join(pastaPublica, c.arte) }));
   if (ig.stories) {
     dados.ofertas
       .slice(0, 3)
@@ -119,6 +119,11 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
       break;
     }
     try {
+      // NADA CORTADO (pedido de 24/10): arte fora de 1080x1350 o Instagram corta, então não posta
+      if (t.local) {
+        const m = await require('sharp')(t.local).metadata();
+        if (m.width !== 1080 || m.height !== 1350) throw new Error(`arte ${path.basename(t.local)} em ${m.width}x${m.height}, o Instagram cortaria (precisa 1080x1350)`);
+      }
       for (const u of t.urls) {
         if (!(await arteNoAr(u, fetchFn, intervaloNoAr ? 3 : 10, intervaloNoAr))) throw new Error(`a arte não está no ar: ${u}`);
       }
