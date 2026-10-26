@@ -114,8 +114,9 @@ async function enfileirar(conta, pastaOrigem, { raiz = RAIZ, log = console.log }
 }
 
 // Próximo carrossel a sair: SEMPRE o primeiro da fila ainda não publicado (a ordem nunca pula),
-// no máximo "porDia" por dia, só a partir de "aPartirDas" (hora de Brasília).
-function proximo(fila, feitos, { hojeBR, horaBR, aPartirDas = 19, porDia = 1, ignorarHora = false } = {}) {
+// no máximo "porDia" por dia, só a partir de "aPartirDas" (hora de Brasília) e, se houver, só a partir do dia "comecaEm" (AAAA-MM-DD).
+function proximo(fila, feitos, { hojeBR, horaBR, aPartirDas = 19, porDia = 1, ignorarHora = false, comecaEm } = {}) {
+  if (!ignorarHora && comecaEm && hojeBR < comecaEm) return null;
   if (!ignorarHora && horaBR < aPartirDas) return null;
   const diaDe = (iso) => new Date(iso).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
   const jaHoje = Object.entries(feitos || {}).filter(([k, v]) => k.startsWith('carrossel:') && v && v.quando && diaDe(v.quando) === hojeBR).length;

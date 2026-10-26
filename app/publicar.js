@@ -122,7 +122,7 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
     .forEach((c) => tarefas.push({ chave: `conteudo:${c.slug}`, tipo: 'post', urls: [urlArte(c)], legenda: c.legenda, local: path.join(pastaPublica, c.arte) }));
   // Carrossel educativo: o 1º da fila ainda não publicado, 1 por dia, a partir das 19h (simulação ignora a hora)
   const prox = educativa
-    ? carrosseis.proximo(filaCarrosseis, feitos, { hojeBR, horaBR, aPartirDas: ig.carrosselAPartirDas === undefined ? 19 : Number(ig.carrosselAPartirDas), porDia: ig.carrosselPorDia === undefined ? 1 : Number(ig.carrosselPorDia) || 0, ignorarHora: simular })
+    ? carrosseis.proximo(filaCarrosseis, feitos, { hojeBR, horaBR, aPartirDas: ig.carrosselAPartirDas === undefined ? 19 : Number(ig.carrosselAPartirDas), porDia: ig.carrosselPorDia === undefined ? 1 : Number(ig.carrosselPorDia) || 0, comecaEm: ig.carrosselComecaEm, ignorarHora: simular })
     : null;
   if (prox) {
     tarefas.push({ chave: `carrossel:${prox.slug}`, tipo: 'carrossel', urls: prox.imagens.map((i) => `${base}/${encodeURI(conta)}/${i}`), legenda: prox.legenda, item: prox });

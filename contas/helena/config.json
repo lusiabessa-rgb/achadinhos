@@ -6,10 +6,11 @@
     "urlBase": "https://lusiabessa-rgb.github.io/achadinhos"
   },
   "instagram": {
-    "ativo": false,
+    "ativo": true,
     "idDaConta": "17841420312757652",
     "carrosselPorDia": 1,
     "carrosselAPartirDas": 19,
-    "tokenVenceEm": "2026-12-20"
+    "tokenVenceEm": "2026-12-20",
+    "carrosselComecaEm": "2026-10-27"
   }
 }

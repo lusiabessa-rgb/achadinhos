@@ -1151,7 +1151,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     try {
       maquina.lerConfig = (p) => {
         const c = lerCfg(p);
-        return { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0 } };
+        return { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined } };
       };
       const reg = [];
       const op = (id) => ({ arqPublicados: path.join(pastaTmp, 'p.json'), ignorarDesligado: true, segredos: { igToken: 't', igUserId: id }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} });
@@ -1226,6 +1226,8 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     // Regras de horário e ordem (função pura)
     const fila = [{ slug: 'a' }, { slug: 'b' }];
     assert.strictEqual(car.proximo(fila, {}, { hojeBR: '2026-10-27', horaBR: 18 }), null, 'antes das 19h não sai');
+    assert.strictEqual(car.proximo(fila, {}, { hojeBR: '2026-10-26', horaBR: 21, comecaEm: '2026-10-27' }), null, 'antes do dia de começar não sai');
+    assert.strictEqual(car.proximo(fila, {}, { hojeBR: '2026-10-27', horaBR: 19, comecaEm: '2026-10-27' }).slug, 'a', 'no dia de começar sai');
     assert.strictEqual(car.proximo(fila, {}, { hojeBR: '2026-10-27', horaBR: 19 }).slug, 'a');
     assert.strictEqual(car.proximo(fila, { 'carrossel:a': { quando: '2026-10-27T22:00:00Z' } }, { hojeBR: '2026-10-27', horaBR: 21 }), null, '2 no mesmo dia');
     assert.strictEqual(car.proximo(fila, { 'carrossel:a': { quando: '2026-10-26T22:00:00Z' } }, { hojeBR: '2026-10-27', horaBR: 19 }).slug, 'b');
@@ -1238,7 +1240,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     try {
       maquina.lerConfig = (p) => {
         const c = lerCfg(p);
-        return c.tipo === 'educativo' ? { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0 } } : c;
+        return c.tipo === 'educativo' ? { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined } } : c;
       };
       const sim = await publicar('helena', { simular: true, arqPublicados, log: () => {} });
       assert.strictEqual(sim.tarefas.length, 1);
