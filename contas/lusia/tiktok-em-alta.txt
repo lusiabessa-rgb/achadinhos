@@ -14,3 +14,28 @@
 2026-10-19 | 1734384887235512194 | Kit 100 clips organizador de fios autoadesivo | 9,99 | 12 | 1800 | 100 | 186 | 4,6 | casa
 2026-10-19 | 1736571737883509843 | Cesto de roupa dobrável pop-up | 16,49 | | 1800 | 68 | 225 | 4,8 | casa
 2026-10-19 | 1737340520841118743 | Porta-ovos rolante 4 andares 30 ovos | 11,76 | | 2500 | 37,66 | 432 | | casa
+2026-10-26 | 1731916337736221947 | Pisca-pisca 100 LED 9 m 8 funções fio transparente | 15,92 | 10 | 5300 | 66,61 | 5700 | 4,7 | natal
+2026-10-26 | 1737951486951589764 | Pisca-pisca LED com controle 100 LEDs coloridos | 9,99 | | 5100 | 12,61 | 623 | | natal
+2026-10-26 | 1737462444515296670 | Cortina LED 3x3 300 LEDs | 27,16 | | 4900 | 50,88 | 748 | 4,4 | natal
+2026-10-26 | 1733167337318089875 | Cortina LED fio de cobre 300 LEDs 3x3 | 29,90 | 8 | 5000 | 88,21 | 2000 | 4,3 | natal
+2026-10-26 | 1732941120479200686 | Mini projetor natalino 16 imagens 3D USB | 26,99 | | 3900 | 51,49 | 282 | 4,4 | natal
+2026-10-26 | 1737741935537194708 | Tapete de porta boucle natalino 60x40 | 49,90 | | 2600 | 37,69 | 536 | 4,7 | natal
+2026-10-26 | 1737296543831524914 | Mini Jesus sentado 3,5 cm decorativo | 15,75 | | 3200 | 65 | | 5,0 | natal
+2026-10-26 | 1737535487430395120 | Luz decorativa LED USB 8 modos com controle | 25,98 | | 2200 | 50 | 86 | 4,2 | natal
+2026-10-26 | 1738017578397369407 | Presépio decorativo Sagrada Família completo | 30,74 | | 1000 | 52,38 | | | natal
+2026-10-26 | 1737542307888268475 | Kit capas de cadeira de Natal 2/4/6 lugares | 21,09 | | 1400 | 65,28 | 88 | | natal
+2026-10-26 | 1737817997070403525 | Projetor de luz LED natalino 16 desenhos | 19,88 | 9,5 | 1400 | 27,57 | 204 | | natal
+2026-10-26 | 1737643660434572743 | Árvore de Natal 2,10 m 1300 galhos | 149,00 | | 1400 | 18,99 | | | natal
+2026-10-26 | 1736474319813444968 | Organizador dobrável roupas e edredom 60x35x40 visor | 13,86 | 12 | | | | 4,4 | casa
+2026-10-26 | 1736943155768821051 | Saco organizador de roupas e edredom anti mofo | 13,90 | | 2100 | 52,69 | | 4,8 | casa
+2026-10-26 | 1737681903007991039 | Organizador de maquiagem com espelho e gavetas | 44,90 | 10 | 2100 | 46,11 | | 4,6 | casa
+2026-10-26 | 1736415958357083702 | Prateleira de canto sem furo metal preto | 9,99 | 9,5 | 1500 | 77,14 | 176 | 4,8 | casa
+2026-10-26 | 1736030542580909455 | Fita de vedação PVC 5 m cozinha e banheiro | 6,98 | 8,5 | 11500 | 51,84 | 1300 | 4,4 | casa
+2026-10-26 | 1735703793329538821 | Escova de limpeza elétrica 9 em 1 | 68,90 | 8 | 4900 | 50,58 | 3800 | 4,5 | casa
+2026-10-26 | 1736912751570748813 | Escova lava-louça 2 em 1 com dispenser | 10,99 | 10 | 2700 | 73,27 | | 4,5 | casa
+2026-10-26 | 1736257525870658847 | Tapete passadeira veludo cristal 50x150 | 39,99 | 8 | | | | 4,7 | casa
+2026-10-26 | 1731321130153379569 | Luminária LED com sensor de presença sem fio | 14,56 | 8 | 4900 | 100 | 214 | 4,1 | casa
+2026-10-26 | 1736900977840064127 | Kit tampas elásticas para alimentos | 10,00 | 9,5 | 3700 | 89,87 | 292 | | casa
+2026-10-26 | 1737309673072002894 | Saco de lixo perfumado lavanda pia e banheiro | 10,80 | 6 | 11900 | 67,56 | 1700 | 4,2 | casa
+2026-10-26 | 1737357033650226325 | Porta papel higiênico adesivo sem furar | 19,79 | | 4100 | 83,83 | 894 | | casa
+2026-10-26 | 1734697333597111383 | Saboneteira de silicone com drenagem | 12,99 | | 1400 | 100 | 119 | 4,8 | casa
