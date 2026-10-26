@@ -1,11 +1,12 @@
 // PUBLICADOR DO INSTAGRAM
 // Uso:  node app/publicar.js <conta> [--simular]
 // Lê as ofertas que a máquina preparou hoje (publico/<conta>/<dia>/dados.json) e publica.
-// --simular: mostra o que publicaria, sem publicar nada.
+// --simular: mostra o que publicaria, sem publicar nada. --conferir-token (com --simular): testa a chave só lendo (GET /me).
 const fs = require('fs');
 const path = require('path');
 const instagram = require('./instagram');
 const maquina = require('./maquina');
+const carrosseis = require('./carrosseis');
 
 const RAIZ = path.join(__dirname, '..');
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -23,10 +24,41 @@ async function arteNoAr(url, fetchFn, tentativas = 10, intervalo = 30000) {
   return false;
 }
 
-async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr, intervaloStatus, log = console.log, dia: diaForcado, ignorarDesligado = false, segredos, arqPublicados: arqForcado } = {}) {
+// TRAVA DE CONTA (pedido da dona: nada de bagunça entre os projetos)
+// - conta com "idDaConta" no config só publica nesse ID do Instagram;
+// - conta educativa sem "idDaConta" não publica;
+// - nenhuma conta publica no ID que outra conta declarou como dela.
+function conferirConta(conta, config, userId, raiz = RAIZ) {
+  const ig = (config && config.instagram) || {};
+  const id = String(userId || '');
+  if (config && config.tipo === 'educativo' && !ig.idDaConta) {
+    throw new instagram.ErroFatal(`A conta "${conta}" é educativa e precisa de "idDaConta" no config.json. Nada publicado.`);
+  }
+  if (ig.idDaConta && String(ig.idDaConta) !== id) {
+    throw new instagram.ErroFatal(`A chave do Instagram não é da conta "${conta}" (ID diferente do "idDaConta"). Nada publicado.`);
+  }
+  const pastaContas = path.join(raiz, 'contas');
+  for (const outra of fs.existsSync(pastaContas) ? fs.readdirSync(pastaContas) : []) {
+    if (outra === conta) continue;
+    let c;
+    try {
+      c = JSON.parse(fs.readFileSync(path.join(pastaContas, outra, 'config.json'), 'utf8'));
+    } catch {
+      continue;
+    }
+    const idOutra = c && c.instagram && c.instagram.idDaConta;
+    if (idOutra && String(idOutra) === id) {
+      throw new instagram.ErroFatal(`A chave usada pela conta "${conta}" é da conta "${outra}". Nada publicado.`);
+    }
+  }
+}
+
+async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr, intervaloStatus, log = console.log, dia: diaForcado, ignorarDesligado = false, segredos, arqPublicados: arqForcado, conferirToken = false } = {}) {
   const pastaConta = path.join(RAIZ, 'contas', conta);
   const config = maquina.lerConfig(pastaConta);
   const ig = config.instagram || {};
+  // Conta educativa (helena): só a fila de carrosséis dela; nunca ofertas, stories ou posts de venda
+  const educativa = config.tipo === 'educativo';
   if (!ig.ativo && !simular && !ignorarDesligado) {
     log('Instagram desligado no config.json ("ativo": false). Nada publicado.');
     return { publicados: 0 };
@@ -35,14 +67,16 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
   const pastaPublica = path.join(RAIZ, 'publico', conta);
   const arqHoje = path.join(pastaPublica, 'hoje.txt');
   // Ofertas do dia (podem não existir: sem chaves/lista da Shopee ainda) + posts de conteúdo da fila
-  const dia = diaForcado || (fs.existsSync(arqHoje) ? fs.readFileSync(arqHoje, 'utf8').trim() : '');
+  const dia = educativa ? '' : diaForcado || (fs.existsSync(arqHoje) ? fs.readFileSync(arqHoje, 'utf8').trim() : '');
   const arqDados = dia ? path.join(pastaPublica, dia, 'dados.json') : '';
   const dados = arqDados && fs.existsSync(arqDados) ? JSON.parse(fs.readFileSync(arqDados, 'utf8')) : { ofertas: [] };
   let filaConteudo = [];
   try {
     filaConteudo = JSON.parse(fs.readFileSync(path.join(pastaPublica, 'conteudo', 'fila.json'), 'utf8')) || [];
   } catch {}
-  if (!dados.ofertas.length && !filaConteudo.length) {
+  if (educativa) filaConteudo = [];
+  const filaCarrosseis = educativa ? carrosseis.lerFila(conta) : [];
+  if (!dados.ofertas.length && !filaConteudo.length && !filaCarrosseis.length) {
     log('Nenhuma oferta nem post de conteúdo para publicar.');
     return { publicados: 0 };
   }
@@ -86,7 +120,14 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
     // "conteudoPorRodada": no máximo N por rodada (12h, 18h, 20h), para espalhar os posts ao longo do dia
     .slice(0, Math.max(0, Math.min(porDia - jaHoje, ig.conteudoPorRodada === undefined ? Infinity : Number(ig.conteudoPorRodada) || 0)))
     .forEach((c) => tarefas.push({ chave: `conteudo:${c.slug}`, tipo: 'post', urls: [urlArte(c)], legenda: c.legenda, local: path.join(pastaPublica, c.arte) }));
-  if (ig.stories) {
+  // Carrossel educativo: o 1º da fila ainda não publicado, 1 por dia, a partir das 19h (simulação ignora a hora)
+  const prox = educativa
+    ? carrosseis.proximo(filaCarrosseis, feitos, { hojeBR, horaBR, aPartirDas: ig.carrosselAPartirDas === undefined ? 19 : Number(ig.carrosselAPartirDas), porDia: ig.carrosselPorDia === undefined ? 1 : Number(ig.carrosselPorDia) || 0, ignorarHora: simular })
+    : null;
+  if (prox) {
+    tarefas.push({ chave: `carrossel:${prox.slug}`, tipo: 'carrossel', urls: prox.imagens.map((i) => `${base}/${encodeURI(conta)}/${i}`), legenda: prox.legenda, item: prox });
+  }
+  if (ig.stories && !educativa) {
     dados.ofertas
       .slice(0, 3)
       .filter((o) => !feitos[`${dia}:story:${o.itemId}`])
@@ -101,11 +142,33 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
   if (simular) {
     log(`SIMULAÇÃO: publicaria ${tarefas.length} item(ns):`);
     for (const t of tarefas) log(`  - ${t.tipo} com ${t.urls.length} imagem(ns)${t.legenda ? `\n${t.legenda.replace(/^/gm, '      ')}` : ''}`);
+    if (educativa) {
+      log(`Fila de carrosséis (${filaCarrosseis.length}), na ordem, 1 por dia a partir das ${ig.carrosselAPartirDas === undefined ? 19 : ig.carrosselAPartirDas}h:`);
+      for (const [i, c] of filaCarrosseis.entries()) {
+        const prob = await carrosseis.conferirItem(conta, c);
+        log(`  ${i + 1}) ${c.slug}: ${c.imagens.length} slides${feitos[`carrossel:${c.slug}`] ? ' (já publicado)' : ''} - ${prob.length ? 'PROBLEMA: ' + prob.join('; ') : 'conferido (1080x1350, sem palavras de venda)'}`);
+        for (const u of c.imagens) log(`       ${base}/${encodeURI(conta)}/${u}`);
+      }
+    }
+    // --conferir-token: só LEITURA (GET /me), confere se a chave é desta conta. Nunca publica.
+    if (conferirToken) {
+      const seg = segredos || maquina.lerSegredos(pastaConta);
+      if (!seg.igToken || !seg.igUserId) log('Sem token/ID desta conta (CHAVES.txt ou Secrets com o nome da conta).');
+      else {
+        conferirConta(conta, config, seg.igUserId);
+        log(`Iria para o Instagram ID ${seg.igUserId} (confere com o "idDaConta" do config: ${ig.idDaConta ? 'sim' : 'sem idDaConta'}).`);
+        const r = await fetchFn(`https://graph.instagram.com/v25.0/me?fields=user_id,username&access_token=${encodeURIComponent(seg.igToken)}`, { signal: AbortSignal.timeout(30000) });
+        const j = await r.json().catch(() => null);
+        if (!r.ok || !j || j.error) log(`Token: NÃO funcionou (${(j && j.error && j.error.message) || 'HTTP ' + r.status}).`);
+        else log(`Token: funcionando, conta @${j.username}, ID ${j.user_id}${String(j.user_id) === String(seg.igUserId) ? ' (igual ao ID)' : ' (DIFERENTE do ID!)'}.`);
+      }
+    }
     return { publicados: 0, tarefas };
   }
 
   const { igToken: token, igUserId: userId } = segredos || maquina.lerSegredos(pastaConta);
   if (!token || !userId) throw new Error('Falta o INSTAGRAM_TOKEN e o INSTAGRAM_USER_ID no CHAVES.txt (ou nos Secrets do GitHub).');
+  conferirConta(conta, config, userId);
   const cred = { token, userId };
 
   const limite = await instagram.limiteDeHoje(cred, fetchFn);
@@ -123,6 +186,11 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
       if (t.local) {
         const m = await require('sharp')(t.local).metadata();
         if (m.width !== 1080 || m.height !== 1350) throw new Error(`arte ${path.basename(t.local)} em ${m.width}x${m.height}, o Instagram cortaria (precisa 1080x1350)`);
+      }
+      // Carrossel educativo: confere de novo imagens (1080x1350 JPEG) e legenda (sem palavras de venda)
+      if (t.item) {
+        const prob = await carrosseis.conferirItem(conta, t.item);
+        if (prob.length) throw new Error(`carrossel ${t.item.slug} barrado: ${prob.join('; ')}`);
       }
       for (const u of t.urls) {
         if (!(await arteNoAr(u, fetchFn, intervaloNoAr ? 3 : 10, intervaloNoAr))) throw new Error(`a arte não está no ar: ${u}`);
@@ -146,10 +214,10 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
 
 if (require.main === module) {
   const conta = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'lusia';
-  publicar(conta, { simular: process.argv.includes('--simular') }).catch((e) => {
+  publicar(conta, { simular: process.argv.includes('--simular'), conferirToken: process.argv.includes('--conferir-token') }).catch((e) => {
     console.error('ERRO: ' + e.message);
     process.exitCode = 1;
   });
 }
 
-module.exports = { publicar };
+module.exports = { publicar, conferirConta };

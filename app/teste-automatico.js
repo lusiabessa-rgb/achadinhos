@@ -1076,6 +1076,201 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     assert.ok(!/sacolinha/i.test(msg) && !/[a-z]+ing\b/.test(msg), 'sem "sacolinha" e sem inglês');
   });
 
+  // ---------- CONTA EDUCATIVA @colorecomhelena: separação à prova de bagunça (26/10) ----------
+  const ID_HELENA = '17841420312757652';
+
+  await teste('helena: config só educativo (sem Shopee, ofertas, TikTok, #publi, campanhas)', async () => {
+    const raiz = path.join(__dirname, '..');
+    const cru = JSON.parse(fs.readFileSync(path.join(raiz, 'contas', 'helena', 'config.json'), 'utf8'));
+    assert.strictEqual(cru.tipo, 'educativo');
+    assert.strictEqual(String(cru.instagram.idDaConta), ID_HELENA);
+    for (const k of ['palavrasChave', 'filtros', 'hashtags', 'hashtagsTikTok', 'hashtagsInstagram', 'tiktok', 'campanhas', 'produtosPorDia']) {
+      assert(!(k in cru), `config da helena não pode ter "${k}"`);
+    }
+    // (o endereço do site é o mesmo GitHub Pages da máquina, por isso fica de fora da busca)
+    assert(!/shopee|#publi|achadinho|tiktok|carrinho|oferta/i.test(JSON.stringify({ ...cru, site: { ...cru.site, urlBase: '' } })), 'config da helena tem coisa de venda');
+    const cfg = maquina.lerConfig(path.join(raiz, 'contas', 'helena'));
+    assert(!('palavrasChave' in cfg) && !('hashtagsInstagram' in cfg), 'a conta educativa herdou coisas de venda do PADRAO');
+    assert.notStrictEqual(String((maquina.lerConfig(path.join(raiz, 'contas', 'lusia')).instagram || {}).idDaConta || ''), ID_HELENA, 'a lusia não pode ter o ID da helena');
+  });
+
+  await teste('helena x lusia: cada conta só lê a PRÓPRIA chave (nunca a da outra)', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'seg-'));
+    const nomes = ['INSTAGRAM_TOKEN', 'INSTAGRAM_USER_ID', 'INSTAGRAM_TOKEN_HELENA', 'INSTAGRAM_USER_ID_HELENA'];
+    const salva = Object.fromEntries(nomes.map((n) => [n, process.env[n]]));
+    try {
+      fs.mkdirSync(path.join(tmp, 'helena'));
+      fs.mkdirSync(path.join(tmp, 'lusia'));
+      // Na nuvem só com as chaves da lusia: a helena NÃO pega a da lusia
+      process.env.INSTAGRAM_TOKEN = 'token-lusia';
+      process.env.INSTAGRAM_USER_ID = '111';
+      delete process.env.INSTAGRAM_TOKEN_HELENA;
+      delete process.env.INSTAGRAM_USER_ID_HELENA;
+      let h = maquina.lerSegredos(path.join(tmp, 'helena'));
+      assert(!h.igToken && !h.igUserId, 'a helena pegou a chave da lusia');
+      // Com os Secrets da helena: cada uma com a sua
+      process.env.INSTAGRAM_TOKEN_HELENA = 'token-helena';
+      process.env.INSTAGRAM_USER_ID_HELENA = ID_HELENA;
+      h = maquina.lerSegredos(path.join(tmp, 'helena'));
+      const l = maquina.lerSegredos(path.join(tmp, 'lusia'));
+      assert.deepStrictEqual([h.igToken, h.igUserId], ['token-helena', ID_HELENA]);
+      assert.deepStrictEqual([l.igToken, l.igUserId], ['token-lusia', '111']);
+      // Só as chaves da helena: a lusia não pega a da helena
+      delete process.env.INSTAGRAM_TOKEN;
+      delete process.env.INSTAGRAM_USER_ID;
+      const l2 = maquina.lerSegredos(path.join(tmp, 'lusia'));
+      assert(!l2.igToken && !l2.igUserId, 'a lusia pegou a chave da helena');
+      // CHAVES.txt de cada pasta é só daquela conta
+      fs.writeFileSync(path.join(tmp, 'helena', 'CHAVES.txt'), 'INSTAGRAM_TOKEN=arquivo-helena\nINSTAGRAM_USER_ID=' + ID_HELENA + '\n');
+      delete process.env.INSTAGRAM_TOKEN_HELENA;
+      delete process.env.INSTAGRAM_USER_ID_HELENA;
+      assert.strictEqual(maquina.lerSegredos(path.join(tmp, 'helena')).igToken, 'arquivo-helena');
+      assert(!maquina.lerSegredos(path.join(tmp, 'lusia')).igToken, 'a lusia leu o CHAVES.txt da helena');
+    } finally {
+      for (const n of nomes) {
+        if (salva[n] === undefined) delete process.env[n];
+        else process.env[n] = salva[n];
+      }
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  await teste('trava de conta: helena só publica no ID dela; lusia nunca publica no ID da helena', async () => {
+    const { publicar, conferirConta } = require('./publicar');
+    const instagram = require('./instagram');
+    const raiz = path.join(__dirname, '..');
+    const cfgH = maquina.lerConfig(path.join(raiz, 'contas', 'helena'));
+    const cfgL = maquina.lerConfig(path.join(raiz, 'contas', 'lusia'));
+    conferirConta('helena', cfgH, ID_HELENA); // certo: passa
+    assert.throws(() => conferirConta('helena', cfgH, '999'), instagram.ErroFatal);
+    assert.throws(() => conferirConta('lusia', cfgL, ID_HELENA), instagram.ErroFatal);
+    assert.throws(() => conferirConta('educ', { tipo: 'educativo', instagram: {} }, '1'), instagram.ErroFatal, 'educativa sem idDaConta não publica');
+    // De ponta a ponta: chave errada = nenhum pedido ao Instagram
+    const pastaTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'trava-'));
+    const lerCfg = maquina.lerConfig;
+    try {
+      maquina.lerConfig = (p) => {
+        const c = lerCfg(p);
+        return { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0 } };
+      };
+      const reg = [];
+      const op = (id) => ({ arqPublicados: path.join(pastaTmp, 'p.json'), ignorarDesligado: true, segredos: { igToken: 't', igUserId: id }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} });
+      await assert.rejects(publicar('helena', op('111')), instagram.ErroFatal);
+      assert.strictEqual(reg.length, 0, 'mandou pedido ao Instagram com a chave errada');
+      const r = await maquina.rodar('lusia', true);
+      const dia = path.basename(r.pastaDia).toLowerCase();
+      await assert.rejects(publicar('lusia', { ...op(ID_HELENA), dia }), instagram.ErroFatal);
+      assert.strictEqual(reg.length, 0, 'conteúdo da lusia foi para a conta da helena');
+    } finally {
+      maquina.lerConfig = lerCfg;
+      fs.rmSync(pastaTmp, { recursive: true, force: true });
+    }
+  });
+
+  await teste('fila da helena: barra venda (#publi, Shopee, carrinho, link, oferta) e imagem fora de 1080x1350', async () => {
+    const sharp = require('sharp');
+    const car = require('./carrosseis');
+    for (const t of ['Compre com #publi', 'Achei na Shopee', 'Toca no carrinho', 'Link na bio', 'Oferta do dia', 'Clica no link 🛒']) {
+      assert(car.problemasDoTexto(t).length, `deixou passar: ${t}`);
+    }
+    assert.strictEqual(car.problemasDoTexto('Salva para lembrar e manda para quem tem filho pequeno. #BNCC').length, 0);
+    const raiz = path.join(__dirname, '..');
+    const conta = 'teste-educ-' + process.pid;
+    const pastaConta = path.join(raiz, 'contas', conta);
+    const origem = fs.mkdtempSync(path.join(os.tmpdir(), 'car-'));
+    try {
+      fs.mkdirSync(pastaConta, { recursive: true });
+      fs.writeFileSync(path.join(pastaConta, 'config.json'), JSON.stringify({ tipo: 'educativo', site: { urlBase: 'https://teste.github.io/x' }, instagram: { ativo: false, idDaConta: '5' } }));
+      const fazer = async (nome, legenda, w = 1080, h = 1350, n = 3) => {
+        const p = path.join(origem, nome);
+        fs.mkdirSync(path.join(p, 'slides'), { recursive: true });
+        for (let i = 1; i <= n; i++) await sharp({ create: { width: w, height: h, channels: 3, background: '#fde' } }).png().toFile(path.join(p, 'slides', String(i).padStart(2, '0') + '.png'));
+        fs.writeFileSync(path.join(p, 'legenda.txt'), legenda);
+        return p;
+      };
+      for (const leg of ['Use o cupom #publi', 'Tem na Shopee', 'Link no carrinho 🛒', 'Clica no link']) {
+        await assert.rejects(car.enfileirar(conta, await fazer('ruim-' + leg.length + leg[0], leg), { log: () => {} }), /Não entrou/);
+      }
+      await assert.rejects(car.enfileirar(conta, await fazer('quadrado', 'Legenda boa', 1080, 1080), { log: () => {} }), /1080x1350/);
+      await assert.rejects(car.enfileirar(conta, await fazer('um-so', 'Legenda boa', 1080, 1350, 1), { log: () => {} }), /2 a 10/);
+      assert.strictEqual(car.lerFila(conta).length, 0, 'entrou coisa errada na fila');
+      // Conta de vendas nunca recebe carrossel educativo
+      await assert.rejects(car.enfileirar('lusia', await fazer('bom-lusia', 'Legenda boa'), { log: () => {} }), /não é educativa/);
+      // O certo entra, vira JPEG 1080x1350 e não repete
+      await car.enfileirar(conta, await fazer('03-bom', 'Legenda boa 🎨'), { log: () => {} });
+      await assert.rejects(car.enfileirar(conta, path.join(origem, '03-bom'), { log: () => {} }), /já está na fila/);
+      const fila = car.lerFila(conta);
+      assert.strictEqual(fila.length, 1);
+      const m = await sharp(path.join(raiz, 'publico', conta, fila[0].imagens[0])).metadata();
+      assert.deepStrictEqual([m.format, m.width, m.height], ['jpeg', 1080, 1350]);
+    } finally {
+      for (const p of [pastaConta, path.join(raiz, 'publico', conta), origem]) fs.rmSync(p, { recursive: true, force: true });
+    }
+  });
+
+  await teste('fila da helena de verdade: 01-bncc-cores antes de 02-maos-escola, tudo 1080x1350 e sem venda', async () => {
+    const car = require('./carrosseis');
+    const fila = car.lerFila('helena');
+    const slugs = fila.map((c) => c.slug);
+    assert(slugs.indexOf('01-bncc-cores') === 0 && slugs.indexOf('02-maos-escola') === 1, 'ordem errada: ' + slugs.join(', '));
+    for (const c of fila) {
+      const p = await car.conferirItem('helena', c);
+      assert.strictEqual(p.length, 0, `${c.slug}: ${p.join('; ')}`);
+    }
+    assert(fila[0].legenda.includes('próximo post'), 'o post 1 promete o post 2');
+  });
+
+  await teste('helena: 1 carrossel por dia, às 19h, na ordem, nunca repete, sempre no ID da helena', async () => {
+    const { publicar } = require('./publicar');
+    const car = require('./carrosseis');
+    // Regras de horário e ordem (função pura)
+    const fila = [{ slug: 'a' }, { slug: 'b' }];
+    assert.strictEqual(car.proximo(fila, {}, { hojeBR: '2026-10-27', horaBR: 18 }), null, 'antes das 19h não sai');
+    assert.strictEqual(car.proximo(fila, {}, { hojeBR: '2026-10-27', horaBR: 19 }).slug, 'a');
+    assert.strictEqual(car.proximo(fila, { 'carrossel:a': { quando: '2026-10-27T22:00:00Z' } }, { hojeBR: '2026-10-27', horaBR: 21 }), null, '2 no mesmo dia');
+    assert.strictEqual(car.proximo(fila, { 'carrossel:a': { quando: '2026-10-26T22:00:00Z' } }, { hojeBR: '2026-10-27', horaBR: 19 }).slug, 'b');
+    // De ponta a ponta com a fila real (arquivo de publicados TEMPORÁRIO)
+    const pastaTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hel-'));
+    const arqPublicados = path.join(pastaTmp, 'publicados.json');
+    const real = path.join(__dirname, '..', 'contas', 'helena', 'publicados.json');
+    const antesReal = fs.existsSync(real) ? fs.readFileSync(real, 'utf8') : null;
+    const lerCfg = maquina.lerConfig;
+    try {
+      maquina.lerConfig = (p) => {
+        const c = lerCfg(p);
+        return c.tipo === 'educativo' ? { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0 } } : c;
+      };
+      const sim = await publicar('helena', { simular: true, arqPublicados, log: () => {} });
+      assert.strictEqual(sim.tarefas.length, 1);
+      assert.strictEqual(sim.tarefas[0].chave, 'carrossel:01-bncc-cores');
+      const reg = [];
+      const opcoes = { arqPublicados, ignorarDesligado: true, segredos: { igToken: 't', igUserId: ID_HELENA }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} };
+      const r1 = await publicar('helena', opcoes);
+      const r2 = await publicar('helena', opcoes);
+      assert.strictEqual(r1.publicados, 1);
+      assert.strictEqual(r2.publicados, 0, 'saíram 2 no mesmo dia');
+      const posts = reg.filter((x) => x.metodo === 'POST');
+      assert(posts.length && posts.every((x) => x.u.includes(`/${ID_HELENA}/`)), 'pedido fora do ID da helena');
+      const filhos = posts.filter((x) => x.corpo.is_carousel_item);
+      assert.strictEqual(filhos.length, 5);
+      assert(filhos.every((x) => x.corpo.image_url.startsWith('https://lusiabessa-rgb.github.io/achadinhos/helena/carrosseis/01-bncc-cores/')));
+      const legenda = posts.find((x) => x.corpo.media_type === 'CAROUSEL').corpo.caption;
+      assert(!/#publi|shopee|carrinho|\blink\b/i.test(legenda));
+      assert(!reg.some((x) => /\/lusia\//.test(x.corpo.image_url || '')), 'imagem da lusia na helena');
+      // No dia seguinte: o 2º (e nunca o 1º de novo)
+      const pub = JSON.parse(fs.readFileSync(arqPublicados, 'utf8'));
+      for (const k of Object.keys(pub)) pub[k].quando = new Date(Date.now() - 86400000).toISOString();
+      fs.writeFileSync(arqPublicados, JSON.stringify(pub));
+      const r3 = await publicar('helena', opcoes);
+      assert.strictEqual(r3.publicados, 1);
+      assert.strictEqual(reg.filter((x) => x.corpo.is_carousel_item).slice(5).every((x) => x.corpo.image_url.includes('/02-maos-escola/')), true, 'não saiu o 2º na ordem');
+      assert.strictEqual(fs.existsSync(real) ? fs.readFileSync(real, 'utf8') : null, antesReal, 'o teste mexeu no publicados.json real da helena');
+    } finally {
+      maquina.lerConfig = lerCfg;
+      fs.rmSync(pastaTmp, { recursive: true, force: true });
+    }
+  });
+
   console.log(`\nResultado: ${passou} ok, ${falhou} falhou.`);
   process.exitCode = falhou ? 1 : 0;
 })();

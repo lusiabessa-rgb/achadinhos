@@ -41,9 +41,13 @@ Leia isto antes de mexer no app. Fale com a dona sempre em português simples.
 | `contas/lusia/config.json` | Palavras de busca, filtros, hashtags, marca, cor e opções do Instagram |
 | `contas/lusia/shopee-produtos.txt` | Lista manual: `nome \| preço \| comissão % \| link \| foto \| frase \| de PREÇO ANTIGO \| N vendidos` (as fotos ficam em `contas/lusia/fotos`) |
 | `contas/lusia/tiktok-produtos.txt` | Produtos do TikTok Shop (`nome \| preço \| comissão`) |
+| `app/carrosseis.js`, `app/fila-carrossel.js` | **Conta educativa @colorecomhelena** (`contas/helena`, `"tipo": "educativo"`): fila de carrosséis em `contas/helena/carrosseis/fila.json`, imagens JPEG em `publico/helena/carrosseis/<slug>/`. Pôr na fila: `node app/fila-carrossel.js helena <pasta com slides/01.png... e legenda.txt>`. Barra #publi, Shopee, carrinho, link, oferta, cupom e imagem fora de 1080x1350. Sai o 1º não publicado, 1 por dia, a partir das 19h. Simular: `node app/publicar.js helena --simular --conferir-token` (só lê, GET /me) |
+| `.github/workflows/helena.yml` | Robô da helena: 19h de Brasília. Recebe SÓ `INSTAGRAM_TOKEN_HELENA` e `INSTAGRAM_USER_ID_HELENA`; pula se faltarem ou se `ativo` for false. Passo a passo da dona: `HELENA-LIGAR-NUVEM.md` |
 | `contas/lusia/CHAVES.txt` | Segredos. **Nunca imprimir, nunca subir para o GitHub** (está no .gitignore) |
 
 O app aceita várias contas (`contas/<nome>/`) porque a dona pode vender o app como assinatura no futuro.
+
+**Separação das contas (26/10, à prova de bagunça):** a conta `lusia` lê os Secrets de sempre (`INSTAGRAM_TOKEN`...); qualquer outra conta só lê os Secrets com `_<CONTA>` no fim (`INSTAGRAM_TOKEN_HELENA`...) e o `CHAVES.txt` da própria pasta. Conta com `instagram.idDaConta` só publica nesse ID, e nenhuma conta publica no ID declarado por outra (`conferirConta` em publicar.js). Os testes "helena" travam isso.
 
 ## Como trabalhar
 - **Testes antes de tudo:** `node app/teste-automatico.js`. Só envie para o GitHub com todos os testes passando.
@@ -82,6 +86,7 @@ O app aceita várias contas (`contas/<nome>/`) porque a dona pode vender o app c
 - **Vídeos do TikTok:** todos são de aquecimento até existir clipe .mp4 de produto. Com 1 clipe de IA por produto, a máquina faz várias variações "com sacolinha".
 - **Placar do TikTok:** pronto; a dona cola os números em `contas/lusia/metricas-tiktok.txt` e roda `node app/placar.js`.
 - **Conferência das 21h30 (desde 19/10):** na nuvem (`conferencia.yml`). Falta a dona criar o bot (`TELEGRAM-PASSO-A-PASSO.md`); até lá o resumo fica só no registro da rodada. Depois do Telegram funcionando, desligar a tarefa do PC "olho-nas-postagens". A data do token fica em `instagram.tokenVenceEm` (atualize ao renovar).
+- **Conta @colorecomhelena (26/10):** pronta e testada, **desligada** (`"ativo": false`). Fila: 01-bncc-cores e depois 02-maos-escola (o 1 promete o 2), 1 por dia às 19h. Simulação com o token real: ok (conta @colorecomhelena, ID 17841420312757652). Falta: (1) a dona criar os Secrets `INSTAGRAM_TOKEN_HELENA` e `INSTAGRAM_USER_ID_HELENA` (`HELENA-LIGAR-NUVEM.md`); (2) o OK dela para `ativo: true`. As imagens só ficam no ar depois de uma rodada do `maquina.yml` (é ele que publica o GitHub Pages). **Token da helena vence ~25/12/2026: renovar antes de 20/12/2026** (`tokenVenceEm` no config da helena).
 - **Tarefa semanal** "posts-semanais-achadinhos": toda sexta às 9h, pesquisa tendências e completa a fila até 7 posts.
 
 ## Atalhos (skills na pasta `.claude/skills` do Projeto zero)

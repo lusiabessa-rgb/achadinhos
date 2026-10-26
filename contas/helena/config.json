@@ -1,0 +1,15 @@
+{
+  "tipo": "educativo",
+  "marca": "@colorecomhelena",
+  "site": {
+    "titulo": "Colore com Helena",
+    "urlBase": "https://lusiabessa-rgb.github.io/achadinhos"
+  },
+  "instagram": {
+    "ativo": false,
+    "idDaConta": "17841420312757652",
+    "carrosselPorDia": 1,
+    "carrosselAPartirDas": 19,
+    "tokenVenceEm": "2026-12-20"
+  }
+}

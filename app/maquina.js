@@ -41,6 +41,8 @@ function lerConfig(pastaConta) {
   } catch (e) {
     throw new Error(`O arquivo ${arq} está com erro de digitação (${e.message}).`);
   }
+  // Conta EDUCATIVA (ex.: helena): projeto separado das vendas, não herda nada de Shopee/ofertas do PADRAO
+  if (c.tipo === 'educativo') return { ...c, site: { ...(c.site || {}) }, instagram: { ...(c.instagram || {}) } };
   const config = { ...PADRAO, ...c, filtros: { ...PADRAO.filtros, ...(c.filtros || {}) }, site: { ...PADRAO.site, ...(c.site || {}) }, instagram: { ...(c.instagram || {}) } };
   if (!Array.isArray(config.palavrasChave) || !config.palavrasChave.length) {
     throw new Error('O config.json precisa de pelo menos 1 palavra em "palavrasChave".');
@@ -50,6 +52,11 @@ function lerConfig(pastaConta) {
 
 // Segredos: no PC vêm do CHAVES.txt; na nuvem (GitHub) vêm dos "Secrets", que viram variáveis de ambiente.
 // Nomes aceitos: APP_ID, SECRET, INSTAGRAM_TOKEN, INSTAGRAM_USER_ID, TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET (na nuvem: SHOPEE_APP_ID, SHOPEE_SECRET...).
+function sufixoSegredos(pastaConta) {
+  const nome = path.basename(path.resolve(pastaConta)).toLowerCase();
+  return nome === 'lusia' ? '' : '_' + nome.toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+}
+
 function lerSegredos(pastaConta) {
   const s = {};
   const arq = path.join(pastaConta, 'CHAVES.txt');
@@ -59,7 +66,13 @@ function lerSegredos(pastaConta) {
       if (m && !/cole aqui/i.test(m[2])) s[m[1].toUpperCase()] = m[2].replace(/^["']|["']$/g, '');
     }
   }
-  const env = process.env;
+  // Separação das contas: a conta "lusia" usa os nomes de sempre (INSTAGRAM_TOKEN...);
+  // qualquer OUTRA conta só lê os Secrets com o nome dela no fim (INSTAGRAM_TOKEN_HELENA...),
+  // nunca os da lusia. Assim o conteúdo de uma conta nunca sai com a chave da outra.
+  const suf = sufixoSegredos(pastaConta);
+  const env = !suf
+    ? process.env
+    : Object.fromEntries(Object.entries(process.env).filter(([k]) => k.endsWith(suf)).map(([k, v]) => [k.slice(0, -suf.length), v]));
   return {
     appId: env.SHOPEE_APP_ID || s.APP_ID,
     secret: env.SHOPEE_SECRET || s.SECRET,
@@ -455,4 +468,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { rodar, lerChaves, lerSegredos, lerTikTok, lerShopeeManual, lerConfig };
+module.exports = { rodar, lerChaves, lerSegredos, sufixoSegredos, lerTikTok, lerShopeeManual, lerConfig };

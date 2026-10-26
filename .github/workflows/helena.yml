@@ -1,0 +1,66 @@
+# Robô da conta EDUCATIVA @colorecomhelena: 1 carrossel por dia às 19h de Brasília.
+# Projeto SEPARADO das vendas: este robô só recebe as chaves da helena (nunca as da lusia).
+# Pula sozinho se faltar o Secret INSTAGRAM_TOKEN_HELENA ou se "ativo" for false em contas/helena/config.json.
+name: Helena (carrossel educativo)
+
+on:
+  schedule:
+    - cron: "0 22 * * *"   # 19h em Brasília (o GitHub pode atrasar alguns minutos)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: helena
+  cancel-in-progress: false
+
+jobs:
+  helena:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      TZ: America/Sao_Paulo
+      # SÓ as chaves da helena (nomes terminados em _HELENA)
+      INSTAGRAM_TOKEN_HELENA: ${{ secrets.INSTAGRAM_TOKEN_HELENA }}
+      INSTAGRAM_USER_ID_HELENA: ${{ secrets.INSTAGRAM_USER_ID_HELENA }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Conferir se a conta helena esta ligada
+        id: ligada
+        run: |
+          if [ -z "$INSTAGRAM_TOKEN_HELENA" ] || [ -z "$INSTAGRAM_USER_ID_HELENA" ]; then
+            echo "Sem os Secrets da helena ainda: pulando."; echo "sim=nao" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ "$(node -p "require('./contas/helena/config.json').instagram.ativo === true")" != "true" ]; then
+            echo "Conta helena desligada (ativo: false): pulando."; echo "sim=nao" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "sim=sim" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v5
+        if: steps.ligada.outputs.sim == 'sim'
+        with:
+          node-version: 24
+          cache: npm
+      - if: steps.ligada.outputs.sim == 'sim'
+        run: npm ci
+
+      - name: Testes automaticos
+        if: steps.ligada.outputs.sim == 'sim'
+        run: |
+          node app/teste-automatico.js
+          rm -rf publico/*/*-teste publico/*/*-teste.html
+
+      - name: Publicar o carrossel do dia
+        if: steps.ligada.outputs.sim == 'sim'
+        run: node app/publicar.js helena
+
+      - name: Salvar o que foi publicado
+        if: ${{ always() && steps.ligada.outputs.sim == 'sim' }}
+        run: |
+          git config user.name "maquina-de-ofertas"
+          git config user.email "maquina@users.noreply.github.com"
+          if [ -f contas/helena/publicados.json ]; then git add contas/helena/publicados.json; fi
+          git commit -m "Helena: publicado em $(date '+%F %H:%M')" || echo "nada novo"
+          (git pull --rebase --autostash -q && git push) || true
