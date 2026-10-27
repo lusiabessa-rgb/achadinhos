@@ -1,4 +1,5 @@
 # Robô da Máquina de Ofertas: roda sozinho 3x por dia nos horários de pico (12h, 18h e 20h de Brasília)
+# Às 18h e 20h também sai o Reel marcado para aquele horário (contas/lusia/fila-reels.json), o mesmo do TikTok.
 # ou quando você aperta "Run workflow" no GitHub (pelo celular também).
 name: Maquina de Ofertas
 
@@ -33,6 +34,9 @@ jobs:
       INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
       TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
       TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+      # Avisos dos Reels (atrasado ou recusado) pelo Telegram da dona
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -93,6 +97,8 @@ jobs:
         if: always()
         run: |
           if [ -f contas/lusia/publicados.json ]; then git add contas/lusia/publicados.json; fi
+          # Reels de dias passados que o publicador apagou (os videos sao pesados)
+          git add -A publico/lusia/reels 2>/dev/null || true
           # tiktok-cofre.json vai criptografado (o robo guarda o token novo que o TikTok manda)
           for f in tiktok-publicados.json tiktok-cofre.json; do if [ -f contas/lusia/$f ]; then git add contas/lusia/$f; fi; done
           git commit -m "Publicado em $(date '+%F %H:%M')" || echo "nada novo"

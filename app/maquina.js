@@ -80,6 +80,9 @@ function lerSegredos(pastaConta) {
     igUserId: env.INSTAGRAM_USER_ID || s.INSTAGRAM_USER_ID,
     tiktokKey: env.TIKTOK_CLIENT_KEY || s.TIKTOK_CLIENT_KEY,
     tiktokSecret: env.TIKTOK_CLIENT_SECRET || s.TIKTOK_CLIENT_SECRET,
+    // Telegram é da dona (não de uma conta): avisos da fila de Reels
+    telegramToken: process.env.TELEGRAM_BOT_TOKEN || s.TELEGRAM_BOT_TOKEN,
+    telegramChatId: process.env.TELEGRAM_CHAT_ID || s.TELEGRAM_CHAT_ID,
   };
 }
 

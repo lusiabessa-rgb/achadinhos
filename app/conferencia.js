@@ -41,7 +41,10 @@ function lerSegredos(pastaConta) {
 }
 
 // Tipo de cada linha do publicados.json: "2026-10-19:carrossel", "...:story:ID", "...:post:ID", "conteudo:slug"
+// "reel:2026-10-27-18h" = Reel; "aviso:..." = só um aviso já dado (não conta como publicação)
 function tipoDaChave(chave) {
+  if (chave.startsWith('aviso:')) return 'aviso';
+  if (chave.startsWith('reel:')) return 'reel';
   if (chave.startsWith('conteudo:')) return 'conteudo';
   if (/:carrossel$/.test(chave)) return 'carrossel';
   if (/:story:/.test(chave)) return 'story';
@@ -56,9 +59,10 @@ function conferirArquivos(conta, { agora = new Date(), arqPublicados, arqFila, c
   const ig = config.instagram || {};
   const feitos = lerJson(arqPublicados || path.join(pastaConta, 'publicados.json'), {}) || {};
   const hoje = diaBR(agora);
-  const publicadosHoje = { carrossel: 0, story: 0, post: 0, conteudo: 0 };
+  const publicadosHoje = { carrossel: 0, story: 0, post: 0, conteudo: 0, reel: 0 };
   for (const [chave, v] of Object.entries(feitos)) {
-    if (v && v.quando && diaBR(v.quando) === hoje) publicadosHoje[tipoDaChave(chave)]++;
+    const tipo = tipoDaChave(chave);
+    if (v && v.quando && diaBR(v.quando) === hoje && tipo in publicadosHoje) publicadosHoje[tipo]++;
   }
   const fila = lerJson(arqFila || path.join(RAIZ, 'publico', conta, 'conteudo', 'fila.json'), []) || [];
   const filaRestante = fila.filter((c) => c && c.slug && !feitos[`conteudo:${c.slug}`]).length;
@@ -106,10 +110,11 @@ function montarResumo({ hoje, instagramLigado, publicadosHoje, filaRestante, por
   const [, mes, dia] = hoje.split('-');
   const linhas = [`📋 Conferência de ${dia}/${mes} (21h30)`];
   const p = publicadosHoje;
-  const totalHoje = p.carrossel + p.story + p.post + p.conteudo;
+  const totalHoje = p.carrossel + p.story + p.post + p.conteudo + (p.reel || 0);
   const partes = [];
   if (p.carrossel) partes.push(`${p.carrossel} carrossel`);
   if (p.post) partes.push(`${p.post} post de oferta`);
+  if (p.reel) partes.push(`${p.reel} Reel${p.reel > 1 ? 's' : ''}`);
   if (p.conteudo) partes.push(`${p.conteudo} post de conteúdo`);
   if (p.story) partes.push(`${p.story} ${p.story === 1 ? 'story' : 'stories'}`);
   const api = insta.feedHoje !== undefined ? `; ${insta.feedHoje} no feed confirmado(s) pelo Instagram` : '';

@@ -7,17 +7,19 @@ const path = require('path');
 const instagram = require('./instagram');
 const maquina = require('./maquina');
 const carrosseis = require('./carrosseis');
+const reels = require('./reels');
+const { enviarTelegram } = require('./conferencia');
 
 const RAIZ = path.join(__dirname, '..');
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Antes de publicar, confere se a arte já está no ar (o site pode levar alguns minutos para atualizar)
-async function arteNoAr(url, fetchFn, tentativas = 10, intervalo = 30000) {
+// Antes de publicar, confere se a arte (ou o vídeo do Reel) já está no ar (o site pode levar alguns minutos para atualizar)
+async function arteNoAr(url, fetchFn, tentativas = 10, intervalo = 30000, aceita = 'jpeg') {
   for (let i = 0; i < tentativas; i++) {
     try {
       const r = await fetchFn(url, { method: 'HEAD', signal: AbortSignal.timeout(15000) });
       const tipo = (r.headers && r.headers.get && r.headers.get('content-type')) || '';
-      if (r.ok && (!tipo || tipo.includes('jpeg'))) return true;
+      if (r.ok && (!tipo || tipo.includes(aceita))) return true;
     } catch {}
     if (i < tentativas - 1) await espera(intervalo);
   }
@@ -53,7 +55,7 @@ function conferirConta(conta, config, userId, raiz = RAIZ) {
   }
 }
 
-async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr, intervaloStatus, log = console.log, dia: diaForcado, ignorarDesligado = false, segredos, arqPublicados: arqForcado, conferirToken = false } = {}) {
+async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr, intervaloStatus, log = console.log, dia: diaForcado, ignorarDesligado = false, segredos, arqPublicados: arqForcado, conferirToken = false, agora = new Date(), filaReels: filaReelsForcada } = {}) {
   const pastaConta = path.join(RAIZ, 'contas', conta);
   const config = maquina.lerConfig(pastaConta);
   const ig = config.instagram || {};
@@ -76,7 +78,10 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
   } catch {}
   if (educativa) filaConteudo = [];
   const filaCarrosseis = educativa ? carrosseis.lerFila(conta) : [];
-  if (!dados.ofertas.length && !filaConteudo.length && !filaCarrosseis.length) {
+  // Reels com dia e hora marcados (os mesmos do TikTok). Conta educativa não tem.
+  // filaReels (opção): os testes da conta real passam uma fila própria e nunca leem a de verdade
+  const filaReels = educativa ? [] : filaReelsForcada || reels.lerFila(conta);
+  if (!dados.ofertas.length && !filaConteudo.length && !filaCarrosseis.length && !filaReels.length) {
     log('Nenhuma oferta nem post de conteúdo para publicar.');
     return { publicados: 0 };
   }
@@ -99,6 +104,11 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
 
   // Lista do que publicar nesta rodada
   const tarefas = [];
+  // REELS primeiro (pedido de 27/10): saem no dia e hora marcados; até 1 dia de atraso, nunca mais velho que isso
+  const { prontos: reelsAgora, atrasados: reelsAtrasados } = reels.devidos(filaReels, feitos, agora);
+  for (const r of reelsAgora) {
+    tarefas.push({ chave: `reel:${r.id}`, tipo: 'reel', urls: [`${base}/${encodeURI(conta)}/${r.video}`], legenda: r.legenda, reel: r });
+  }
   if (ig.modo === 'carrossel' && dados.ofertas.length && !feitos[`${dia}:carrossel`]) {
     tarefas.push({ chave: `${dia}:carrossel`, tipo: 'carrossel', urls: dados.ofertas.map(urlArte), legenda: dados.legendaCarrossel });
   }
@@ -113,7 +123,8 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
   // Só no horário de pico (pessoas em casa rolando o feed): a partir de "conteudoAPartirDas" (padrão 19h, Brasília)
   const horaBR = Number(new Date().toLocaleString('en-GB', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }));
   const aPartir = ig.conteudoAPartirDas === undefined ? 19 : Number(ig.conteudoAPartirDas);
-  const porDia = horaBR < aPartir ? 0 : ig.conteudoPorDia === undefined ? 1 : Number(ig.conteudoPorDia) || 0;
+  // Reel no mesmo horário tem prioridade: nesta rodada a foto de conteúdo fica para a próxima
+  const porDia = reelsAgora.length || horaBR < aPartir ? 0 : ig.conteudoPorDia === undefined ? 1 : Number(ig.conteudoPorDia) || 0;
   const jaHoje = Object.entries(feitos).filter(([k, v]) => k.startsWith('conteudo:') && v && v.quando && diaDe(v.quando) === hojeBR).length;
   filaConteudo
     .filter((c) => c && c.slug && c.arte && c.legenda && !feitos[`conteudo:${c.slug}`])
@@ -134,14 +145,35 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
       .forEach((o) => tarefas.push({ chave: `${dia}:story:${o.itemId}`, tipo: 'story', urls: [urlArte(o)] }));
   }
 
+  // Reel que passou mais de 1 dia do horário (a rodada falhou): NÃO posta velho, avisa no Telegram (1 vez)
+  if (reelsAtrasados.length && !simular) {
+    const seg = segredos || maquina.lerSegredos(pastaConta);
+    const lista = reelsAtrasados.map((r) => `- ${r.data.split('-').reverse().slice(0, 2).join('/')} ${r.hora}h: ${r.origem || r.video}`).join('\n');
+    const texto = `⚠️ Reels do Instagram que NÃO saíram no horário (passou de 1 dia, não postei atrasado):\n${lista}\nSe quiser, ponha de novo na fila com data nova (node app/fila-reels.js).`;
+    log(texto);
+    await avisar(seg, texto, fetchFn, log);
+    for (const r of reelsAtrasados) marcar(`aviso:reel:${r.id}`, null);
+  }
+
   if (!tarefas.length) {
     log('Tudo de hoje já foi publicado.');
+    const proxReel = filaReels.find((r) => !feitos[`reel:${r.id}`] && reels.momento(r) > agora);
+    if (proxReel) log(`Próximo Reel: ${proxReel.data} às ${proxReel.hora}h (${proxReel.video}).`);
+    if (!simular && !arqForcado) limparReels(conta, filaReels, feitos, agora, log);
     return { publicados: 0 };
   }
 
   if (simular) {
     log(`SIMULAÇÃO: publicaria ${tarefas.length} item(ns):`);
-    for (const t of tarefas) log(`  - ${t.tipo} com ${t.urls.length} imagem(ns)${t.legenda ? `\n${t.legenda.replace(/^/gm, '      ')}` : ''}`);
+    for (const t of tarefas) log(`  - ${t.tipo} com ${t.urls.length} ${t.tipo === 'reel' ? 'vídeo' : 'imagem(ns)'}${t.legenda ? `\n${t.legenda.replace(/^/gm, '      ')}` : ''}`);
+    if (filaReels.length) {
+      log(`Fila de Reels (${filaReels.length}), cada um no seu dia e hora:`);
+      for (const r of filaReels) {
+        const prob = reels.problemasItem(r, RAIZ, conta);
+        const est = feitos[`reel:${r.id}`] ? 'já publicado' : feitos[`aviso:reel:${r.id}`] ? 'passou do prazo' : reelsAgora.includes(r) ? 'sai AGORA' : 'esperando';
+        log(`  ${r.data} ${r.hora}h ${r.video} (${est})${prob.length && est !== 'já publicado' ? ' PROBLEMA: ' + prob.join('; ') : ''}`);
+      }
+    }
     if (educativa) {
       log(`Fila de carrosséis (${filaCarrosseis.length}), na ordem, 1 por dia a partir das ${ig.carrosselAPartirDas === undefined ? 19 : ig.carrosselAPartirDas}h:`);
       for (const [i, c] of filaCarrosseis.entries()) {
@@ -192,11 +224,17 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
         const prob = await carrosseis.conferirItem(conta, t.item);
         if (prob.length) throw new Error(`carrossel ${t.item.slug} barrado: ${prob.join('; ')}`);
       }
+      // Reel: confere de novo a legenda (sem link/carrinho/sacolinha/#publi) e se o vídeo existe
+      if (t.reel) {
+        const prob = reels.problemasItem(t.reel, RAIZ, conta);
+        if (prob.length) throw new Error(`Reel ${t.reel.id} barrado: ${prob.join('; ')}`);
+      }
       for (const u of t.urls) {
-        if (!(await arteNoAr(u, fetchFn, intervaloNoAr ? 3 : 10, intervaloNoAr))) throw new Error(`a arte não está no ar: ${u}`);
+        if (!(await arteNoAr(u, fetchFn, intervaloNoAr ? 3 : 10, intervaloNoAr, t.reel ? 'video' : 'jpeg'))) throw new Error(`${t.reel ? 'o vídeo' : 'a arte'} não está no ar: ${u}`);
       }
       let id;
-      if (t.tipo === 'carrossel') id = await instagram.publicarCarrossel(cred, t.urls, t.legenda, fetchFn, intervaloStatus);
+      if (t.tipo === 'reel') id = await instagram.publicarReel(cred, t.urls[0], t.legenda, fetchFn, intervaloStatus);
+      else if (t.tipo === 'carrossel') id = await instagram.publicarCarrossel(cred, t.urls, t.legenda, fetchFn, intervaloStatus);
       else if (t.tipo === 'post') id = await instagram.publicarImagem(cred, t.urls[0], t.legenda, fetchFn, intervaloStatus);
       else id = await instagram.publicarStory(cred, t.urls[0], fetchFn, intervaloStatus);
       marcar(t.chave, id);
@@ -206,10 +244,30 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
     } catch (e) {
       if (e instanceof instagram.ErroFatal) throw e;
       log(`  aviso: não publiquei ${t.tipo}: ${e.message}`);
+      // Reel que falhou: a dona fica sabendo (a próxima rodada tenta de novo, até 1 dia depois do horário)
+      if (t.reel) await avisar(segredos || maquina.lerSegredos(pastaConta), `⚠️ O Reel de ${t.reel.data.split('-').reverse().slice(0, 2).join('/')} ${t.reel.hora}h não saiu no Instagram: ${e.message}\nA próxima rodada tenta de novo.`, fetchFn, log);
     }
   }
   log(`Instagram: ${publicados} publicação(ões) feitas.`);
+  // Só com o publicados.json de verdade (teste com arquivo temporário nunca apaga vídeo)
+  if (!arqForcado) limparReels(conta, filaReels, feitos, agora, log);
   return { publicados };
+}
+
+// Aviso pelo Telegram da dona. Sem Telegram, fica só no registro. Nunca quebra a rodada.
+async function avisar(seg, texto, fetchFn, log) {
+  if (!seg || !seg.telegramToken || !seg.telegramChatId) return log('(Sem Telegram: o aviso ficou só no registro.)');
+  try {
+    await enviarTelegram(texto, { token: seg.telegramToken, chatId: seg.telegramChatId, fetchFn });
+  } catch (e) {
+    log('(Não consegui avisar no Telegram: ' + e.message + ')');
+  }
+}
+
+// Vídeos de dias passados (já publicados ou fora do prazo) saem do site e do repositório (são pesados)
+function limparReels(conta, fila, feitos, agora, log) {
+  const apagados = reels.limparVelhos(conta, fila, feitos, { agora });
+  if (apagados.length) log(`Reels velhos apagados do site: ${apagados.join(', ')}`);
 }
 
 if (require.main === module) {

@@ -47,16 +47,21 @@ async function chamar(cred, metodo, caminho, params = {}, fetchFn = fetch) {
 }
 
 // Espera o Instagram terminar de preparar a imagem (status FINISHED)
-async function esperarPronto(cred, idContainer, fetchFn, intervalo = 3000, maxTentativas = 40) {
+// (vídeo: pede também o "status", que diz o motivo do erro)
+async function esperarPronto(cred, idContainer, fetchFn, intervalo = 3000, maxTentativas = 40, video = false) {
   for (let i = 0; i < maxTentativas; i++) {
-    const r = await chamar(cred, 'GET', idContainer, { fields: 'status_code' }, fetchFn);
+    const r = await chamar(cred, 'GET', idContainer, { fields: video ? 'status_code,status' : 'status_code' }, fetchFn);
     if (r.status_code === 'FINISHED') return;
     if (r.status_code === 'ERROR' || r.status_code === 'EXPIRED') {
-      throw new Error(`O Instagram não aceitou a imagem (${r.status_code}). Ela precisa ser JPEG e estar no ar.`);
+      throw new Error(
+        video
+          ? `O Instagram não aceitou o vídeo (${r.status_code}${r.status ? ': ' + r.status : ''}). Ele precisa ser MP4 H.264/AAC, 9:16, até 90 s e estar no ar.`
+          : `O Instagram não aceitou a imagem (${r.status_code}). Ela precisa ser JPEG e estar no ar.`
+      );
     }
     await espera(intervalo);
   }
-  throw new Error('O Instagram demorou demais para preparar a imagem.');
+  throw new Error(video ? 'O Instagram demorou demais para preparar o vídeo. Nada publicado.' : 'O Instagram demorou demais para preparar a imagem.');
 }
 
 async function limiteDeHoje(cred, fetchFn) {
@@ -108,6 +113,15 @@ async function publicarStory(cred, urlImagem, fetchFn = fetch, intervalo) {
   return p.id;
 }
 
+// Reel com 1 vídeo MP4 (H.264/AAC, 9:16) num endereço público. O Instagram baixa e processa o vídeo:
+// espera o status FINISHED (de 10 em 10 s, até ~10 min) antes de publicar. Devolve o ID do post.
+async function publicarReel(cred, urlVideo, legenda, fetchFn = fetch, intervalo = 10000, maxTentativas = 60) {
+  const c = await chamar(cred, 'POST', `${cred.userId}/media`, { media_type: 'REELS', video_url: urlVideo, caption: legenda, share_to_feed: 'true' }, fetchFn);
+  await esperarPronto(cred, c.id, fetchFn, intervalo, maxTentativas, true);
+  const p = await chamar(cred, 'POST', `${cred.userId}/media_publish`, { creation_id: c.id }, fetchFn);
+  return p.id;
+}
+
 // O token dura 60 dias. Renovar estende o prazo (precisa ter mais de 24h de vida).
 async function renovarToken(cred, fetchFn = fetch) {
   const url = `${HOST}/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(cred.token)}`;
@@ -148,4 +162,4 @@ async function responderComentario(cred, idComentario, texto, fetchFn = fetch) {
   return chamar(cred, 'POST', `${idComentario}/replies`, { message: texto }, fetchFn);
 }
 
-module.exports = { postsRecentes, comentarios, responderNoDirect, responderComentario, publicarImagem, publicarCarrossel, publicarStory, limiteDeHoje, renovarToken, ErroFatal };
+module.exports = { postsRecentes, comentarios, responderNoDirect, responderComentario, publicarImagem, publicarCarrossel, publicarStory, publicarReel, limiteDeHoje, renovarToken, ErroFatal };

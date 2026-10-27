@@ -508,11 +508,11 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     try {
       // 1 conteúdo por dia no teste: com mais, a 2ª rodada publica o próximo da fila (o que é certo)
       maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoPorDia: 1 } });
-      const sim = await publicar('lusia', { simular: true, dia, arqPublicados, log: () => {} });
+      const sim = await publicar('lusia', { simular: true, dia, arqPublicados, filaReels: [], log: () => {} });
       assert.strictEqual(sim.tarefas.filter((t) => t.tipo === 'carrossel').length, 1);
       assert(sim.tarefas[0].legenda.includes('bio'));
       const reg = [];
-      const opcoes = { dia, arqPublicados, ignorarDesligado: true, segredos: { igToken: 't', igUserId: '9' }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} };
+      const opcoes = { dia, arqPublicados, filaReels: [], ignorarDesligado: true, segredos: { igToken: 't', igUserId: '9' }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} };
       const r1 = await publicar('lusia', opcoes);
       const r2 = await publicar('lusia', opcoes);
       assert.strictEqual(r1.publicados, sim.tarefas.length);
@@ -535,7 +535,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     const lerCfg = maquina.lerConfig;
     try {
       maquina.lerConfig = (p) => ({ ...lerCfg(p), instagram: { ...lerCfg(p).instagram, conteudoPorDia: 1, conteudoAPartirDas: 0 } });
-      const sim = await publicar('lusia', { simular: true, dia: 'nao-existe', arqPublicados, log: () => {} });
+      const sim = await publicar('lusia', { simular: true, dia: 'nao-existe', arqPublicados, filaReels: [], log: () => {} });
       // limite de 1 por dia já usado: nada de conteúdo (e sem ofertas nesse dia)
       assert(!(sim.tarefas || []).some((t) => t.chave.startsWith('conteudo:')), 'passou do limite do dia');
     } finally {
@@ -974,20 +974,22 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
         '2026-10-19:story:a': { id: '2', quando: '2026-10-19T15:06:00Z' },
         'conteudo:x': { id: '3', quando: '2026-10-19T23:02:00Z' },
         'conteudo:velho': { id: '4', quando: '2026-10-17T23:02:00Z' },
+        'reel:2026-10-19-18h': { id: '5', quando: '2026-10-19T21:05:00Z' },
+        'aviso:reel:2026-10-17-20h': { id: null, quando: '2026-10-19T21:06:00Z' },
       }));
       fs.writeFileSync(arqFila, JSON.stringify(['x', 'velho', 'a', 'b', 'c', 'd', 'e'].map((slug) => ({ slug }))));
       const agora = new Date('2026-10-20T00:30:00Z'); // 21h30 do dia 19 em Brasília
       const config = { instagram: { ativo: true, conteudoPorDia: 2, tokenVenceEm: '2026-12-15' } };
       const d = conf.conferirArquivos('lusia', { agora, arqPublicados, arqFila, config });
       assert.strictEqual(d.hoje, '2026-10-19');
-      assert.deepStrictEqual(d.publicadosHoje, { carrossel: 1, story: 1, post: 0, conteudo: 1 });
+      assert.deepStrictEqual(d.publicadosHoje, { carrossel: 1, story: 1, post: 0, conteudo: 1, reel: 1 });
       assert.strictEqual(d.filaRestante, 5);
       assert.strictEqual(d.tokenDias, 57);
       const ok = conf.montarResumo({ ...d, insta: { feedHoje: 2 }, robo: { total: 4, falhas: [] } });
       const linhas = ok.split('\n');
       assert.ok(linhas.length <= 8, 'resumo comprido demais: ' + linhas.length);
       assert.ok(linhas[0].includes('19/10'));
-      assert.ok(/✅ Instagram: 3 publica/.test(ok), ok);
+      assert.ok(/✅ Instagram: 4 publica/.test(ok) && ok.includes('1 Reel'), ok);
       assert.ok(ok.includes('5 post(s), dá para 2 dia(s)') && ok.includes('⚠️ Fila'), 'fila curta tem que avisar');
       assert.ok(ok.includes('✅ Token do Instagram: vence em 57 dia(s)'));
       assert.ok(ok.includes('✅ Robô: nenhuma falha'));
@@ -1003,7 +1005,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       const vencido = conf.montarResumo({ ...d, insta: { erro: 'token vencido' }, robo: null });
       assert.ok(vencido.includes('VENCEU') && vencido.includes('não consegui conferir'));
       // a conferência só lê: o arquivo continua igual
-      assert.strictEqual(Object.keys(JSON.parse(fs.readFileSync(arqPublicados, 'utf8'))).length, 4);
+      assert.strictEqual(Object.keys(JSON.parse(fs.readFileSync(arqPublicados, 'utf8'))).length, 6);
     } finally {
       fs.rmSync(tmp, { recursive: true, force: true });
     }
@@ -1270,6 +1272,209 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     } finally {
       maquina.lerConfig = lerCfg;
       fs.rmSync(pastaTmp, { recursive: true, force: true });
+    }
+  });
+
+  // ---------- Reels no @achadinhoabessa (pedido de 27/10: tudo o que vai pro TikTok vai pro Instagram) ----------
+  const reels = require('./reels');
+
+  await teste('Reels: legenda do TikTok vira legenda do Instagram (sem link, carrinho e #publi; com Salva e rótulo de IA)', async () => {
+    const tk = 'Sem tomada perto da parede? 🔌 Decoração de Natal: a cortina liga no USB. Clica no link 🛒 #publi #decoracaodenatal #cortinadeled #achadinhos';
+    const ig = reels.adaptarLegenda(tk);
+    assert.deepStrictEqual(reels.problemasLegenda(ig), [], ig);
+    assert(ig.startsWith('Sem tomada perto da parede? 🔌 Decoração de Natal: a cortina liga no USB.'), ig);
+    assert(ig.includes(reels.CTA_SALVA));
+    assert(ig.trim().endsWith(reels.ROTULO_IA), 'o rótulo de IA não é a última linha');
+    assert(ig.includes('#decoracaodenatal #cortinadeled #achadinhos') && !/#publi/.test(ig));
+    // Já tem "Salva": vai uma pergunta no lugar; texto em várias linhas; mais de 5 hashtags vira 5
+    const novos = 'Árvore cheia de buraco? O segredo é a flor 🎄\nEncaixa a flor no vão. Salva pra enfeitar a sua.\nToca no carrinho 🛒\nCompre pelo link do vídeo!\n#publi #a #b #c #d #e #f #tiktokshop';
+    const ig2 = reels.adaptarLegenda(novos);
+    assert.deepStrictEqual(reels.problemasLegenda(ig2), [], ig2);
+    assert(ig2.includes(reels.CTA_PERGUNTA) && !ig2.includes(reels.CTA_SALVA), ig2);
+    assert(ig2.includes('Salva pra enfeitar a sua.') && !/Compre/.test(ig2), 'frase com link ficou: ' + ig2);
+    assert.strictEqual((ig2.match(/#\w+/g) || []).length, 5);
+    // As legendas reais da semana também passam
+    for (const t of ['Link no carrinho 🛒 #publi #x', 'Clica no link 🛒 Salva pra escolher o seu! #publi']) {
+      assert.deepStrictEqual(reels.problemasLegenda(reels.adaptarLegenda(t)), [], t);
+    }
+  });
+
+  await teste('Reels: TRAVA, legenda com link, carrinho, sacolinha, #publi ou sem rótulo de IA não entra na fila', async () => {
+    const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'reel-trava-'));
+    try {
+      fs.mkdirSync(path.join(raiz, 'contas', 'x'), { recursive: true });
+      fs.mkdirSync(path.join(raiz, 'publico', 'x', 'reels'), { recursive: true });
+      fs.writeFileSync(path.join(raiz, 'publico', 'x', 'reels', 'v.mp4'), 'x');
+      const base = { id: '2026-10-27-18h', data: '2026-10-27', hora: 18, video: 'reels/v.mp4' };
+      const ok = `Que lindo\n\nSalva pra não esquecer 💾\n\n${reels.ROTULO_IA}`;
+      for (const leg of [ok + '\nClica no link', ok + '\nToca no carrinho', ok + ' 🛒', ok + '\nsacolinha', ok + ' #publi', 'Sem rótulo', ok + ' #a #b #c #d #e #f', ok + ' #tiktokshop']) {
+        assert.throws(() => reels.adicionarNaFila('x', { ...base, legenda: leg }, { raiz }), /NÃO entrou/, 'deixou passar: ' + leg);
+      }
+      assert.deepStrictEqual(reels.lerFila('x', raiz), [], 'entrou coisa na fila');
+      reels.adicionarNaFila('x', { ...base, legenda: ok }, { raiz });
+      assert.throws(() => reels.adicionarNaFila('x', { ...base, legenda: ok }, { raiz }), /já existe/, 'dois Reels no mesmo horário');
+      assert.strictEqual(reels.lerFila('x', raiz).length, 1);
+    } finally {
+      fs.rmSync(raiz, { recursive: true, force: true });
+    }
+  });
+
+  await teste('Reels: saem no dia e hora marcados, até 1 dia de atraso; mais velho só avisa', async () => {
+    const fila = [
+      { id: '2026-10-27-18h', data: '2026-10-27', hora: 18 },
+      { id: '2026-10-27-20h', data: '2026-10-27', hora: 20 },
+      { id: '2026-10-28-18h', data: '2026-10-28', hora: 18 },
+    ];
+    const ids = (r) => r.map((x) => x.id);
+    // 27/10 12h (Brasília): nada
+    let d = reels.devidos(fila, {}, new Date('2026-10-27T15:00:00Z'));
+    assert.deepStrictEqual([ids(d.prontos), ids(d.atrasados)], [[], []]);
+    // 27/10 18h05: só o das 18h (nunca "o próximo da fila")
+    d = reels.devidos(fila, {}, new Date('2026-10-27T21:05:00Z'));
+    assert.deepStrictEqual(ids(d.prontos), ['2026-10-27-18h']);
+    // 20h, com o das 18h já publicado: só o das 20h
+    d = reels.devidos(fila, { 'reel:2026-10-27-18h': { id: '1' } }, new Date('2026-10-27T23:05:00Z'));
+    assert.deepStrictEqual(ids(d.prontos), ['2026-10-27-20h']);
+    // a rodada das 18h falhou: às 20h saem os dois (não pula)
+    d = reels.devidos(fila, {}, new Date('2026-10-27T23:05:00Z'));
+    assert.deepStrictEqual(ids(d.prontos), ['2026-10-27-18h', '2026-10-27-20h']);
+    // 29/10 12h: os de 27/10 passaram de 1 dia -> só aviso; o de 28/10 18h ainda sai
+    d = reels.devidos(fila, {}, new Date('2026-10-29T15:00:00Z'));
+    assert.deepStrictEqual([ids(d.prontos), ids(d.atrasados)], [['2026-10-28-18h'], ['2026-10-27-18h', '2026-10-27-20h']]);
+    // aviso já dado não repete
+    d = reels.devidos(fila, { 'aviso:reel:2026-10-27-18h': {}, 'aviso:reel:2026-10-27-20h': {} }, new Date('2026-10-29T15:00:00Z'));
+    assert.deepStrictEqual(ids(d.atrasados), []);
+    assert.strictEqual(reels.lerData('27/10', new Date('2026-10-27T15:00:00Z')), '2026-10-27');
+    assert.deepStrictEqual(['18', '18h', '18:00', '8'].map(reels.lerHora), [18, 18, 18, 8]);
+  });
+
+  await teste('Instagram: Reel segue os passos oficiais (REELS + video_url, espera FINISHED, publica) e erro claro', async () => {
+    let status = ['IN_PROGRESS', 'IN_PROGRESS', 'FINISHED'];
+    const reg = [];
+    const falso = async (url, opt = {}) => {
+      const u = String(url);
+      const metodo = opt.method || 'GET';
+      const corpo = opt.body ? Object.fromEntries(new URLSearchParams(String(opt.body))) : {};
+      reg.push({ metodo, u, corpo });
+      const ok = (json) => ({ ok: true, status: 200, json: async () => json });
+      if (u.includes('/media_publish')) return ok({ id: 'REEL1' });
+      if (u.endsWith('/media')) return ok({ id: 'C1' });
+      return ok({ status_code: status.shift() || 'IN_PROGRESS', status: 'Error: formato de vídeo' });
+    };
+    const id = await instagram.publicarReel(CRED, 'https://x/reels/a.mp4', 'leg', falso, 1, 5);
+    assert.strictEqual(id, 'REEL1');
+    const c = reg[0];
+    assert.deepStrictEqual([c.metodo, c.corpo.media_type, c.corpo.video_url, c.corpo.caption], ['POST', 'REELS', 'https://x/reels/a.mp4', 'leg']);
+    assert.strictEqual(reg.filter((x) => x.metodo === 'GET').length, 3, 'não esperou o FINISHED');
+    assert(reg[reg.length - 1].u.includes('/media_publish') && reg[reg.length - 1].corpo.creation_id === 'C1');
+    // Vídeo recusado: erro claro e nada publicado
+    reg.length = 0;
+    status = ['ERROR'];
+    await assert.rejects(instagram.publicarReel(CRED, 'https://x/a.mp4', 'l', falso, 1, 5), /não aceitou o vídeo \(ERROR: Error: formato/);
+    assert(!reg.some((x) => x.u.includes('media_publish')), 'publicou vídeo com erro');
+    // Tempo-limite: nunca fica FINISHED -> para e avisa
+    reg.length = 0;
+    status = [];
+    await assert.rejects(instagram.publicarReel(CRED, 'https://x/a.mp4', 'l', falso, 1, 4), /demorou demais para preparar o vídeo/);
+    assert.strictEqual(reg.filter((x) => x.metodo === 'GET').length, 4);
+  });
+
+  await teste('publicador com Reel: sai na hora marcada, ganha da foto, não repete, atrasado vai pro Telegram', async () => {
+    const sharp = require('sharp');
+    const { publicar } = require('./publicar');
+    const raiz = path.join(__dirname, '..');
+    const conta = 'teste-reels-' + process.pid;
+    const pastaConta = path.join(raiz, 'contas', conta);
+    const pastaPub = path.join(raiz, 'publico', conta);
+    const lerCfg = maquina.lerConfig;
+    try {
+      fs.mkdirSync(pastaConta, { recursive: true });
+      fs.mkdirSync(path.join(pastaPub, 'reels'), { recursive: true });
+      fs.mkdirSync(path.join(pastaPub, 'conteudo'), { recursive: true });
+      const cfg = JSON.parse(fs.readFileSync(path.join(raiz, 'contas', 'lusia', 'config.json'), 'utf8'));
+      fs.writeFileSync(path.join(pastaConta, 'config.json'), JSON.stringify(cfg));
+      await sharp({ create: { width: 1080, height: 1350, channels: 3, background: '#eee' } }).jpeg().toFile(path.join(pastaPub, 'conteudo', 'foto.jpg'));
+      fs.writeFileSync(path.join(pastaPub, 'conteudo', 'fila.json'), JSON.stringify([{ slug: 'foto', arte: 'conteudo/foto.jpg', legenda: 'Foto do dia' }]));
+      const leg = (t) => `${t}\n\n${reels.CTA_SALVA}\n\n${reels.ROTULO_IA}`;
+      for (const n of ['velho', 'cortina', 'arvore']) fs.writeFileSync(path.join(pastaPub, 'reels', n + '.mp4'), 'mp4');
+      reels.salvarFila(conta, [
+        { id: '2026-10-25-18h', data: '2026-10-25', hora: 18, video: 'reels/velho.mp4', legenda: leg('Velho'), origem: 'velho.mp4' },
+        { id: '2026-10-27-18h', data: '2026-10-27', hora: 18, video: 'reels/cortina.mp4', legenda: leg('Cortina'), origem: 'cortina.mp4' },
+        { id: '2026-10-27-20h', data: '2026-10-27', hora: 20, video: 'reels/arvore.mp4', legenda: leg('Arvore'), origem: 'arvore.mp4' },
+      ]);
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoAPartirDas: 0, conteudoPorDia: 2, conteudoPorRodada: 1 } });
+      const reg = [];
+      const igFalso = instagramFalso(reg);
+      const fetchFn = async (url, opt = {}) => {
+        if (String(url).includes('api.telegram.org')) {
+          reg.push({ metodo: 'TELEGRAM', u: '', corpo: JSON.parse(opt.body) });
+          return { ok: true, status: 200, json: async () => ({ ok: true }) };
+        }
+        const r = await igFalso(url, opt);
+        return (opt.method === 'HEAD' && String(url).endsWith('.mp4')) ? { ...r, headers: { get: () => 'video/mp4' } } : r;
+      };
+      const opcoes = (agora) => ({ agora, ignorarDesligado: true, segredos: { igToken: 't', igUserId: '9', telegramToken: 'tg', telegramChatId: '1' }, fetchFn, intervaloNoAr: 1, intervaloStatus: 1, log: () => {} });
+      // 27/10 12h: nenhum Reel ainda (o das 18h não sai antes); o velho de 25/10 só gera aviso no Telegram
+      const sim = await publicar(conta, { ...opcoes(new Date('2026-10-27T15:00:00Z')), simular: true });
+      assert(!sim.tarefas.some((t) => t.tipo === 'reel'), 'Reel saiu antes da hora');
+      // 18h05: sai o Reel das 18h e a foto fica para a próxima rodada (o Reel tem prioridade)
+      const r1 = await publicar(conta, opcoes(new Date('2026-10-27T21:05:00Z')));
+      assert.strictEqual(r1.publicados, 1);
+      const reelPost = reg.find((x) => x.corpo.media_type === 'REELS');
+      assert(reelPost && reelPost.corpo.video_url === `https://teste.github.io/ofertas/${conta}/reels/cortina.mp4`, 'vídeo errado');
+      assert(reelPost.corpo.caption.startsWith('Cortina'));
+      assert(!reg.some((x) => x.corpo.image_url), 'a foto saiu junto com o Reel');
+      assert(!reg.some((x) => (x.corpo.video_url || '').includes('velho')), 'postou Reel atrasado mais de 1 dia');
+      const tg = reg.filter((x) => x.metodo === 'TELEGRAM');
+      assert.strictEqual(tg.length, 1, 'não avisou do atrasado no Telegram');
+      assert(tg[0].corpo.text.includes('25/10 18h'), tg[0].corpo.text);
+      // Mesma rodada de novo: não repete o Reel nem o aviso; agora sai a foto
+      const r2 = await publicar(conta, opcoes(new Date('2026-10-27T21:20:00Z')));
+      assert.strictEqual(reg.filter((x) => x.corpo.media_type === 'REELS').length, 1, 'repetiu o Reel');
+      assert.strictEqual(reg.filter((x) => x.metodo === 'TELEGRAM').length, 1, 'repetiu o aviso');
+      assert.strictEqual(r2.publicados, 1);
+      // 20h: sai o das 20h
+      await publicar(conta, opcoes(new Date('2026-10-27T23:05:00Z')));
+      assert(reg.some((x) => (x.corpo.video_url || '').endsWith('/arvore.mp4')), 'o Reel das 20h não saiu');
+      // Dia seguinte: os vídeos de dias passados (publicados ou fora do prazo) saem do site
+      await publicar(conta, opcoes(new Date('2026-10-28T15:00:00Z')));
+      assert.deepStrictEqual(fs.readdirSync(path.join(pastaPub, 'reels')), [], 'não apagou os vídeos velhos');
+      const pub = JSON.parse(fs.readFileSync(path.join(pastaConta, 'publicados.json'), 'utf8'));
+      assert(pub['reel:2026-10-27-18h'] && pub['reel:2026-10-27-20h'] && pub['aviso:reel:2026-10-25-18h'] && !pub['reel:2026-10-25-18h']);
+    } finally {
+      maquina.lerConfig = lerCfg;
+      for (const p of [pastaConta, pastaPub]) fs.rmSync(p, { recursive: true, force: true });
+    }
+  });
+
+  await teste('Reels: o comando confere o vídeo (H.264/AAC, 9:16, até 90 s) e converte sem cortar', async () => {
+    const { spawnSync } = require('child_process');
+    if (spawnSync('ffmpeg', ['-version']).status !== 0) return console.log('       (sem ffmpeg aqui: conferência do vídeo pulada)');
+    const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'reel-cmd-'));
+    try {
+      fs.mkdirSync(path.join(raiz, 'contas', 'x'), { recursive: true });
+      const gerar = (nome, tam, seg, codec = 'libx264') => {
+        const arq = path.join(raiz, nome);
+        const r = spawnSync('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', `color=c=white:s=${tam}:r=5:d=${seg}`, '-f', 'lavfi', '-i', `sine=d=${seg}`, '-shortest', '-c:v', codec, '-c:a', 'aac', '-pix_fmt', 'yuv420p', arq]);
+        assert.strictEqual(r.status, 0, 'não gerou o vídeo de teste');
+        return arq;
+      };
+      const agora = new Date('2026-10-27T15:00:00Z');
+      const certo = reels.enfileirar('x', gerar('Certo Vídeo.mp4', '180x320', 4), '27/10', '18h', 'Que lindo. Clica no link 🛒 #publi #natal', { raiz, agora });
+      assert.strictEqual(certo.video, 'reels/2026-10-27-18h-certo-video.mp4');
+      assert.strictEqual(certo.info.convertido, false);
+      assert(fs.existsSync(path.join(raiz, 'publico', 'x', certo.video)));
+      assert.deepStrictEqual(reels.problemasLegenda(certo.legenda), []);
+      // Deitado (16:9): converte para 1080x1920 com fundo, sem cortar nada
+      const deitado = reels.enfileirar('x', gerar('deitado.mp4', '320x180', 4, 'mpeg4'), '2026-10-27', '20', 'Oi #natal', { raiz, agora });
+      assert.strictEqual(deitado.info.convertido, true);
+      assert.deepStrictEqual([deitado.info.largura, deitado.info.altura], [1080, 1920]);
+      // Mais de 90 s: recusa (não corta sozinha); horário já passado há mais de 1 dia: recusa
+      assert.throws(() => reels.enfileirar('x', gerar('longo.mp4', '90x160', 91), '28/10', '18', 'Oi', { raiz, agora }), /máximo 90/);
+      assert.throws(() => reels.enfileirar('x', path.join(raiz, 'Certo Vídeo.mp4'), '20/10', '18', 'Oi', { raiz, agora }), /já passou/);
+      assert.strictEqual(reels.lerFila('x', raiz).length, 2);
+    } finally {
+      fs.rmSync(raiz, { recursive: true, force: true });
     }
   });
 
