@@ -1478,6 +1478,131 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
+  // ---------- CANAL/GRUPO DO TELEGRAM "Achadinhos da Abessa" (28/10) ----------
+  await teste('telegram canal: legenda sem sacolinha, sem preço, sem link inventado, máx. 3 hashtags e rótulo no fim', async () => {
+    const tc = require('./telegram-canal');
+    const reels = require('./reels');
+    const ig = 'Árvore cheia de buraco? O segredo é a flor 🎄\nCusta só R$ 29,90. Põe na sacolinha. Veja em https://outro.site/x\nEncaixa no vão.\n\nSalva pra não esquecer 💾\n\n#arvoredenatal #natal #achadinhos #casa #decor\n\n' + reels.ROTULO_IA;
+    const leg = tc.legendaCanal(ig);
+    assert.strictEqual(leg.split('\n')[0], 'Árvore cheia de buraco?', '1ª linha = gancho');
+    assert.ok(!/sacolinha/i.test(leg) && !/R\$/.test(leg) && !leg.includes('outro.site') && !leg.includes('Salva pra não esquecer'));
+    assert.ok(leg.includes(tc.CTA_CARRINHO) && /#publi\b/.test(leg));
+    assert.ok((leg.match(/#\S+/g) || []).length <= 3);
+    assert.ok(leg.trim().endsWith(reels.ROTULO_IA));
+    assert.deepStrictEqual(tc.problemasLegendaCanal(leg), []);
+    // Vídeo sem produto no TikTok: sem carrinho e sem #publi
+    const sem = tc.legendaCanal(ig, { semProduto: true });
+    assert.ok(!/carrinho|🛒|#publi|https?:/.test(sem) && sem.includes('Salva'));
+    assert.deepStrictEqual(tc.problemasLegendaCanal(sem), []);
+    // Trava
+    const p = (t) => tc.problemasLegendaCanal(t + '\n\n' + reels.ROTULO_IA).join(' ');
+    assert.ok(/sacolinha/.test(p('Põe na sacolinha')));
+    assert.ok(/não é o perfil/.test(p('Compra em https://shope.ee/abc #publi')));
+    assert.ok(/sem o link/.test(p('Toca no carrinho 🛒 #publi')));
+    assert.ok(/preço/.test(p('Só R$ 10')));
+    assert.ok(/hashtags/.test(p('#a #b #c #d')));
+    assert.ok(/última linha/.test(tc.problemasLegendaCanal('Oi')));
+    assert.ok(tc.legendaCanal('x'.repeat(50) + '. ' + 'Frase longa de teste. '.repeat(80)).length <= 1024);
+  });
+
+  await teste('telegram canal: posta só o que a hora chegou, nunca repete, pula > 50 MB, desligado pula, grupo que vira supergrupo', async () => {
+    const tc = require('./telegram-canal');
+    const reels = require('./reels');
+    const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'canal-'));
+    try {
+      const conta = path.join(raiz, 'contas', 'x');
+      fs.mkdirSync(path.join(raiz, 'publico', 'x', 'reels'), { recursive: true });
+      fs.mkdirSync(conta, { recursive: true });
+      const salvarCfg = (c) => fs.writeFileSync(path.join(conta, 'config.json'), JSON.stringify(c));
+      salvarCfg({ telegramCanal: { ativo: true, id: '-100' } });
+      const leg = 'Gancho bom? Corpo.\n\nSalva pra não esquecer 💾\n\n#natal\n\n' + reels.ROTULO_IA;
+      const item = (id, data, hora) => {
+        fs.writeFileSync(path.join(raiz, 'publico', 'x', `reels/${id}.mp4`), 'video');
+        return { id, data, hora, video: `reels/${id}.mp4`, legenda: leg };
+      };
+      const fila = [item('2026-10-26-18h', '2026-10-26', 18), item('2026-10-28-18h', '2026-10-28', 18), item('2026-10-28-20h', '2026-10-28', 20)];
+      const arqPublicados = path.join(conta, 'publicados.json');
+      fs.writeFileSync(arqPublicados, JSON.stringify({ 'reel:2026-10-28-18h': { id: 'ig' } }));
+      const envios = [];
+      let migrar = false;
+      const falso = async (u, op = {}) => {
+        if (u.endsWith('/sendVideo')) {
+          envios.push({ chat: op.body.get('chat_id'), legenda: op.body.get('caption') });
+          if (migrar) {
+            migrar = false;
+            return { ok: false, status: 400, json: async () => ({ ok: false, description: 'group upgraded', parameters: { migrate_to_chat_id: -1009 } }) };
+          }
+          return { ok: true, status: 200, json: async () => ({ ok: true, result: { message_id: 7 } }) };
+        }
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      };
+      const logs = [];
+      const op = (agora) => ({ raiz, fila, arqPublicados, agora: new Date(agora), fetchFn: falso, log: (m) => logs.push(m), segredos: { telegramToken: 'TOKEN-SECRETO', telegramChatId: '42' } });
+      // 17h59 de 28/10: o das 18h ainda NÃO sai (nunca adiantado); o de 26/10 passou de 1 dia
+      assert.strictEqual((await tc.publicarCanal('x', op('2026-10-28T20:59:00Z'))).enviados, 0);
+      // 18h05: sai só o das 18h
+      assert.strictEqual((await tc.publicarCanal('x', op('2026-10-28T21:05:00Z'))).enviados, 1);
+      assert.strictEqual(envios.length, 1);
+      assert.strictEqual(envios[0].chat, '-100');
+      assert.ok(!/sacolinha/i.test(envios[0].legenda) && envios[0].legenda.includes(tc.PERFIL_TIKTOK));
+      const feitos = JSON.parse(fs.readFileSync(arqPublicados, 'utf8'));
+      assert.ok(feitos['telegram-canal:2026-10-28-18h'] && feitos['reel:2026-10-28-18h'], 'anota sem apagar o que já estava');
+      // Rodada de novo: não repete
+      assert.strictEqual((await tc.publicarCanal('x', op('2026-10-28T21:30:00Z'))).enviados, 0);
+      assert.strictEqual(envios.length, 1);
+      // 20h: o grupo virou supergrupo -> grava o ID novo e manda de novo
+      migrar = true;
+      assert.strictEqual((await tc.publicarCanal('x', op('2026-10-28T23:02:00Z'))).enviados, 1);
+      assert.deepStrictEqual(envios.slice(1).map((e) => e.chat), ['-100', '-1009']);
+      assert.strictEqual(JSON.parse(fs.readFileSync(path.join(conta, 'config.json'), 'utf8')).telegramCanal.id, '-1009');
+      // Vídeo com mais de 50 MB: pula, avisa 1 vez e não tenta mandar
+      const grande = item('2026-10-29-18h', '2026-10-29', 18);
+      fs.truncateSync(path.join(raiz, 'publico', 'x', grande.video), 51 * 1024 * 1024);
+      fila.push(grande);
+      assert.strictEqual((await tc.publicarCanal('x', op('2026-10-29T21:01:00Z'))).enviados, 0);
+      assert.strictEqual(envios.length, 3);
+      assert.ok(JSON.parse(fs.readFileSync(arqPublicados, 'utf8'))['aviso:telegram-canal:2026-10-29-18h']);
+      assert.ok(logs.every((l) => !String(l).includes('TOKEN-SECRETO')), 'token nunca no registro');
+      // Desligado ou sem ID: pula sem erro e sem internet
+      for (const c of [{ telegramCanal: { ativo: false, id: '-1' } }, { telegramCanal: { ativo: true, id: '' } }, {}]) {
+        salvarCfg(c);
+        const r = await tc.publicarCanal('x', { ...op('2026-10-30T21:00:00Z'), fetchFn: async () => assert.fail('não pode chamar o Telegram') });
+        assert.strictEqual(r.enviados, 0);
+      }
+      // O config de verdade nasce desligado
+      assert.strictEqual(maquina.lerConfig(path.join(__dirname, '..', 'contas', 'lusia')).telegramCanal.ativo, false);
+    } finally {
+      fs.rmSync(raiz, { recursive: true, force: true });
+    }
+  });
+
+  await teste('telegram canal --descobrir: acha grupo, supergrupo ou canal, prefere "Achadinhos" e grava o ID', async () => {
+    const tc = require('./telegram-canal');
+    const ups = [
+      { message: { chat: { id: 5, type: 'private' }, text: 'oi' } },
+      { my_chat_member: { chat: { id: -300, type: 'channel', title: 'Outro canal' }, new_chat_member: { status: 'administrator' } } },
+      { message: { chat: { id: -11, type: 'group', title: 'Achadinhos da Abessa' }, new_chat_members: [{ is_bot: true }] } },
+      { message: { chat: { id: -11, type: 'group', title: 'Achadinhos da Abessa' }, migrate_to_chat_id: -10011 } },
+      { my_chat_member: { chat: { id: -22, type: 'group', title: 'Removido' }, new_chat_member: { status: 'left' } } },
+    ];
+    const achados = tc.canaisDosUpdates(ups);
+    assert.deepStrictEqual(achados.map((c) => c.id).sort(), ['-10011', '-300']);
+    const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'descobrir-'));
+    try {
+      fs.mkdirSync(path.join(raiz, 'contas', 'x'), { recursive: true });
+      fs.writeFileSync(path.join(raiz, 'contas', 'x', 'config.json'), JSON.stringify({ marca: 'm', telegramCanal: { ativo: false, id: '' } }));
+      const logs = [];
+      const r = await tc.descobrir('x', { raiz, segredos: { telegramToken: 'TOKEN-SECRETO' }, log: (m) => logs.push(m), fetchFn: async () => ({ ok: true, status: 200, json: async () => ({ ok: true, result: ups }) }) });
+      assert.strictEqual(r.id, '-10011');
+      const cfg = JSON.parse(fs.readFileSync(path.join(raiz, 'contas', 'x', 'config.json'), 'utf8'));
+      assert.deepStrictEqual(cfg.telegramCanal, { ativo: false, id: '-10011' }, 'grava o ID e NÃO liga');
+      assert.strictEqual(cfg.marca, 'm');
+      assert.ok(logs.every((l) => !l.includes('TOKEN-SECRETO')));
+    } finally {
+      fs.rmSync(raiz, { recursive: true, force: true });
+    }
+  });
+
   console.log(`\nResultado: ${passou} ok, ${falhou} falhou.`);
   process.exitCode = falhou ? 1 : 0;
 })();

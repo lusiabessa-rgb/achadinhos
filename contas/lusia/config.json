@@ -79,5 +79,9 @@
         "eu"
       ]
     }
+  },
+  "telegramCanal": {
+    "ativo": false,
+    "id": ""
   }
 }

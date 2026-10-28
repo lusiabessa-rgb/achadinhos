@@ -93,6 +93,13 @@ jobs:
           if [ -z "$TIKTOK_CLIENT_KEY" ]; then echo "Sem chaves do TikTok ainda: pulando."; exit 0; fi
           node app/tiktok.js lusia
 
+      - name: Mandar o video para o canal/grupo do Telegram
+        if: ${{ !cancelled() }}
+        run: |
+          # O mesmo video do Reel, so quando a hora chegou (18h e 20h); so age com "telegramCanal": { "ativo": true, "id": ... }
+          if [ -z "$TELEGRAM_BOT_TOKEN" ]; then echo "Sem TELEGRAM_BOT_TOKEN: pulando o canal."; exit 0; fi
+          node app/telegram-canal.js lusia
+
       - name: Salvar o que foi publicado
         if: always()
         run: |
