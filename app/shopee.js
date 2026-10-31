@@ -91,7 +91,7 @@ async function buscarProdutos(chaves, { palavra, ordem = 'vendidos', pagina = 1,
 }
 
 async function gerarLinkCurto(chaves, urlProduto, subId = 'maquina', fetchFn) {
-  const query = `mutation ($url: String!, $subs: [String]) {
+  const query = `mutation ($url: String!, $subs: [String!]) {
     generateShortLink(input: { originUrl: $url, subIds: $subs }) { shortLink }
   }`;
   const data = await chamar(chaves, query, { url: urlProduto, subs: [subId] }, fetchFn);
