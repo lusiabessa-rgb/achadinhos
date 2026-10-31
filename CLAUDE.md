@@ -38,6 +38,7 @@ Leia isto antes de mexer no app. Fale com a dona sempre em português simples.
 | `.github/workflows/produtos-semana.yml` | Robô da lista: toda segunda 10h de Brasília. Usa o `tiktok-em-alta.txt` que está no GitHub (a skill cacar-produtos-tiktok envia) |
 | `.github/workflows/conferencia.yml` | Robô da conferência: todo dia 21h30 de Brasília (00:30 UTC). Substitui a tarefa do PC "olho-nas-postagens" |
 | `TELEGRAM-PASSO-A-PASSO.md` | O que a dona faz no @BotFather |
+| `.github/workflows/site.yml` | **Só atualiza o site (31/10):** todo push que mexe em `publico/colorir/**` publica o GitHub Pages na hora, sem postar nada (antes o app novo esperava a rodada das 12h/18h/20h). Também tem "Run workflow" |
 | `.github/workflows/respostas.yml` | Robô de respostas: a cada 15 min (só age se `respostas.ativo`) |
 | `publico/privacidade.html` | Política de privacidade, exigida pela Meta e pelo TikTok: https://lusiabessa-rgb.github.io/achadinhos/privacidade.html |
 | `contas/lusia/config.json` | Palavras de busca, filtros, hashtags, marca, cor e opções do Instagram |
