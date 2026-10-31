@@ -5,7 +5,11 @@
   // ===== O que fica grátis (a Lusia decide; é só mudar os números) =====
   const GRATIS = { desenhos: 3, formas: 2, letras: 5, numeros: 3, quebra: 2 };
   // Jogo das Cores e Feira das Frutas ficam abertos. Vale Encantado e Sequência são da assinatura.
-  const LINK_ASSINAR = ""; // link da Kiwify: fica vazio até o produto ser criado
+  // Links de pagamento da Kiwify (produto "Colore com Helena", criado em 31/10)
+  const LINKS = { mensal: "https://pay.kiwify.com.br/9P9HQon", anual: "https://pay.kiwify.com.br/d1O6hAv" };
+  // TRAVA FORTE (31/10): endereço do servidor (Google Apps Script, mini-app/trava/Codigo.gs).
+  // Vazio = ainda não instalado: o app usa a lista antiga de e-mails (assinantes.json).
+  const SERVIDOR = "https://script.google.com/macros/s/AKfycbylt4cbcJ9s2M_cmMI48UTH3LvC6yZRts-MnqSerCxDreYWhzdMZZR8_Wbc2nvFaEW-/exec";
   const SAL = "colore-com-helena";
   const VALE_SEM_INTERNET = 35 * 864e5; // 35 dias: depois disso precisa conferir de novo com internet
 
@@ -100,9 +104,15 @@
         <button class="btn" id="assFecha">Agora não</button>
       </div>`);
     $("assQuero").onclick = () => {
-      if (LINK_ASSINAR) return window.open(LINK_ASSINAR, "_blank");
-      mostra(`<h2>Quase lá! 💛</h2><p>A assinatura abre em breve.</p>
-        <div class="botoes"><button class="btn" id="assFecha">Ok</button></div>`);
+      mostra(`<h2>Escolha o plano</h2>
+        <p>Depois de pagar, volte aqui e toque em "Já sou assinante" com o mesmo e-mail da compra.</p>
+        <div class="botoes">
+          <button class="btn verde" id="assAnual">⭐ Anual: R$ 99,90<br><small>sai R$ 8,33 por mês</small></button>
+          <button class="btn forte" id="assMensal">Mensal: R$ 14,90</button>
+          <button class="btn" id="assFecha">Voltar</button>
+        </div>`);
+      $("assAnual").onclick = () => window.open(LINKS.anual, "_blank");
+      $("assMensal").onclick = () => window.open(LINKS.mensal, "_blank");
       $("assFecha").onclick = fecha;
     };
     $("assJa").onclick = pedeEmail;
@@ -119,9 +129,11 @@
         <button class="btn" id="assFecha">Voltar</button>
       </div>`);
     $("assFecha").onclick = fecha;
+    if (SERVIDOR) $("assEntrar").textContent = "Mandar código para o e-mail";
     $("assEntrar").onclick = async () => {
       const email = $("assEmail").value.trim();
       if (!/^\S+@\S+\.\S+$/.test(email)) return ($("assMsg").textContent = "Confira o e-mail.");
+      if (SERVIDOR) return pedeCodigo(email);
       $("assMsg").textContent = "Conferindo...";
       const ok = await confere(email);
       if (ok === null) return ($("assMsg").textContent = "Sem internet agora. Tente de novo com internet.");
@@ -132,6 +144,47 @@
       mostra(`<div style="font-size:52px">🎉</div><h2>Tudo liberado!</h2><p>Bom divertimento!</p>
         <div class="botoes"><button class="btn verde" id="assFecha">Vamos lá</button></div>`);
       $("assFecha").onclick = fecha;
+    };
+  }
+
+  // ===== Trava forte: código por e-mail (só com SERVIDOR) =====
+  async function servidor(params) {
+    try {
+      const r = await fetch(SERVIDOR + "?" + new URLSearchParams(params), { cache: "no-store" });
+      return r.ok ? await r.json() : null;
+    } catch (e) { return null; }
+  }
+  const tudoLiberado = () => {
+    montaInicio();
+    mostra(`<div style="font-size:52px">🎉</div><h2>Tudo liberado!</h2><p>Bom divertimento!</p>
+      <div class="botoes"><button class="btn verde" id="assFecha">Vamos lá</button></div>`);
+    $("assFecha").onclick = fecha;
+  };
+
+  async function pedeCodigo(email) {
+    $("assMsg").textContent = "Mandando...";
+    const r = await servidor({ acao: "pedir", email });
+    if (!r) return ($("assMsg").textContent = "Sem internet agora. Tente de novo com internet.");
+    if (!r.ok) return ($("assMsg").textContent = r.msg || "Não deu certo. Tente de novo.");
+    mostra(`<h2>Digite o código</h2>
+      <p>${r.msg}</p>
+      <input id="assCodigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+      <p class="msg" id="assMsg"></p>
+      <div class="botoes">
+        <button class="btn verde" id="assOkCod">Entrar</button>
+        <button class="btn" id="assFecha">Voltar</button>
+      </div>`);
+    $("assFecha").onclick = fecha;
+    $("assOkCod").onclick = async () => {
+      const codigo = $("assCodigo").value.replace(/\D/g, "");
+      if (codigo.length !== 6) return ($("assMsg").textContent = "O código tem 6 números.");
+      $("assMsg").textContent = "Conferindo...";
+      const e = await servidor({ acao: "entrar", email, codigo, aparelho: st.aparelho || "" });
+      if (!e) return ($("assMsg").textContent = "Sem internet agora. Tente de novo com internet.");
+      if (!e.ok) return ($("assMsg").textContent = e.msg || "Código errado.");
+      st = { email, ok: true, conferido: Date.now(), passe: e.passe, aparelho: e.aparelho };
+      salva();
+      tudoLiberado();
     };
   }
 
@@ -177,7 +230,15 @@
   montaInicio();
 
   // Assinante: confere de novo sempre que abrir com internet (se cancelou, trava).
-  if (st.email) confere(st.email).then(ok => {
+  if (SERVIDOR && st.passe) servidor({ acao: "conferir", passe: st.passe }).then(r => {
+    if (!r) return; // sem internet: vale o passe guardado (até 35 dias)
+    st.ok = !!r.ok; st.conferido = Date.now();
+    if (r.passe) st.passe = r.passe;
+    salva();
+    montaInicio();
+  });
+  else if (SERVIDOR && st.ok && !st.passe) { st.ok = false; salva(); montaInicio(); } // quem entrou pela lista antiga entra de novo com código
+  else if (st.email) confere(st.email).then(ok => {
     if (ok === null) return;
     st.ok = ok; st.conferido = Date.now(); salva();
     montaInicio();
