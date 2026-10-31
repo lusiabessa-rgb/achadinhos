@@ -1609,6 +1609,20 @@ mascotesDoRodape("inicio");
 </script>
 
 <script src="assinatura.js"></script>
-<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");</script>
+<script>
+// Atualização sozinha (pedido da Lusia, 31/10): quem já tem o app recebe a versão nova sem baixar de novo.
+// Ao abrir (e ao voltar para o app), procura versão nova; quando ela assume, a tela recarrega uma vez.
+if ("serviceWorker" in navigator) {
+  const jaTinha = !!navigator.serviceWorker.controller;
+  let recarregou = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (jaTinha && !recarregou) { recarregou = true; location.reload(); }
+  });
+  navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
+    reg.update();
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update(); });
+  });
+}
+</script>
 </body>
 </html>
