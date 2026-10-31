@@ -1,0 +1,32 @@
+# Atualiza SÓ o site (GitHub Pages) quando o app de colorir muda, sem postar nada.
+# Antes, o app novo só ia ao ar na próxima rodada do robô (12h, 18h ou 20h). Pedido de 31/10.
+name: Site (so atualizar)
+
+on:
+  push:
+    branches: [main]
+    paths: ["publico/colorir/**"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: maquina
+  cancel-in-progress: false
+
+jobs:
+  site:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: publico
+      - uses: actions/deploy-pages@v4
