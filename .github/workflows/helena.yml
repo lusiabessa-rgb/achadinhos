@@ -24,6 +24,9 @@ jobs:
       # SÓ as chaves da helena (nomes terminados em _HELENA)
       INSTAGRAM_TOKEN_HELENA: ${{ secrets.INSTAGRAM_TOKEN_HELENA }}
       INSTAGRAM_USER_ID_HELENA: ${{ secrets.INSTAGRAM_USER_ID_HELENA }}
+      # Telegram é da dona (não da conta): aviso quando o carrossel não sai
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     steps:
       - uses: actions/checkout@v5
 

@@ -246,6 +246,8 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
       log(`  aviso: não publiquei ${t.tipo}: ${e.message}`);
       // Reel que falhou: a dona fica sabendo (a próxima rodada tenta de novo, até 1 dia depois do horário)
       if (t.reel) await avisar(segredos || maquina.lerSegredos(pastaConta), `⚠️ O Reel de ${t.reel.data.split('-').reverse().slice(0, 2).join('/')} ${t.reel.hora}h não saiu no Instagram: ${e.message}\nA próxima rodada tenta de novo.`, fetchFn, log);
+      // Carrossel educativo que falhou (31/10: saiu "success" e ninguém soube): avisa a dona no Telegram
+      if (t.item) await avisar(segredos || maquina.lerSegredos(pastaConta), `⚠️ O carrossel "${t.item.slug}" (${config.marca || conta}) NÃO saiu no Instagram hoje: ${e.message}\nNada foi publicado. A próxima rodada (amanhã às 19h) tenta este mesmo carrossel de novo.`, fetchFn, log);
     }
   }
   log(`Instagram: ${publicados} publicação(ões) feitas.`);

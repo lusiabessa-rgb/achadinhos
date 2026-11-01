@@ -1335,6 +1335,65 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
+  // 31/10: o carrossel 05 não saiu ("Media ID is not available", código 9007) e o run deu success calado
+  await teste('Instagram: código 9007 espera, confere o status e tenta de novo; se não der, avisa no Telegram', async () => {
+    const erro9007 = { ok: false, status: 400, headers: { get: () => '' }, json: async () => ({ error: { code: 9007, error_subcode: 2207027, message: 'Media ID is not available' } }) };
+    // (a) 2 vezes 9007 e depois publica: confere o status do pai e dos filhos entre as tentativas
+    const reg = [];
+    const base = instagramFalso(reg);
+    let falhas = 2;
+    const f = async (url, opt) => {
+      if (String(url).includes('/media_publish') && falhas > 0) {
+        falhas--;
+        reg.push({ metodo: 'POST', u: String(url), corpo: {} });
+        return erro9007;
+      }
+      return base(url, opt);
+    };
+    const id = await instagram.publicarCarrossel(CRED, ['https://x/1.jpg', 'https://x/2.jpg'], 'oi', f, 1);
+    assert(id.startsWith('POST'));
+    const pub = reg.map((r, i) => (r.u.includes('/media_publish') ? i : -1)).filter((i) => i >= 0);
+    assert.strictEqual(pub.length, 3, 'não tentou de novo');
+    const checagensEntre = reg.slice(pub[0], pub[1]).filter((r) => r.metodo === 'GET' && r.u.includes('status_code')).length;
+    assert(checagensEntre >= 3, 'não conferiu o status do carrossel e dos filhos antes de tentar de novo');
+    // (b) 9007 sempre: erro claro, limite de tentativas
+    let tentativas = 0;
+    const sempre = async (url, opt) => (String(url).includes('/media_publish') ? (tentativas++, erro9007) : base(url, opt));
+    await assert.rejects(instagram.publicarCarrossel(CRED, ['https://x/1.jpg', 'https://x/2.jpg'], 'oi', sempre, 1), /código 9007.*Nada publicado/);
+    assert.strictEqual(tentativas, 5);
+    // (c) na rodada da helena: não grava como publicado e avisa a dona no Telegram
+    const { publicar } = require('./publicar');
+    const pastaTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hel9007-'));
+    const lerCfg = maquina.lerConfig;
+    try {
+      maquina.lerConfig = (p) => {
+        const c = lerCfg(p);
+        return c.tipo === 'educativo' ? { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined } } : c;
+      };
+      const arqPublicados = path.join(pastaTmp, 'publicados.json');
+      const telegram = [];
+      const reg2 = [];
+      const base2 = instagramFalso(reg2);
+      const fetchFn = async (url, opt = {}) => {
+        const u = String(url);
+        if (u.includes('api.telegram.org')) {
+          telegram.push(String(opt.body || ''));
+          return { ok: true, status: 200, json: async () => ({ ok: true, result: {} }) };
+        }
+        return u.includes('/media_publish') ? erro9007 : base2(url, opt);
+      };
+      const r = await publicar('helena', { arqPublicados, ignorarDesligado: true, segredos: { igToken: 't', igUserId: ID_HELENA, telegramToken: 'tg', telegramChatId: '1' }, fetchFn, intervaloNoAr: 1, intervaloStatus: 1, log: () => {} });
+      assert.strictEqual(r.publicados, 0);
+      const feitos = fs.existsSync(arqPublicados) ? JSON.parse(fs.readFileSync(arqPublicados, 'utf8')) : {};
+      assert(!Object.keys(feitos).some((k) => k.startsWith('carrossel:')), 'gravou como publicado sem publicar');
+      assert.strictEqual(telegram.length, 1, 'não avisou no Telegram');
+      assert(/carrossel/.test(decodeURIComponent(telegram[0])) && /9007/.test(decodeURIComponent(telegram[0])), 'aviso sem clareza');
+    } finally {
+      maquina.lerConfig = lerCfg;
+      fs.rmSync(pastaTmp, { recursive: true, force: true });
+    }
+  });
+
   // ---------- Reels no @achadinhoabessa (pedido de 27/10: tudo o que vai pro TikTok vai pro Instagram) ----------
   const reels = require('./reels');
 

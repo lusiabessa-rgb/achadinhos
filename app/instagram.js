@@ -36,6 +36,7 @@ async function chamar(cred, metodo, caminho, params = {}, fetchFn = fetch) {
         );
       }
       ultimoErro = new Error(`Instagram: ${e.message || 'HTTP ' + resp.status}${e.code ? ` (código ${e.code})` : ''}`);
+      ultimoErro.codigo = e.code;
       if (resp.status >= 400 && resp.status < 500 && e.code !== 4 && e.code !== 9) throw ultimoErro; // erro do pedido
     } catch (e) {
       if (e instanceof ErroFatal || (e.message || '').startsWith('Instagram:')) throw e;
@@ -64,6 +65,26 @@ async function esperarPronto(cred, idContainer, fetchFn, intervalo = 3000, maxTe
   throw new Error(video ? 'O Instagram demorou demais para preparar o vídeo. Nada publicado.' : 'O Instagram demorou demais para preparar a imagem.');
 }
 
+// media_publish com paciência (31/10: o carrossel 05 da helena falhou com "Media ID is not available",
+// código 9007 = o Instagram ainda não liberou o contêiner). Se der 9007: espera, confere de novo o
+// status_code do contêiner (e dos filhos, no carrossel) e tenta outra vez, até "vezes" tentativas.
+async function publicarContainer(cred, idContainer, fetchFn, intervalo, { filhos = [], vezes = 5, video = false } = {}) {
+  const pausa = intervalo === undefined ? 15000 : intervalo;
+  for (let i = 1; ; i++) {
+    try {
+      const p = await chamar(cred, 'POST', `${cred.userId}/media_publish`, { creation_id: idContainer }, fetchFn);
+      return p.id;
+    } catch (e) {
+      if (e.codigo !== 9007) throw e;
+      if (i >= vezes) {
+        throw new Error(`O Instagram não liberou a publicação (código 9007, "mídia ainda não disponível") nem depois de ${vezes} tentativas. Nada publicado; a próxima rodada tenta de novo.`);
+      }
+      await espera(pausa);
+      for (const id of [...filhos, idContainer]) await esperarPronto(cred, id, fetchFn, intervalo, 40, video);
+    }
+  }
+}
+
 async function limiteDeHoje(cred, fetchFn) {
   try {
     const r = await chamar(cred, 'GET', `${cred.userId}/content_publishing_limit`, { fields: 'quota_usage,config' }, fetchFn);
@@ -79,8 +100,7 @@ async function limiteDeHoje(cred, fetchFn) {
 async function publicarImagem(cred, urlImagem, legenda, fetchFn = fetch, intervalo) {
   const c = await chamar(cred, 'POST', `${cred.userId}/media`, { image_url: urlImagem, caption: legenda }, fetchFn);
   await esperarPronto(cred, c.id, fetchFn, intervalo);
-  const p = await chamar(cred, 'POST', `${cred.userId}/media_publish`, { creation_id: c.id }, fetchFn);
-  return p.id;
+  return publicarContainer(cred, c.id, fetchFn, intervalo);
 }
 
 // Carrossel com 2 a 10 imagens (conta como 1 post no limite do dia).
@@ -101,16 +121,15 @@ async function publicarCarrossel(cred, urlsImagens, legenda, fetchFn = fetch, in
     fetchFn
   );
   await esperarPronto(cred, pai.id, fetchFn, intervalo);
-  const p = await chamar(cred, 'POST', `${cred.userId}/media_publish`, { creation_id: pai.id }, fetchFn);
-  return p.id;
+  // (antes do publish: filhos e contêiner do carrossel já estão FINISHED; 3 em 3 s, até ~2 min cada)
+  return publicarContainer(cred, pai.id, fetchFn, intervalo, { filhos });
 }
 
 // Story com 1 imagem (sem legenda; o link fica na bio).
 async function publicarStory(cred, urlImagem, fetchFn = fetch, intervalo) {
   const c = await chamar(cred, 'POST', `${cred.userId}/media`, { image_url: urlImagem, media_type: 'STORIES' }, fetchFn);
   await esperarPronto(cred, c.id, fetchFn, intervalo);
-  const p = await chamar(cred, 'POST', `${cred.userId}/media_publish`, { creation_id: c.id }, fetchFn);
-  return p.id;
+  return publicarContainer(cred, c.id, fetchFn, intervalo);
 }
 
 // Reel com 1 vídeo MP4 (H.264/AAC, 9:16) num endereço público. O Instagram baixa e processa o vídeo:
@@ -118,8 +137,7 @@ async function publicarStory(cred, urlImagem, fetchFn = fetch, intervalo) {
 async function publicarReel(cred, urlVideo, legenda, fetchFn = fetch, intervalo = 10000, maxTentativas = 60) {
   const c = await chamar(cred, 'POST', `${cred.userId}/media`, { media_type: 'REELS', video_url: urlVideo, caption: legenda, share_to_feed: 'true' }, fetchFn);
   await esperarPronto(cred, c.id, fetchFn, intervalo, maxTentativas, true);
-  const p = await chamar(cred, 'POST', `${cred.userId}/media_publish`, { creation_id: c.id }, fetchFn);
-  return p.id;
+  return publicarContainer(cred, c.id, fetchFn, intervalo, { video: true });
 }
 
 // O token dura 60 dias. Renovar estende o prazo (precisa ter mais de 24h de vida).
