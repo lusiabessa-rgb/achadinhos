@@ -196,6 +196,35 @@
   .bola { width: min(13vw, 54px); aspect-ratio: 1; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
   .bola.falta { background: #fff; border: 4px dashed #BBB; display: grid; place-items: center; font-size: 24px; font-weight: 800; color: #999; }
   .bola.falta.certa { border-style: solid; border-color: #fff; animation: pula .5s; }
+
+  /* Hora da pausa (01/11): tempo de tela escolhido pelo adulto */
+  .tempoTela { display: block; margin: 14px auto 0; font-size: 13px; font-weight: 600; color: #777; padding: 8px 14px; box-shadow: none; background: #fff; border: 1px solid #EEE; }
+  #pausaAviso { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 65; background: #FFF3C4; color: #6B5300;
+    border-radius: 999px; padding: 10px 18px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,.15); display: none; white-space: nowrap; }
+  #pausaAviso.aberto { display: block; animation: surge .4s; }
+  #pausaTela { position: fixed; inset: 0; z-index: 70; display: none; place-items: center; padding: 20px; overflow-y: auto;
+    background: linear-gradient(160deg, #E8F3F1, #EEF0FA); }
+  #pausaTela.aberta { display: grid; }
+  #pausaTela .caixa { max-width: 380px; width: 100%; text-align: center; }
+  #pausaTela .lua { font-size: 64px; line-height: 1; }
+  #pausaTela h2 { font-size: 26px; margin: 12px 0 6px; color: #2E5E5A; }
+  #pausaTela p { margin: 0 0 14px; color: #555; line-height: 1.4; }
+  #pausaTela .brincadeira { background: #fff; border-radius: 18px; padding: 16px; font-size: 18px; font-weight: 600; color: #2B2B2B;
+    box-shadow: 0 2px 10px rgba(0,0,0,.06); margin-bottom: 16px; }
+  #pausaTela .botoes, #pausaTela .tempos { display: grid; gap: 10px; }
+  #pausaTela .tempos { grid-template-columns: 1fr 1fr; }
+  #pausaTela .tempos .btn.ligado { background: var(--verde); }
+  #pausaTela input { width: 100%; font-size: 20px; padding: 12px; border-radius: 12px; border: 2px solid #ddd; margin-bottom: 8px; text-align: center; }
+  #pausaTela .msg { min-height: 20px; color: #B3261E; font-size: 14px; margin: 0 0 8px; }
+  #pausaTela .adulto { margin-top: 18px; font-size: 14px; color: #777; }
+  #impressao { display: none; }
+  @media print {
+    body { background: #fff; }
+    body > * { display: none !important; }
+    #impressao { display: block !important; text-align: center; }
+    #impressao svg { width: 100%; max-width: 18cm; height: auto; }
+    #impressao p { font: 14px Arial, sans-serif; color: #555; }
+  }
 </style>
 
 <link rel="manifest" href="manifest.webmanifest">
@@ -222,6 +251,7 @@
     <div class="medalhas" id="medalhas"></div>
     <p class="aviso">Cada desenho terminado vale 1 estrela. Cada acerto no jogo também. Junte estrelas para ganhar medalhas!</p>
     <p class="aviso">👨‍👩‍👧 Para crianças a partir de 2 anos, sempre com um adulto por perto. Pouco tempo de tela por dia e muita conversa junto.</p>
+    <button class="btn tempoTela" id="tempoTela">⏰ Tempo de tela: desligado</button>
   </section>
 
   <!-- LISTA de uma seção (desenhos, letras ou números) -->
@@ -351,6 +381,11 @@
     <button class="btn" id="fechaFesta">Continuar pintando</button>
   </div>
 </div></div>
+
+<!-- Hora da pausa (01/11): aviso de 1 minuto, tela de descanso e folha para imprimir -->
+<div id="pausaAviso">⏰ Falta 1 minuto!</div>
+<div id="pausaTela"><div class="caixa" id="pausaCaixa"></div></div>
+<div id="impressao"></div>
 
 <script>
 // ===== Conteúdo =====
@@ -1603,6 +1638,99 @@ function acabouQuebra() {
   const figs = Object.keys(FIGURAS_QC), prox = figs.find(f => !prog.feitos[qcChave(f, qc.n)]);
   setTimeout(() => festa(medalha ? medalha[1] : emoji, ELOGIOS[ultimoElogio], texto, prox ? () => montaQuebra(prox) : abrirQuebra), 1600);
 }
+
+// ===== Hora da pausa (ideia 5, pedido da Lusia em 01/11) =====
+// O adulto escolhe 10, 15 ou 20 minutos (trava da continha). Conta só o tempo com o app aberto na tela.
+// Falta 1 minuto: aviso suave. Acabou: tela de descanso que só o adulto desbloqueia.
+// Ficou mais de 30 minutos longe do app: o tempo começa de novo (o descanso já aconteceu).
+function passoPausa(st, agora) {
+  if (!st.min) return "nada";
+  if (st.bloqueado) return "bloqueia";
+  const passou = agora - (st.ultimo || agora);
+  st.ultimo = agora;
+  if (passou > 30 * 60000) { st.usado = 0; st.avisou = false; }
+  else if (passou > 0 && passou <= 5000) st.usado = (st.usado || 0) + passou; // pulo grande = app estava fechado, não conta
+  if (st.usado >= st.min * 60000) { st.bloqueado = true; return "bloqueia"; }
+  if (st.min > 1 && st.usado >= (st.min - 1) * 60000 && !st.avisou) { st.avisou = true; return "aviso"; }
+  return "nada";
+} // fim passoPausa
+const TEMPOS_TELA = [10, 15, 20];
+const BRINCADEIRAS = [
+  "Desenhe no papel o que você pintou.",
+  "Procure 3 coisas azuis na casa.",
+  "Brinque de estátua com alguém da família.",
+  "Ache 2 coisas redondas e 2 coisas quadradas.",
+  "Conte quantas janelas tem a sua casa.",
+  "Dance uma música com a família.",
+  "Olhe pela janela e diga as cores que você vê.",
+  "Monte uma torre com caixas ou almofadas."
+];
+let pausa = { min: 0 };
+try { pausa = Object.assign(pausa, JSON.parse(localStorage.getItem("helena-pausa")) || {}); } catch (e) {}
+const guardaPausa = () => { try { localStorage.setItem("helena-pausa", JSON.stringify(pausa)); } catch (e) {} };
+function mostraTempoTela() { $("tempoTela").textContent = "⏰ Tempo de tela: " + (pausa.min ? pausa.min + " minutos" : "desligado"); }
+
+// Trava do adulto: continha fácil (a criança pequena não resolve sozinha).
+function travaDoAdulto(depois, voltar) {
+  const a = 3 + Math.floor(Math.random() * 6), b = 4 + Math.floor(Math.random() * 5);
+  $("pausaCaixa").innerHTML = `<div class="lua">🔐</div><h2>Só para adultos</h2>
+    <p>Quanto é ${a} + ${b}?</p>
+    <input id="pausaConta" inputmode="numeric" autocomplete="off">
+    <p class="msg" id="pausaMsg"></p>
+    <div class="botoes"><button class="btn verde" id="pausaOk">Continuar</button><button class="btn" id="pausaVolta">Voltar</button></div>`;
+  $("pausaTela").classList.add("aberta");
+  $("pausaOk").onclick = () => +$("pausaConta").value === a + b ? depois() : ($("pausaMsg").textContent = "Resposta errada.");
+  $("pausaVolta").onclick = voltar;
+}
+function escolheTempo() {
+  $("pausaCaixa").innerHTML = `<div class="lua">⏰</div><h2>Tempo de tela</h2>
+    <p>Quando o tempo acabar, o app pede uma pausa e só volta com um adulto. Para 2 anos ou mais, com um adulto por perto e por pouco tempo.</p>
+    <div class="tempos">${[0, ...TEMPOS_TELA].map(m => `<button class="btn${pausa.min === m ? " ligado" : ""}" data-min="${m}">${m ? m + " minutos" : "Desligado"}</button>`).join("")}</div>`;
+  $("pausaTela").classList.add("aberta");
+  $("pausaCaixa").querySelectorAll("[data-min]").forEach(b => b.onclick = () => {
+    pausa = { min: +b.dataset.min, usado: 0, ultimo: Date.now(), bloqueado: false, avisou: false };
+    guardaPausa(); mostraTempoTela();
+    $("pausaTela").classList.remove("aberta");
+  });
+}
+function telaDescanso() {
+  if ($("pausaTela").classList.contains("aberta")) return; // já aberta (descanso ou adulto mexendo): não atrapalha
+  calar(); $("festa").classList.remove("aberta");
+  const sugestao = BRINCADEIRAS[Math.floor(Math.random() * BRINCADEIRAS.length)];
+  $("pausaCaixa").innerHTML = `<div class="lua">🌙</div><h2>Hora de descansar os olhos!</h2>
+    <p>Agora a brincadeira é longe da tela:</p>
+    <div class="brincadeira">${sugestao}</div>
+    <div class="botoes"><button class="btn forte" id="pausaImprime">🖨️ Imprimir este desenho para pintar no papel</button></div>
+    <button class="btn adulto" id="pausaAdulto">👩 Sou o adulto</button>`;
+  $("pausaTela").classList.add("aberta");
+  $("pausaImprime").onclick = imprimirDesenho;
+  $("pausaAdulto").onclick = () => travaDoAdulto(escolheTempo, () => { $("pausaTela").classList.remove("aberta"); telaDescanso(); });
+  // não há fala gravada com essa frase: usa a voz do celular
+  fala("Hora de descansar os olhos! " + sugestao, "pt-BR");
+}
+// Folha para imprimir: o desenho aberto agora (ou um desenho sorteado), só a linha preta.
+function imprimirDesenho() {
+  const naTela = $("pintar").classList.contains("ativa") && atual;
+  const d = naTela ? atual : DESENHOS[Math.floor(Math.random() * DESENHOS.length)];
+  const eraLivre = livre; livre = false;
+  const linhas = camadas(d).linhas;
+  livre = eraLivre;
+  $("impressao").innerHTML = embrulha(linhas) + "<p>Colore com Helena · pinte com giz de cera ou lápis de cor</p>";
+  window.print();
+}
+function tiquePausa() {
+  if (document.visibilityState !== "visible") return;
+  const r = passoPausa(pausa, Date.now());
+  if (!pausa.min) return;
+  guardaPausa();
+  if (r === "aviso") { $("pausaAviso").classList.add("aberto"); setTimeout(() => $("pausaAviso").classList.remove("aberto"), 8000); }
+  if (r === "bloqueia") telaDescanso();
+}
+$("tempoTela").onclick = () => travaDoAdulto(escolheTempo, () => $("pausaTela").classList.remove("aberta"));
+document.addEventListener("visibilitychange", tiquePausa);
+setInterval(tiquePausa, 1000);
+mostraTempoTela();
+tiquePausa();
 
 montaInicio();
 mascotesDoRodape("inicio");

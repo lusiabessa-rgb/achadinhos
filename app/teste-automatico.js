@@ -1722,6 +1722,30 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
+  await teste('app colorir: Hora da pausa (tempo de tela, aviso de 1 minuto, bloqueio só o adulto tira)', async () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'publico', 'colorir', 'index.html'), 'utf8');
+    for (const t of ['id="tempoTela"', 'id="pausaTela"', 'id="pausaAviso"', 'Falta 1 minuto!', 'Hora de descansar os olhos!',
+      'Imprimir este desenho para pintar no papel', 'Só para adultos', '"helena-pausa"', '[10, 15, 20]', 'window.print()']) {
+      assert.ok(html.includes(t), 'faltou no app: ' + t);
+    }
+    assert.ok(!/inh[ao]s?\b/i.test(html.match(/const BRINCADEIRAS = \[[\s\S]*?\];/)[0]), 'brincadeira com diminutivo');
+    const passoPausa = new Function(html.match(/function passoPausa[\s\S]*?\} \/\/ fim passoPausa/)[0].replace('} // fim passoPausa', '}') + '\nreturn passoPausa;')();
+    const min = 60000;
+    assert.strictEqual(passoPausa({ min: 0 }, 1000), 'nada', 'desligado não conta');
+    const st = { min: 10, usado: 0, ultimo: 0 };
+    let r = 'nada', aviso = 0;
+    for (let t = 1000; t <= 11 * min && r !== 'bloqueia'; t += 1000) { r = passoPausa(st, t); if (r === 'aviso') aviso++; }
+    assert.strictEqual(r, 'bloqueia');
+    assert.strictEqual(aviso, 1, 'aviso de 1 minuto sai uma vez só');
+    assert.ok(st.bloqueado);
+    assert.strictEqual(passoPausa(st, 99 * min), 'bloqueia', 'só o adulto desbloqueia, mesmo horas depois');
+    const fechado = { min: 10, usado: 5 * min, ultimo: 0 };
+    passoPausa(fechado, 10 * min); // app ficou 10 min fechado: não conta
+    assert.strictEqual(fechado.usado, 5 * min);
+    passoPausa(fechado, 50 * min); // mais de 30 min longe: começa de novo
+    assert.strictEqual(fechado.usado, 0);
+  });
+
   console.log(`\nResultado: ${passou} ok, ${falhou} falhou.`);
   process.exitCode = falhou ? 1 : 0;
 })();
