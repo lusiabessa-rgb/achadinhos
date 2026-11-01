@@ -4,6 +4,8 @@
 // e escolhe no máximo 4 produtos, cada um com o que ELA faz (de preferência nada, ou 1 toque).
 // Uso:  node app/produtos-semana.js <conta>            -> monta, salva em contas/<conta>/produtos-da-semana.txt e manda no Telegram
 //       node app/produtos-semana.js <conta> --simular  -> só mostra, não manda
+// Desde 26/10 (ela: "são muitas opções e não bate com a descrição"): depois do resumo vai UMA FOTO por produto
+// do TikTok, com o título exato do anúncio e a loja (colunas foto | titulo | loja do tiktok-em-alta.txt).
 const fs = require('fs');
 const path = require('path');
 const { enviarTelegram } = require('./conferencia');
@@ -43,16 +45,28 @@ function parecidos(a, b) {
   return comum >= 2;
 }
 
+// Colunas de uma linha do tiktok-em-alta.txt. As 3 últimas (foto | titulo | loja) são opcionais (linhas antigas não têm).
+// O título do anúncio pode ter "|" dentro (ex.: "3x3 Metros | Para Festa"): com as 3 colunas, a loja é a última e o meio é o título.
+function colunasTikTok(linha) {
+  const c = linha.split('|').map((x) => x.trim());
+  const extra = c.slice(10);
+  const foto = /^https?:\/\//.test(extra[0] || '') ? extra[0] : '';
+  const titulo = extra.length >= 3 ? extra.slice(1, -1).join(' | ') : extra[1] || '';
+  const loja = extra.length >= 3 ? extra[extra.length - 1] : '';
+  return { c: c.slice(0, 10), foto, titulo, loja };
+}
+
 function lerTikTok(conta) {
-  const linhas = linhasDe(path.join(RAIZ, 'contas', conta, 'tiktok-em-alta.txt')).map((l) => l.split('|').map((c) => c.trim()));
-  const ultima = linhas.reduce((d, c) => (c[0] > d ? c[0] : d), '');
+  const linhas = linhasDe(path.join(RAIZ, 'contas', conta, 'tiktok-em-alta.txt')).map(colunasTikTok);
+  const ultima = linhas.reduce((d, { c }) => (c[0] > d ? c[0] : d), '');
   return {
     data: ultima,
     itens: linhas
-      .filter((c) => c[0] === ultima && c[2])
-      .map(([, id, nome, preco, comissao, vendas, cresc, afiliados, , categoria]) => ({
+      .filter(({ c }) => c[0] === ultima && c[2])
+      .map(({ c: [, id, nome, preco, comissao, vendas, cresc, afiliados, , categoria], foto, titulo, loja }) => ({
         id, nome, preco: num(preco), comissao: num(comissao), vendas: num(vendas) || 0,
         cresc: num(cresc) || 0, afiliados: num(afiliados), categoria: (categoria || '').toLowerCase(),
+        foto, titulo, loja,
       })),
   };
 }
@@ -121,13 +135,73 @@ function montarMensagem({ data, lista, soShopee }) {
   return l.join('\n');
 }
 
-async function produtosDaSemana(conta, { simular = false, log = console.log, segredos } = {}) {
+// Legenda da foto de cada produto (o Telegram aceita até 1024 letras)
+function legendaFoto(p, i) {
+  const l = [`${i + 1}. ${p.nome}${p.preco != null ? ' (' + reais(p.preco) + ')' : ''}`];
+  l.push('Busque na vitrine: ' + (p.titulo || busca(p.nome)));
+  if (p.loja) l.push('Loja: ' + p.loja);
+  l.push('👉 É ESTE da foto.');
+  return l.join('\n').slice(0, 1024);
+}
+
+// Baixa a foto do anúncio (o servidor de imagens do FastMoss pede Referer) e devolve um JPG
+async function baixarFoto(url, { fetchFn = fetch } = {}) {
+  const r = await fetchFn(url, {
+    headers: {
+      Referer: 'https://www.fastmoss.com/',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36',
+      Accept: 'image/avif,image/webp,image/*,*/*;q=0.8',
+    },
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!r.ok) throw new Error('foto HTTP ' + r.status);
+  const cru = Buffer.from(await r.arrayBuffer());
+  if (!cru.length) throw new Error('foto vazia');
+  const sharp = require('sharp');
+  return sharp(cru).flatten({ background: '#ffffff' }).jpeg({ quality: 90 }).toBuffer();
+}
+
+// Manda 1 foto por produto. Se a foto falhar, vai só o texto; se até o texto falhar, segue (nunca quebra a rodada).
+async function enviarFotos(lista, { token, chatId, fetchFn = fetch, log = console.log } = {}) {
+  let fotos = 0, textos = 0;
+  for (const [i, p] of lista.entries()) {
+    const legenda = legendaFoto(p, i);
+    try {
+      if (!p.foto) throw new Error('sem foto');
+      const jpg = await baixarFoto(p.foto, { fetchFn });
+      const form = new FormData();
+      form.append('chat_id', String(chatId));
+      form.append('caption', legenda);
+      form.append('photo', new Blob([jpg], { type: 'image/jpeg' }), `produto-${i + 1}.jpg`);
+      const r = await fetchFn(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: form, signal: AbortSignal.timeout(30000) });
+      const json = await r.json().catch(() => ({}));
+      // Nunca mostrar a URL (ela tem o token)
+      if (!r.ok || !json.ok) throw new Error(`o Telegram recusou a foto (${json.description || 'HTTP ' + r.status})`);
+      fotos++;
+    } catch (e) {
+      log(`(Foto do produto ${i + 1} não foi: ${e.message}. Vai só o texto.)`);
+      try {
+        await enviarTelegram(legenda, { token, chatId, fetchFn });
+        textos++;
+      } catch (e2) {
+        log(`(Texto do produto ${i + 1} também não foi: ${e2.message})`);
+      }
+    }
+  }
+  return { fotos, textos };
+}
+
+async function produtosDaSemana(conta,{ simular = false, log = console.log, segredos } = {}) {
   const { data, itens } = lerTikTok(conta);
   const escolha = escolher({ tiktok: itens, shopee: lerShopee(conta), vitrine: lerVitrine(conta) });
   const msg = montarMensagem({ data, ...escolha });
   fs.writeFileSync(path.join(RAIZ, 'contas', conta, 'produtos-da-semana.txt'), msg + '\n');
   log(msg);
-  if (simular) return { msg, enviado: false };
+  const doTikTok = escolha.lista.filter((p) => p.id);
+  if (simular) {
+    doTikTok.forEach((p, i) => log(`\n[foto ${i + 1}] ${p.foto || '(sem foto: vai só o texto)'}\n${legendaFoto(p, i)}`));
+    return { msg, enviado: false };
+  }
   const seg = segredos || lerSegredosLocal(conta);
   if (!seg.telegramToken || !seg.telegramChatId) {
     log('\n(Sem TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID: a lista ficou só aqui.)');
@@ -135,7 +209,9 @@ async function produtosDaSemana(conta, { simular = false, log = console.log, seg
   }
   await enviarTelegram(msg, { token: seg.telegramToken, chatId: seg.telegramChatId });
   log('\nLista enviada pelo Telegram.');
-  return { msg, enviado: true };
+  const f = await enviarFotos(doTikTok, { token: seg.telegramToken, chatId: seg.telegramChatId, log });
+  log(`Fotos: ${f.fotos} enviada(s), ${f.textos} só em texto.`);
+  return { msg, enviado: true, ...f };
 }
 
 function lerSegredosLocal(conta) {
@@ -155,4 +231,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { produtosDaSemana, escolher, montarMensagem, parecidos, palavras, lerTikTok };
+module.exports = { produtosDaSemana, escolher, montarMensagem, parecidos, palavras, lerTikTok, colunasTikTok, legendaFoto, baixarFoto, enviarFotos };

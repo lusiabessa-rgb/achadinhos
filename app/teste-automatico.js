@@ -94,6 +94,16 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     }
   });
 
+  await teste('Instagram só promete "link na bio" se o link estiver na bio (linkNaBio)', async () => {
+    const t = require('./textos');
+    const p = { itemId: 1, productName: 'Carimbo de biscoito', price: 24 };
+    for (const l of [t.legendaInstagram(p, 1, []), t.legendaCarrossel([p], [])]) {
+      assert(!/na bio/i.test(l) && /Salva pra não esquecer/.test(l) && !/null/.test(l), 'prometeu link que não existe: ' + l);
+    }
+    assert(!/null/.test(t.legendaCarrossel([p], [], { comenteQuero: true })));
+    assert(/na bio/i.test(t.legendaInstagram(p, 1, [], { linkNaBio: true })));
+  });
+
   await teste('cada plataforma fala do seu jeito: TikTok nunca cita Shopee, link na bio ou o Instagram', async () => {
     for (let id = 1; id <= 60; id++) {
       const p = { itemId: 'x'.repeat(id), productName: 'Guirlanda', priceMin: '59.9' };
@@ -510,7 +520,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoPorDia: 1 } });
       const sim = await publicar('lusia', { simular: true, dia, arqPublicados, filaReels: [], log: () => {} });
       assert.strictEqual(sim.tarefas.filter((t) => t.tipo === 'carrossel').length, 1);
-      assert(sim.tarefas[0].legenda.includes('bio'));
+      assert(sim.tarefas[0].legenda.includes('Salva') && !sim.tarefas[0].legenda.includes('na bio'));
       const reg = [];
       const opcoes = { dia, arqPublicados, filaReels: [], ignorarDesligado: true, segredos: { igToken: 't', igUserId: '9' }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} };
       const r1 = await publicar('lusia', opcoes);
@@ -1076,6 +1086,56 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     const msg = ps.montarMensagem({ data: '2026-10-19', lista, soShopee });
     assert.ok(/só \d\)/.test(msg) && msg.includes('vende nas DUAS') && msg.includes('Você só faz'));
     assert.ok(!/sacolinha/i.test(msg) && !/[a-z]+ing\b/.test(msg), 'sem "sacolinha" e sem inglês');
+  });
+
+  await teste('produtos da semana: 1 FOTO por produto com título exato e loja (26/10); foto falhou = só texto', async () => {
+    const ps = require('./produtos-semana');
+    const sharp = require('sharp');
+    // Colunas novas opcionais: linha antiga continua valendo; título com "|" dentro não quebra
+    const antiga = ps.colunasTikTok('2026-10-19 | 1 | Cortina | 28,00 | | 4700 | 48 | 489 | 4,4 | natal');
+    assert.strictEqual(antiga.foto, '');
+    assert.strictEqual(antiga.titulo, '');
+    const nova = ps.colunasTikTok('2026-10-26 | 2 | Cortina | 29,90 | 8 | 5000 | 88 | 2000 | 4,3 | natal | https://s.500fd.com/tt_product/a~b.webp | Cortina de Cobre 3x3 Metros | Para Festa | Walcost0501');
+    assert.strictEqual(nova.foto, 'https://s.500fd.com/tt_product/a~b.webp');
+    assert.strictEqual(nova.titulo, 'Cortina de Cobre 3x3 Metros | Para Festa');
+    assert.strictEqual(nova.loja, 'Walcost0501');
+    assert.strictEqual(ps.colunasTikTok('2026-10-26 | 3 | Tampa | 10 | | | | | | casa | https://x/y.webp | Kit Tampas |').loja, '');
+    const reais = ps.lerTikTok('lusia').itens.filter((p) => p.foto);
+    assert.ok(reais.length >= 4 && reais.every((p) => p.titulo), 'as linhas de 26/10 têm foto e título');
+
+    const webp = await sharp({ create: { width: 40, height: 40, channels: 3, background: '#c08040' } }).webp().toBuffer();
+    const pedidos = [];
+    const falso = async (u, op = {}) => {
+      pedidos.push({ u, op });
+      if (u.includes('500fd')) {
+        if (u.includes('quebrada')) return { ok: false, status: 403, arrayBuffer: async () => new ArrayBuffer(0) };
+        return { ok: true, status: 200, arrayBuffer: async () => webp.buffer.slice(webp.byteOffset, webp.byteOffset + webp.length) };
+      }
+      return { ok: true, status: 200, json: async () => ({ ok: true }) };
+    };
+    const lista = [
+      { id: '1', nome: 'Luminária com sensor', preco: 14.56, foto: 'https://s.500fd.com/tt_product/x~y.webp', titulo: 'Luz Lâmpada com Sensor de Presença', loja: 'PanguTK' },
+      { id: '2', nome: 'Tampas elásticas', preco: 10, foto: 'https://s.500fd.com/tt_product/quebrada.webp', titulo: 'Kit Tampas Plásticas', loja: '' },
+      { id: '3', nome: 'Projetor', preco: 26.99, foto: '', titulo: '', loja: '' },
+    ];
+    const r = await ps.enviarFotos(lista, { token: 'TK', chatId: '42', fetchFn: falso, log: () => {} });
+    assert.deepStrictEqual(r, { fotos: 1, textos: 2 }, 'foto que falha vira texto, sem quebrar');
+    const baixou = pedidos.find((p) => p.u.includes('x~y'));
+    assert.strictEqual(baixou.op.headers.Referer, 'https://www.fastmoss.com/');
+    assert.ok(/Mozilla/.test(baixou.op.headers['User-Agent']));
+    const foto = pedidos.find((p) => p.u.endsWith('/sendPhoto'));
+    assert.ok(foto.op.body instanceof FormData, 'foto vai como arquivo (multipart)');
+    const leg = foto.op.body.get('caption');
+    assert.ok(leg.includes('Busque na vitrine: Luz Lâmpada com Sensor de Presença') && leg.includes('Loja: PanguTK') && leg.includes('É ESTE da foto'), 'legenda com acento, título e loja');
+    const arq = Buffer.from(await foto.op.body.get('photo').arrayBuffer());
+    assert.strictEqual((await sharp(arq).metadata()).format, 'jpeg', 'webp vira jpg');
+    const textos = pedidos.filter((p) => p.u.endsWith('/sendMessage')).map((p) => JSON.parse(p.op.body).text);
+    assert.ok(textos[0].includes('Kit Tampas Plásticas') && !textos[0].includes('Loja:'), 'sem loja, sem a linha Loja');
+    assert.ok(textos[1].includes('Busque na vitrine: projetor'), 'sem título, usa a busca curta');
+    // Telegram fora do ar: não quebra
+    const recusa = async (u) => (u.includes('500fd') ? falso(u) : { ok: false, status: 500, json: async () => ({}) });
+    const r2 = await ps.enviarFotos(lista, { token: 'TK', chatId: '42', fetchFn: recusa, log: () => {} });
+    assert.deepStrictEqual(r2, { fotos: 0, textos: 0 });
   });
 
   // ---------- CONTA EDUCATIVA @colorecomhelena: separação à prova de bagunça (26/10) ----------

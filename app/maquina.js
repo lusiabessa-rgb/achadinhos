@@ -229,7 +229,9 @@ async function rodar(conta, modoTeste) {
     if (campanha) log(`Campanha da semana: ${campanha.nome} (até ${campanhas.dataBR(campanha.ate)}).`);
     // "Comente QUERO": só aparece nas legendas quando a resposta automática no direct está ligada
     const comenteQuero = !!(config.instagram && config.instagram.respostas && config.instagram.respostas.ativo);
-    const extra = { campanha, comenteQuero };
+    // Regra da Lusia (01/11): só promete "link na bio" se o link estiver MESMO na bio (instagram.linkNaBio)
+    const linkNaBio = !!(config.instagram && config.instagram.linkNaBio);
+    const extra = { campanha, comenteQuero, linkNaBio };
     // Sem as chaves da Shopee ainda? Usa o modo manual (produtos escolhidos em shopee-manual.json)
     const seg = lerSegredos(pastaConta);
     const manual = !modoTeste && !(seg.appId && seg.secret);
@@ -373,7 +375,7 @@ async function rodar(conta, modoTeste) {
             marca: config.marca,
             cor: config.corArte,
             titulo: campanha ? campanha.titulo : undefined,
-            chamada: `${comenteQuero ? 'Comente QUERO' : 'Link na bio'}  ·  oferta nº ${ok + 1}`,
+            chamada: comenteQuero ? `Comente QUERO  ·  oferta nº ${ok + 1}` : linkNaBio ? `Link na bio  ·  oferta nº ${ok + 1}` : 'Salva para não esquecer',
           }
         );
         fs.copyFileSync(arteArq, path.join(pasta, 'arte-oferta.jpg'));

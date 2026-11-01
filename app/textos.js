@@ -40,6 +40,7 @@ const comPubli = (hashtags = []) => ['#publi', ...hashtags.filter((h) => h.toLow
 // extra (opcional) em todas as funções de legenda:
 //   campanha: a campanha da semana (campanhas.js), que ganha a frase de abertura
 //   comenteQuero: true quando a resposta automática no direct está ligada (respostas.js)
+//   linkNaBio: true só quando o site está de verdade na bio do Instagram; sem ele, nada de "link na bio"
 const fraseCampanha = (extra = {}) => (extra.campanha && extra.campanha.frase) || '';
 const CTA_QUERO = '💬 Comente QUERO que eu te mando o link no direct!';
 
@@ -104,7 +105,7 @@ function legendaInstagram(p, numero, hashtags, extra = {}) {
     vendas ? `🔥 ${vendas}` : null,
     '',
     extra.comenteQuero ? CTA_QUERO : null,
-    `👉 ${extra.comenteQuero ? 'Ou pelo link' : 'Link'} na bio: oferta nº ${numero}`,
+    extra.linkNaBio ? `👉 ${extra.comenteQuero ? 'Ou pelo link' : 'Link'} na bio: oferta nº ${numero}` : extra.comenteQuero ? null : 'Salva pra não esquecer 💾',
     '_Preço pode mudar a qualquer momento._',
     '',
     comPubli(hashtags),
@@ -121,11 +122,13 @@ function legendaCarrossel(produtos, hashtags, extra = {}) {
     ...produtos.map((p, i) => `${i + 1}. ${p.productName} | ${resumo(p).preco}`),
     '',
     ...(extra.comenteQuero ? [CTA_QUERO] : []),
-    `👉 ${extra.comenteQuero ? 'Ou na bio:' : 'Os links estão na bio,'} é só procurar o número da oferta.`,
+    extra.linkNaBio ? `👉 ${extra.comenteQuero ? 'Ou na bio:' : 'Os links estão na bio,'} é só procurar o número da oferta.` : extra.comenteQuero ? null : 'Salva pra não esquecer 💾',
     '_Preços podem mudar a qualquer momento._',
     '',
     comPubli(hashtags),
-  ].join('\n');
+  ]
+    .filter((l) => l !== null)
+    .join('\n');
 }
 
 // Pinterest funciona como um "Google de ideias": título e descrição com as palavras que as pessoas pesquisam,
