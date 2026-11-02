@@ -254,7 +254,7 @@
     <h3>🏅 Suas medalhas</h3>
     <div class="medalhas" id="medalhas"></div>
     <p class="aviso">Cada desenho terminado vale 1 estrela. Cada acerto no jogo também. Junte estrelas para ganhar medalhas!</p>
-    <p class="aviso">👨‍👩‍👧 Para crianças a partir de 2 anos, sempre com um adulto por perto. Pouco tempo de tela por dia e muita conversa junto.</p>
+    <p class="aviso">👨‍👩‍👧 Para crianças a partir de 3 anos, sempre com um adulto por perto. Pouco tempo de tela por dia e muita conversa junto.</p>
     <p class="aviso links"><a href="ajuda.html">Ajuda</a> · <a href="termos.html">Termos de uso</a> · <a href="privacidade.html">Privacidade</a></p>
     <button class="btn tempoTela" id="tempoTela">⏰ Tempo de tela: desligado</button>
   </section>
@@ -1777,7 +1777,7 @@ function travaDoAdulto(depois, voltar) {
 }
 function escolheTempo() {
   $("pausaCaixa").innerHTML = `<div class="lua">⏰</div><h2>Tempo de tela</h2>
-    <p>Quando o tempo acabar, o app pede uma pausa e só volta com um adulto. Para 2 anos ou mais, com um adulto por perto e por pouco tempo.</p>
+    <p>Quando o tempo acabar, o app pede uma pausa e só volta com um adulto. Para 3 anos ou mais, com um adulto por perto e por pouco tempo.</p>
     <div class="tempos">${[0, ...TEMPOS_TELA].map(m => `<button class="btn${pausa.min === m ? " ligado" : ""}" data-min="${m}">${m ? m + " minutos" : "Desligado"}</button>`).join("")}</div>`;
   $("pausaTela").classList.add("aberta");
   $("pausaCaixa").querySelectorAll("[data-min]").forEach(b => b.onclick = () => {
