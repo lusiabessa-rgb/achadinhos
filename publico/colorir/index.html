@@ -1777,7 +1777,7 @@ function travaDoAdulto(depois, voltar) {
 }
 function escolheTempo() {
   $("pausaCaixa").innerHTML = `<div class="lua">⏰</div><h2>Tempo de tela</h2>
-    <p>Quando o tempo acabar, o app pede uma pausa e só volta com um adulto. Para 3 anos ou mais, com um adulto por perto e por pouco tempo.</p>
+    <p>Você escolhe quanto tempo seu filho pode usar. Quando o tempo acabar, a tela é bloqueada e só volta quando você liberar.</p>
     <div class="tempos">${[0, ...TEMPOS_TELA].map(m => `<button class="btn${pausa.min === m ? " ligado" : ""}" data-min="${m}">${m ? m + " minutos" : "Desligado"}</button>`).join("")}</div>`;
   $("pausaTela").classList.add("aberta");
   $("pausaCaixa").querySelectorAll("[data-min]").forEach(b => b.onclick = () => {
