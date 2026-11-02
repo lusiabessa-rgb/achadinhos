@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Colore com Helena · app de atividades para as férias</title>
+<meta name="description" content="Desenhos para pintar, letras e números com voz, jogos de cores e quebra-cabeças, criados por uma professora alfabetizadora. Sem anúncios e com Hora da pausa.">
+<meta property="og:title" content="Colore com Helena: troque o feed infinito por uma tela que ensina brincando">
+<meta property="og:description" content="App de atividades para crianças a partir de 3 anos, criado por uma professora. Sem anúncios, com Hora da pausa.">
+<meta property="og:image" content="https://lusiabessa-rgb.github.io/achadinhos/colorir/vendas/inicio.webp">
+<link rel="icon" href="icone-192.png">
+<link rel="stylesheet" href="paginas.css">
+<style>
+  main { padding-top: 14px; }
+  section { padding: 26px 0 8px; }
+  h1 { font-size: 30px; }
+  h2 { font-size: 24px; line-height: 1.25; margin: 0 0 10px; }
+  .sub { font-size: 17px; color: #4a433d; }
+  .chamada { display: inline-block; background: #FFF0C2; color: #6b4e00; font-weight: 800; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; padding: 6px 14px; border-radius: 999px; margin-top: 4px; }
+  .hero { background: #fff repeating-linear-gradient(180deg, transparent 0 31px, var(--pauta) 31px 32px); border: 1px solid #EDE6D8; border-left: 3px solid var(--margem); border-radius: 22px; padding: 18px 16px 22px; margin-top: 6px; box-shadow: 0 6px 22px rgba(30,58,95,.07); }
+  .chamada { background: #EEF3FA !important; color: var(--tinta) !important; }
+  h1.gancho { font-size: 36px; line-height: 1.12; margin: 14px 0 10px; letter-spacing: -.01em; }
+  .risco { color: var(--verm); }
+  .marca { display: inline-block; color: #fff; background: var(--verde); padding: 2px 14px 6px; border-radius: 14px; box-shadow: 0 4px 12px rgba(43,168,74,.35); }
+  .destaque { font-size: 21px; font-weight: 700; line-height: 1.35; margin: 0 0 12px; color: var(--tinta); }
+  .destaque b { color: var(--azul); }
+  @media (min-width: 640px) { h1.gancho { font-size: 46px; } }
+  .centro { text-align: center; }
+  .selinhos { font-size: 14px; color: var(--suave); margin-top: 6px; }
+  .autoridade { display: inline-block; background: #fff; border: 2px solid var(--linha); border-radius: 999px; padding: 6px 14px; font-size: 14px; font-weight: 700; color: #4a433d; margin: 4px 0 0; }
+  .pilha ul { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+  .pilha li { font-size: 15px; }
+  @media (min-width: 640px) { .pilha ul { grid-template-columns: 1fr 1fr; } }
+  .economia { display: inline-block; background: #E8F7EC; color: #1e7a37; font-weight: 800; font-size: 14px; padding: 4px 12px; border-radius: 999px; margin: 4px 0; }
+  .botao { margin-top: 6px; }
+  .tela { width: 100%; max-width: 300px; display: block; margin: 0 auto; border-radius: 26px; border: 8px solid #2B2B2B; box-shadow: 0 10px 28px rgba(0,0,0,.18); background: #fff; }
+  .dobra { position: relative; padding: 8px 0 0; }
+  .mascote { position: absolute; width: 66px; }
+  .dobra-img .tela { max-width: 262px; }
+  .m1 { left: 0; bottom: -6px; } .m2 { right: 0; top: -14px; } .m3 { right: 6px; bottom: 6px; }
+  .dobra-img { position: relative; max-width: 420px; margin: 18px auto 0; }
+  .comparar { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .comparar figure { margin: 0; text-align: center; font-weight: 700; font-size: 15px; }
+  .feed { width: 100%; height: auto; display: block; border-radius: 18px; border: 6px solid #2B2B2B; background: #111; }
+  .comparar img { width: 100%; border-radius: 18px; border: 6px solid #2B2B2B; }
+  .lista { list-style: none; padding: 0; margin: 0; }
+  .lista li { padding: 10px 0 10px 34px; position: relative; border-bottom: 1px solid var(--linha); }
+  .lista li::before { content: "✓"; position: absolute; left: 4px; top: 9px; color: var(--verde); font-weight: 900; font-size: 19px; }
+  .lista.nao li::before { content: "✕"; color: #c9a9a9; }
+  .galeria { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 14px 0; }
+  .galeria figure { margin: 0; text-align: center; font-size: 14px; font-weight: 700; color: #4a433d; }
+  .galeria img { width: 100%; border-radius: 16px; border: 5px solid #2B2B2B; background: #fff; }
+  .dois { display: grid; gap: 14px; }
+  .criadora { display: flex; gap: 14px; align-items: flex-start; }
+  .criadora img { width: 84px; flex: 0 0 auto; }
+  .precos { display: grid; gap: 16px; margin-top: 14px; }
+  .plano { background: #fff; border-radius: 22px; padding: 22px 18px; box-shadow: 0 4px 18px rgba(0,0,0,.08); border: 3px solid transparent; position: relative; text-align: center; }
+  .plano.destaque { border-color: var(--verde); }
+  .plano.mensal { border-color: var(--azul); }
+  .plano .selo { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: var(--verde); color: #fff; font-weight: 800; font-size: 13px; padding: 4px 14px; border-radius: 999px; white-space: nowrap; }
+  .plano h3 { margin: 4px 0 6px; font-size: 21px; }
+  .valor { font-size: 34px; font-weight: 900; color: var(--texto); }
+  .valor small { font-size: 16px; font-weight: 700; }
+  .de { color: #9a8f83; text-decoration: line-through; font-size: 17px; }
+  .plano p { margin: 6px 0; font-size: 15px; color: #4a433d; }
+  .plano .botao { width: 100%; text-align: center; margin-top: 12px; }
+  .faixa { background: var(--amar); color: #3b2e00; text-align: center; font-weight: 800; padding: 10px 14px; border-radius: 14px; }
+  .garantia { display: flex; gap: 14px; align-items: center; }
+  .garantia .medalha { flex: 0 0 auto; width: 84px; height: 84px; border-radius: 50%; background: var(--verde); color: #fff; display: grid; place-items: center; text-align: center; font-weight: 900; line-height: 1.05; font-size: 15px; box-shadow: 0 0 0 5px #fff, 0 0 0 8px var(--verde); }
+  @media (min-width: 640px) { .precos { grid-template-columns: 1fr 1fr; } .galeria { grid-template-columns: repeat(3, 1fr); } .dois { grid-template-columns: 1fr 1fr; } h1 { font-size: 36px; } }
+</style>
+</head>
+<body>
+<div class="arco"></div>
+<main>
+<a class="topo" href="#"><img src="icone-192.png" alt=""><div><b>Colore com Helena</b><span>Pintar, brincar e aprender</span></div></a>
+
+<!-- 1. Dobra -->
+<section class="centro" style="padding-top:4px">
+  <div class="hero">
+  <span class="chamada">☀️ As férias estão chegando</span>
+  <h1 class="gancho">Seu filho vai passar as férias <span class="risco">rolando vídeo</span>… ou <span class="marca">criando</span>?</h1>
+  <p class="destaque">Troque o feed infinito por uma tela que <b>ensina brincando</b>.</p>
+  <p class="autoridade">✏️ Criado por professora especialista em Psicopedagogia e Alfabetização</p>
+  <p class="selinhos">Sem anúncios · Garantia de 7 dias · Cancela quando quiser</p>
+  </div>
+  <div class="dobra-img">
+    <img class="tela" src="vendas/inicio.webp" alt="Tela inicial do app Colore com Helena">
+    <img class="mascote m1" src="vendas/lapis.webp" alt="">
+    <img class="mascote m2" src="vendas/estrela.webp" alt="">
+  </div>
+  
+
+</section>
+
+<!-- 2. Dor -->
+<section>
+  <h2>Férias em casa: você conhece essa cena?</h2>
+  <p>Quando as aulas acabam, nos primeiros dias tudo é festa. Depois vem o "mãe, tô entediado", "pai, me dá o celular".</p>
+  <p>Aí a gente cede, porque precisa trabalhar, fazer o almoço, respirar um pouco. E seu filho passa a tarde rolando vídeo atrás de vídeo, sem fazer nada com as mãos nem com a cabeça.</p>
+  <p>Bate aquela culpa. Você sabe que tela sem limite não faz bem, mas também não dá para inventar atividade nova toda hora.</p>
+  <div class="comparar">
+    <figure><svg class="feed" viewBox="0 0 200 356" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Celular passando vídeos sem parar">
+<defs><linearGradient id="vg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7B5CFF"/><stop offset=".55" stop-color="#FF6FA8"/><stop offset="1" stop-color="#FFB25C"/></linearGradient>
+<filter id="bl"><feGaussianBlur stdDeviation="6"/></filter></defs>
+<rect width="200" height="356" fill="#111"/>
+<g filter="url(#bl)" opacity=".9"><circle cx="70" cy="140" r="60" fill="url(#vg)"/><circle cx="135" cy="210" r="55" fill="#5CC8FF" opacity=".7"/><circle cx="90" cy="250" r="40" fill="#FFD84D" opacity=".6"/></g>
+<text x="100" y="26" font-family="Segoe UI, Arial" font-size="12" font-weight="700" fill="#fff" text-anchor="middle" opacity=".95">Seguindo   <tspan text-decoration="underline">Para você</tspan></text>
+<circle cx="100" cy="175" r="24" fill="#000" opacity=".35"/><path d="M92 163 L114 175 L92 187 Z" fill="#fff"/>
+<g font-family="Segoe UI, Arial" font-size="9" fill="#fff" text-anchor="middle" font-weight="700">
+<text x="178" y="168" font-size="20">❤️</text><text x="178" y="180">9 mil</text>
+<text x="178" y="208" font-size="20">💬</text><text x="178" y="220">340</text>
+<text x="178" y="248" font-size="20">↪️</text></g>
+<rect x="14" y="290" width="120" height="8" rx="4" fill="#fff" opacity=".85"/><rect x="14" y="304" width="90" height="7" rx="3.5" fill="#fff" opacity=".55"/>
+<rect x="14" y="332" width="172" height="3" rx="1.5" fill="#fff" opacity=".25"/><rect x="14" y="332" width="60" height="3" rx="1.5" fill="#fff"/>
+<g transform="translate(100 60)"><rect x="-34" y="-14" width="68" height="28" rx="14" fill="#fff" opacity=".18"/><text y="5" font-family="Segoe UI, Arial" font-size="14" fill="#fff" text-anchor="middle" font-weight="800">↑ ↑ ↑</text></g>
+</svg><figcaption>Rolar vídeo sem fim</figcaption></figure>
+    <figure><img src="vendas/fazenda.webp" alt="Cenário da Fazenda no app"><figcaption>Procurar, tocar e criar</figcaption></figure>
+  </div>
+</section>
+
+<!-- 3. Solução -->
+<section>
+  <h2>Tela não precisa ser só rolar feed.</h2>
+  <p>A Sociedade Brasileira de Pediatria recomenda que crianças de 2 a 5 anos fiquem no máximo 1 hora por dia em telas, sempre com um adulto acompanhando, e que menores de 2 anos evitem telas (manual "Menos Telas, Mais Saúde").</p>
+  <p>Foi pensando nisso que o Colore com Helena foi criado: um tempo de tela curto, com propósito e com você por perto. Seu filho pinta, toca, ouve, encontra cores e forma letras. Ele participa em vez de só assistir.</p>
+  <p>E é você quem manda no tempo: escolhe 10, 15 ou 20 minutos. Quando acaba, a tela é bloqueada, sugere uma brincadeira longe dela e só volta quando você liberar.</p>
+  <img src="vendas/pausa.webp" alt="Tela da Hora da pausa: o adulto escolhe 10, 15 ou 20 minutos" style="width:100%;max-width:340px;display:block;margin:14px auto 0;border-radius:18px;box-shadow:0 4px 16px rgba(0,0,0,.1)">
+  <p class="centro"><a class="botao" href="#precos">Quero para as férias</a></p>
+</section>
+
+<!-- 4. O que tem dentro -->
+<section>
+  <h2>Tudo o que vem no app</h2>
+  <div class="galeria">
+    <figure><img src="vendas/desenho.webp" alt="Desenho para pintar"><figcaption>Desenhos para pintar</figcaption></figure>
+    <figure><img src="vendas/letra.webp" alt="Letra A para pintar"><figcaption>Letras e números com voz</figcaption></figure>
+    <figure><img src="vendas/mar.webp" alt="Cenário Fundo do mar"><figcaption>Vale Encantado: 4 cenários</figcaption></figure>
+    <figure><img src="vendas/quebra.webp" alt="Quebra-cabeça"><figcaption>16 quebra-cabeças</figcaption></figure>
+    <figure><img src="vendas/praia.webp" alt="Cenário da Praia"><figcaption>Praia: ache as cores</figcaption></figure>
+    <figure><img src="vendas/vale.webp" alt="Cenário do Vale Encantado"><figcaption>Vale Encantado</figcaption></figure>
+  </div>
+  <ul class="lista">
+    <li><b>Desenhos para pintar:</b> deslizando o dedo ou tocando com o balde de tinta.</li>
+    <li><b>Letras de A a Z e números de 0 a 9:</b> cheios ou pontilhados, com voz que fala "Letra A! A de Abacaxi!".</li>
+    <li><b>Formas geométricas pontilhadas</b> para seguir o traço com o dedo.</li>
+    <li><b>Agora do seu jeito:</b> depois do pontilhado, seu filho tenta escrever sozinho.</li>
+    <li><b>Jogo das Cores:</b> o nome de cada cor em português e em inglês.</li>
+    <li><b>Vale Encantado:</b> Vale, Fazenda, Fundo do mar e Praia, para achar tudo o que tem a cor pedida.</li>
+    <li><b>Feira das Frutas:</b> as cores das frutas e um "Você sabia?" sobre alimentação.</li>
+    <li><b>Quebra-cabeça</b> com 16 figuras e <b>Sequência de cores</b>.</li>
+    <li><b>Estrelas e medalhas</b> a cada atividade terminada.</li>
+    <li><b>Voz da Helena</b> (feita com IA): seu filho não precisa saber ler para brincar.</li>
+    <li><b>Tempo de tela:</b> você escolhe o tempo e a tela é bloqueada quando ele acaba; só você libera. Na pausa, o app sugere uma brincadeira longe da tela ou imprimir o desenho para pintar no papel.</li>
+    <li><b>Dicas para a família</b> em cada atividade, muitas com o código da BNCC (a Base Nacional Comum Curricular) que ela trabalha.</li>
+  </ul>
+  <p class="centro"><a class="botao" href="#precos">Ver os planos</a></p>
+</section>
+
+<!-- 5. Para quem é -->
+<section>
+  <div class="dois">
+    <div class="cartao"><h2 style="font-size:20px">É para você se:</h2>
+      <ul class="lista">
+        <li>tem um filho a partir de 3 anos e quer uma opção melhor que o feed nas férias;</li>
+        <li>quer uma atividade educativa pronta, sem ter que inventar nada todo dia;</li>
+        <li>pode ficar por perto enquanto seu filho usa, mesmo fazendo outra coisa no mesmo cômodo;</li>
+        <li>gosta de saber o que cada atividade trabalha.</li>
+      </ul></div>
+    <div class="cartao"><h2 style="font-size:20px">Não é para você se:</h2>
+      <ul class="lista nao">
+        <li>procura algo para deixar seu filho sozinho na tela por horas (o app foi feito para o contrário);</li>
+        <li>seu filho tem menos de 3 anos;</li>
+        <li>espera um app que "ensina a ler sozinho": ele ajuda a conhecer letras, números e cores brincando, junto com você;</li>
+        <li>só usa apps baixados da loja: por enquanto ele abre por um link.</li>
+      </ul></div>
+  </div>
+</section>
+
+<!-- 6. Quem criou -->
+<section>
+  <h2>Feito por quem está na sala de aula</h2>
+  <div class="criadora">
+    <img src="vendas/estrela.webp" alt="">
+    <div>
+      <p>O Colore com Helena foi criado por uma professora especialista em Psicopedagogia, Educação Infantil, Alfabetização e Letramento, que vê todo dia como as crianças aprendem melhor quando estão brincando, mexendo, ouvindo e tentando de novo.</p>
+      <p>A ideia foi levar um pouco da experiência dela para a sua casa: atividades curtas, coloridas e com propósito, do jeito que ela faria com a turma. A Helena é a nossa personagem e acompanha seu filho em cada atividade.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7. Como funciona -->
+<section>
+  <h2>Começar leva poucos minutos</h2>
+  <ol class="passos">
+    <li><b>Escolha o seu plano</b> e finalize a compra com segurança pela Kiwify.</li>
+    <li><b>Abra o app</b> pelo link que chega no seu e-mail e entre com o mesmo e-mail da compra.</li>
+    <li><b>Adicione à tela inicial</b> do celular ou do tablet. Pronto: ele fica com ícone, como um aplicativo, e funciona até sem internet.</li>
+  </ol>
+  <div class="cartao">📱 Funciona em Android e em iPhone. O app abre por um link e ainda não está na Play Store nem na App Store, por isso você não precisa procurar nada em loja.</div>
+</section>
+
+<!-- Amostra grátis -->
+<section class="centro">
+  <h2>Experimente a parte grátis antes</h2>
+  <p>Alguns desenhos, letras, números, quebra-cabeças, o Jogo das Cores e a Feira das Frutas ficam abertos para você testar com seu filho hoje mesmo.</p>
+  <a class="botao azul" href="./">Abrir a parte grátis</a>
+</section>
+
+<!-- 8. Segurança -->
+<section>
+  <h2>Pensado para crianças, do jeito certo</h2>
+  <ul class="lista">
+    <li><b>Sem anúncios dentro do app.</b> Nada de propaganda no meio da brincadeira.</li>
+    <li><b>Nenhum dado da criança é coletado.</b> Só pedimos o e-mail do adulto que assina.</li>
+    <li><b>Você controla o tempo:</b> você escolhe o tempo, e a tela é bloqueada quando ele acaba. Só você libera.</li>
+    <li><b>Assinatura que você cancela quando quiser,</b> sem multa.</li>
+  </ul>
+</section>
+
+<!-- 9. Preços -->
+<section id="precos">
+  <h2 class="centro">Preço de lançamento: só até 30 de novembro</h2>
+  <p class="centro">Na primeira turma de assinantes, os dois planos estão mais baratos. Para quem assinar depois do dia 30/11, os preços sobem.</p>
+  <div class="cartao pilha">
+    <b>Tudo isso em uma assinatura:</b>
+    <ul>
+      <li>🎨 19 desenhos para pintar</li><li>🔤 26 letras (A a Z) com voz</li><li>🔢 10 números (0 a 9) com voz</li>
+      <li>🔷 8 formas para cobrir os pontos</li><li>🏰 4 cenários para achar as cores</li><li>🧩 16 quebra-cabeças</li>
+      <li>🎯 Jogo das Cores, Feira das Frutas e Sequência de cores</li><li>⏰ Tempo de tela que você controla</li>
+      <li>✨ Novidades ao longo do ano, sem pagar a mais</li>
+    </ul>
+  </div>
+  <div class="precos">
+    <div class="plano destaque">
+      <span class="selo">MELHOR CUSTO</span>
+      <h3>Plano Anual</h3>
+      <div class="de">R$ 99,90</div>
+      <div class="valor">R$ 79,90 <small>por ano</small></div>
+      <span class="economia">Economize R$ 98,90 em relação a 12 meses do plano mensal</span>
+      <p>À vista, equivale a <b>R$ 6,66 por mês</b>: menos que um picolé por mês, para as férias inteiras e o ano todo.</p>
+      <p>Ou em até 12x no cartão (com os juros do parcelamento).</p>
+      <p>Preço de lançamento para quem assinar até 30/11. Depois dessa data, o anual passa a R$ 99,90.</p>
+      <a class="botao" data-plano="anual" href="#">Quero o plano anual</a>
+    </div>
+    <div class="plano mensal">
+      <h3>Plano Mensal</h3>
+      <div class="valor">R$ 14,90 <small>por mês</small></div>
+      <p>Preço de lançamento para quem assinar até 30/11. Depois dessa data, o mensal passa a R$ 16,90.</p>
+      <p>Cancela quando quiser.</p>
+      <a class="botao azul" data-plano="mensal" href="#">Quero o plano mensal</a>
+    </div>
+  </div>
+  <p class="centro" style="font-weight:700">Assinando até 30/11, você mantém o preço de lançamento enquanto a sua assinatura continuar ativa.</p>
+  <p class="selinhos centro">Os dois planos dão acesso a tudo · Garantia de 7 dias · Pagamento seguro pela Kiwify</p>
+</section>
+
+<!-- 10. Garantia -->
+<section>
+  <div class="cartao garantia">
+    <div class="medalha">7 dias<br>de<br>garantia</div>
+    <div><h2 style="font-size:20px">Experimente por 7 dias sem risco</h2>
+    <p style="margin:0">Assine, abra o app e use com seu filho. Se em até 7 dias você achar que não é para vocês, é só pedir o reembolso pela Kiwify e devolvemos 100% do valor, sem perguntas.</p></div>
+  </div>
+</section>
+
+<!-- 11. Perguntas -->
+<section>
+  <h2>Perguntas frequentes</h2>
+  <details><summary>Preciso baixar na Play Store ou na App Store?</summary><p>Não. O Colore com Helena abre por um link, no navegador do celular ou do tablet. Você adiciona à tela inicial e ele fica com ícone, como qualquer aplicativo.</p></details>
+  <details><summary>Funciona no meu celular?</summary><p>Funciona em Android e iPhone, e também em tablet. No Android, use o Chrome; no iPhone, o Safari, para adicionar à tela inicial.</p></details>
+  <details><summary>Precisa de internet?</summary><p>Só para abrir na primeira vez e entrar com o seu e-mail. Depois, funciona sem internet (é só abrir com internet uma vez por mês). Ótimo para viagem.</p></details>
+  <details><summary>Para qual idade é?</summary><p>Para crianças a partir de 3 anos, sempre com um adulto por perto. As atividades vão do mais simples (pintar, achar cores) ao mais desafiador (escrever sozinha depois do pontilhado).</p></details>
+  <details><summary>Meu filho precisa saber ler?</summary><p>Não. A voz gravada fala as letras, os números e as cores.</p></details>
+  <details><summary>O app vai ensinar meu filho a ler?</summary><p>Ele não substitui a escola nem promete alfabetizar. Ajuda seu filho a conhecer letras, números, formas e cores brincando, e as dicas mostram como continuar a conversa fora da tela.</p></details>
+  <details><summary>E o tempo de tela?</summary><p>Você escolhe quanto tempo seu filho pode usar (10, 15 ou 20 minutos). Quando acaba, a tela é bloqueada e sugere uma brincadeira longe dela ou imprimir o desenho para pintar no papel. Só um adulto libera de novo.</p></details>
+  <details><summary>Tem anúncio? Vocês coletam dados do meu filho?</summary><p>Não tem nenhum anúncio. Não coletamos nenhum dado da criança, só o e-mail do adulto que assinou. Veja a <a href="privacidade.html">privacidade</a>.</p></details>
+  <details><summary>Como cancelo?</summary><p>Quando quiser, sem multa, pela Kiwify (o link vem no e-mail da compra) ou pelo nosso e-mail. Nos primeiros 7 dias você ainda tem a garantia de reembolso total.</p></details>
+  <details><summary>Qual plano vale mais a pena?</summary><p>O anual: no lançamento sai por R$ 79,90 o ano todo (à vista, equivale a R$ 6,66 por mês), contra R$ 14,90 por mês no mensal. Esse preço vale só até 30/11.</p></details>
+</section>
+
+<!-- 12. Chamada final -->
+<section class="centro">
+  <h2>As férias estão chegando. O preço de lançamento termina em 30/11.</h2>
+  <p>Você não precisa escolher entre "tela o dia todo" e "nenhuma tela". Dá para ter um tempo de tela curto, com propósito, que termina numa brincadeira longe dela.</p>
+  <p>Assine hoje e, ainda hoje, seu filho já pode estar pintando, ouvindo a Helena e encontrando as cores no Vale Encantado.</p>
+  <img src="vendas/salsicha.webp" alt="" style="width:110px">
+  <p><a class="botao" href="#precos">Quero o Colore com Helena</a></p>
+  <p class="selinhos">7 dias de garantia · Sem anúncios · Cancela quando quiser</p>
+</section>
+</main>
+<footer class="rodape"><a href="./">Abrir o app</a><a href="ajuda.html">Ajuda</a><a href="termos.html">Termos de uso</a><a href="privacidade.html">Privacidade</a><br>Colore com Helena · Contato: colorecomhelena@gmail.com</footer>
+<script>
+  // Links de pagamento da Kiwify (os mesmos do app). Anual = plano de lançamento R$ 79,90 até 30/11; depois: d1O6hAv (R$ 99,90).
+  const CHECKOUT = { anual: "https://pay.kiwify.com.br/UlpVFQv", mensal: "https://pay.kiwify.com.br/9P9HQon" };
+  document.querySelectorAll("[data-plano]").forEach(a => a.href = CHECKOUT[a.dataset.plano]);
+</script>
+</body>
+</html>

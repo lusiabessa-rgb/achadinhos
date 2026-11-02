@@ -6,7 +6,7 @@
   const GRATIS = { desenhos: 3, formas: 2, letras: 5, numeros: 3, quebra: 2 };
   // Jogo das Cores e Feira das Frutas ficam abertos. Vale Encantado e Sequência são da assinatura.
   // Links de pagamento da Kiwify (produto "Colore com Helena", criado em 31/10)
-  const LINKS = { mensal: "https://pay.kiwify.com.br/9P9HQon", anual: "https://pay.kiwify.com.br/d1O6hAv" };
+  const LINKS = { mensal: "https://pay.kiwify.com.br/9P9HQon", anual: "https://pay.kiwify.com.br/UlpVFQv" }; // anual = plano de lançamento R$ 79,90 até 30/11 (depois: d1O6hAv, R$ 99,90)
   // TRAVA FORTE (31/10): endereço do servidor (Google Apps Script, mini-app/trava/Codigo.gs).
   // Vazio = ainda não instalado: o app usa a lista antiga de e-mails (assinantes.json).
   const SERVIDOR = "https://script.google.com/macros/s/AKfycbylt4cbcJ9s2M_cmMI48UTH3LvC6yZRts-MnqSerCxDreYWhzdMZZR8_Wbc2nvFaEW-/exec";
@@ -107,8 +107,8 @@
       mostra(`<h2>Escolha o plano</h2>
         <p>Depois de pagar, volte aqui e toque em "Já sou assinante" com o mesmo e-mail da compra.</p>
         <div class="botoes">
-          <button class="btn verde" id="assAnual">⭐ Anual: R$ 99,90<br><small>sai R$ 8,33 por mês</small></button>
-          <button class="btn forte" id="assMensal">Mensal: R$ 14,90</button>
+          <button class="btn verde" id="assAnual">⭐ Anual: R$ 79,90<br><small>preço de lançamento até 30/11 · à vista sai R$ 6,66 por mês</small></button>
+          <button class="btn forte" id="assMensal">Mensal: R$ 14,90<br><small>preço de lançamento até 30/11</small></button>
           <button class="btn" id="assFecha">Voltar</button>
         </div>`);
       $("assAnual").onclick = () => window.open(LINKS.anual, "_blank");

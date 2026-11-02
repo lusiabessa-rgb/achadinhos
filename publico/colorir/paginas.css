@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Nunito:wght@400;600;700;800&display=swap");
 /* Estilo das páginas do app Colore com Helena (termos, privacidade, ajuda, obrigado, vendas). Mesmas cores do app. */
 :root {
   --verm: #E63946; --lar: #F4A261; --amar: #F7C531; --verde: #2BA84A; --azul: #1D6FD8; --roxo: #8E5CC8; --rosa: #E86FA8;
@@ -26,3 +27,15 @@ details { background: var(--cartao); border-radius: 14px; padding: 12px 16px; ma
 summary { font-weight: 700; cursor: pointer; }
 footer.rodape { max-width: 720px; margin: 0 auto; padding: 18px 16px 40px; font-size: 14px; color: var(--suave); border-top: 1px solid var(--linha); }
 footer.rodape a { margin-right: 14px; }
+
+/* ===== Tema "educação" (02/11, pedido da Lusia: cara profissional que remete a educação) ===== */
+:root { --tinta: #1E3A5F; --papel: #FBF8F1; --pauta: rgba(30,58,95,.06); --margem: rgba(230,57,70,.18); }
+body { background: var(--papel); color: #2A2F36; font-family: "Nunito", "Segoe UI", Roboto, Arial, sans-serif; }
+h1, h2, h3 { font-family: "Fraunces", Georgia, serif; color: var(--tinta); letter-spacing: -.005em; }
+h2 { position: relative; padding-bottom: 8px; }
+h2::after { content: ""; position: absolute; left: 0; bottom: 0; width: 56px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--verm), var(--amar), var(--verde), var(--azul)); }
+.centro h2::after, h2.centro::after { left: 50%; transform: translateX(-50%); }
+.arco { height: 6px; background: linear-gradient(90deg, var(--tinta) 0 70%, var(--verm) 70% 76%, var(--amar) 76% 82%, var(--verde) 82% 88%, var(--azul) 88% 94%, var(--roxo) 94%); }
+.topo b { font-family: "Fraunces", Georgia, serif; color: var(--tinta); }
+.cartao, details { border: 1px solid #EDE6D8; box-shadow: 0 2px 10px rgba(30,58,95,.05); }
+footer.rodape { border-top: 1px solid #E6DED0; }
