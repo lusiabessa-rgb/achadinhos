@@ -1101,7 +1101,8 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     assert.strictEqual(nova.loja, 'Walcost0501');
     assert.strictEqual(ps.colunasTikTok('2026-10-26 | 3 | Tampa | 10 | | | | | | casa | https://x/y.webp | Kit Tampas |').loja, '');
     const reais = ps.lerTikTok('lusia').itens.filter((p) => p.foto);
-    assert.ok(reais.length >= 4 && reais.every((p) => p.titulo), 'as linhas de 26/10 têm foto e título');
+    // 02/11: não exige quantidade de fotos na lista REAL (ela muda toda semana; em 01/11 travou o robô da helena)
+    assert.ok(reais.every((p) => p.titulo), 'linha da lista real com foto também tem título');
 
     const webp = await sharp({ create: { width: 40, height: 40, channels: 3, background: '#c08040' } }).webp().toBuffer();
     const pedidos = [];
