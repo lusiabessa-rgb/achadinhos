@@ -1,5 +1,8 @@
 # PRODUTOS EM ALTA NO TIKTOK SHOP BRASIL (dados do FastMoss, preenchido pela skill "cacar-produtos-tiktok")
-# data | id do produto | nome | preço | comissão % (vazio se não aparece) | vendas 7 dias | crescimento 7 dias % | afiliados | nota | categoria (natal/casa)
+# data | id do produto | nome | preço | comissão % (vazio se não aparece) | vendas 7 dias | crescimento 7 dias % | afiliados | nota | categoria (natal/casa) | foto | titulo | loja
+# As 3 últimas são opcionais (linhas antigas não têm). Se usar, escreva SEMPRE as 3 (loja vazia = termina em "|"):
+#   foto = URL exata da foto do anúncio (https://s.500fd.com/tt_product/...webp, a 1ª do HTML da página de detalhe)
+#   titulo = título exato do anúncio (pode ter "|" dentro), loja = nome da loja. O robô manda a foto + título no Telegram.
 2026-10-19 | 1737462444515296670 | Cortina LED 3x3 300 LEDs | 28,00 | | 4700 | 48,43 | 489 | 4,4 | natal
 2026-10-19 | 1737222873287657464 | Kit 4 capas de almofada Natal 45x45 | 35,92 | | 1500 | 100 | 11 | | natal
 2026-10-19 | 1737893320014268229 | Árvore de Natal 1,20 m | 19,99 | | 3600 | 18,72 | 235 | | natal
@@ -17,8 +20,8 @@
 2026-10-26 | 1731916337736221947 | Pisca-pisca 100 LED 9 m 8 funções fio transparente | 15,92 | 10 | 5300 | 66,61 | 5700 | 4,7 | natal
 2026-10-26 | 1737951486951589764 | Pisca-pisca LED com controle 100 LEDs coloridos | 9,99 | | 5100 | 12,61 | 623 | | natal
 2026-10-26 | 1737462444515296670 | Cortina LED 3x3 300 LEDs | 27,16 | | 4900 | 50,88 | 748 | 4,4 | natal
-2026-10-26 | 1733167337318089875 | Cortina LED fio de cobre 300 LEDs 3x3 | 29,90 | 8 | 5000 | 88,21 | 2000 | 4,3 | natal
-2026-10-26 | 1732941120479200686 | Mini projetor natalino 16 imagens 3D USB | 26,99 | | 3900 | 51,49 | 282 | 4,4 | natal
+2026-10-26 | 1733167337318089875 | Cortina LED fio de cobre 300 LEDs 3x3 | 29,90 | 8 | 5000 | 88,21 | 2000 | 4,3 | natal | https://s.500fd.com/tt_product/fa2e2bc347004f68929c5b10fd3d2d91~tplv-aphluv4xwc-resize-webp:330:330.webp | Cortina de Luz LED com Fio de Cobre - 300 LEDs, 3x3 Metros | Para Festa | Walcost0501
+2026-10-26 | 1732941120479200686 | Mini projetor natalino 16 imagens 3D USB | 26,99 | | 3900 | 51,49 | 282 | 4,4 | natal | https://s.500fd.com/tt_product/52bac24e38fd4b71ba20d343a76f9ce1~tplv-o3syd03w52-resize-webp:330:330.webp | Mini Projetor 16 Modos De Imagens Natalinas 3D Decorações Natal Festivo Festa Dinâmica Holográfica USB |
 2026-10-26 | 1737741935537194708 | Tapete de porta boucle natalino 60x40 | 49,90 | | 2600 | 37,69 | 536 | 4,7 | natal
 2026-10-26 | 1737296543831524914 | Mini Jesus sentado 3,5 cm decorativo | 15,75 | | 3200 | 65 | | 5,0 | natal
 2026-10-26 | 1737535487430395120 | Luz decorativa LED USB 8 modos com controle | 25,98 | | 2200 | 50 | 86 | 4,2 | natal
@@ -34,8 +37,8 @@
 2026-10-26 | 1735703793329538821 | Escova de limpeza elétrica 9 em 1 | 68,90 | 8 | 4900 | 50,58 | 3800 | 4,5 | casa
 2026-10-26 | 1736912751570748813 | Escova lava-louça 2 em 1 com dispenser | 10,99 | 10 | 2700 | 73,27 | | 4,5 | casa
 2026-10-26 | 1736257525870658847 | Tapete passadeira veludo cristal 50x150 | 39,99 | 8 | | | | 4,7 | casa
-2026-10-26 | 1731321130153379569 | Luminária LED com sensor de presença sem fio | 14,56 | 8 | 4900 | 100 | 214 | 4,1 | casa
-2026-10-26 | 1736900977840064127 | Kit tampas elásticas para alimentos | 10,00 | 9,5 | 3700 | 89,87 | 292 | | casa
+2026-10-26 | 1731321130153379569 | Luminária LED com sensor de presença sem fio | 14,56 | 8 | 4900 | 100 | 214 | 4,1 | casa | https://s.500fd.com/tt_product/8e24704212d74c7a8c7255a302b474d4~tplv-o3syd03w52-resize-webp:800:800.webp | Luz Lâmpada com Sensor de Presença Luminária LED Sem fio recarregável casa quarto escada | PanguTK
+2026-10-26 | 1736900977840064127 | Kit tampas elásticas para alimentos | 10,00 | 9,5 | 3700 | 89,87 | 292 | | casa | https://s.500fd.com/tt_product/1e140242a7704f37911f757c53940236~tplv-aphluv4xwc-resize-webp:330:330.webp | Kit Tampas Plásticas Elásticas Para Cobrir Alimentos Geladeira |
 2026-10-26 | 1737309673072002894 | Saco de lixo perfumado lavanda pia e banheiro | 10,80 | 6 | 11900 | 67,56 | 1700 | 4,2 | casa
 2026-10-26 | 1737357033650226325 | Porta papel higiênico adesivo sem furar | 19,79 | | 4100 | 83,83 | 894 | | casa
 2026-10-26 | 1734697333597111383 | Saboneteira de silicone com drenagem | 12,99 | | 1400 | 100 | 119 | 4,8 | casa
