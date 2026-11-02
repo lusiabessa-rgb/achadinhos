@@ -405,7 +405,7 @@ const DESENHOS = [
       <rect ${L} x="175" y="235" width="50" height="85"/>
       <rect ${L} x="120" y="195" width="40" height="40"/>
       <rect ${L} x="240" y="195" width="40" height="40"/>` },
-  { nome: "Peixe", dica: "<b>Escolher cores é se expressar.</b> Deixe a criança escolher (peixe roxo vale!). A BNCC, no campo \"Traços, sons, cores e formas\" (<b>EI03TS02</b>), fala em se expressar livremente por meio do desenho e da pintura.",
+  { nome: "Peixe", rosto: `<path d="M78 212 Q92 224 106 212"/><path d="M150 158 Q168 200 150 242"/><circle cx="120" cy="185" r="5" fill="#2B2B2B"/>`, dica: "<b>Escolher cores é se expressar.</b> Deixe a criança escolher (peixe roxo vale!). A BNCC, no campo \"Traços, sons, cores e formas\" (<b>EI03TS02</b>), fala em se expressar livremente por meio do desenho e da pintura.",
     svg: L => `<rect ${L} x="4" y="4" width="392" height="392" rx="16"/>
       <polygon ${L} points="290,200 370,140 370,260"/>
       <ellipse ${L} cx="190" cy="200" rx="120" ry="80"/>
@@ -427,7 +427,7 @@ const DESENHOS = [
       <circle ${L} cx="160" cy="195" r="40"/>
       <circle ${L} cx="138" cy="125" r="40"/>
       <circle ${L} cx="200" cy="145" r="34"/>` },
-  { nome: "Borboleta", dica: "<b>Os dois lados iguais.</b> Desafio: pintar a asa da direita igual à da esquerda. Comparar cores e formas é um ótimo exercício de atenção.",
+  { nome: "Borboleta", rosto: `<circle cx="193" cy="68" r="3.5" fill="#2B2B2B"/><circle cx="207" cy="68" r="3.5" fill="#2B2B2B"/><path d="M192 78 Q200 86 208 78"/><path d="M192 52 Q180 28 166 22"/><path d="M208 52 Q220 28 234 22"/><circle cx="163" cy="20" r="5"/><circle cx="237" cy="20" r="5"/>`, dica: "<b>Os dois lados iguais.</b> Desafio: pintar a asa da direita igual à da esquerda. Comparar cores e formas é um ótimo exercício de atenção.",
     svg: L => `<rect ${L} x="4" y="4" width="392" height="392" rx="16"/>
       <ellipse ${L} cx="125" cy="140" rx="85" ry="75"/>
       <ellipse ${L} cx="275" cy="140" rx="85" ry="75"/>
@@ -437,7 +437,7 @@ const DESENHOS = [
       <circle ${L} cx="280" cy="135" r="25"/>
       <ellipse ${L} cx="200" cy="200" rx="18" ry="120"/>
       <circle ${L} cx="200" cy="72" r="22"/>` },
-  { nome: "Gato", dica: "<b>Som e movimento.</b> Pergunte que som o gato faz e imitem juntos, andando de quatro pela sala.",
+  { nome: "Gato", rosto: `<circle cx="176" cy="160" r="4.5" fill="#2B2B2B"/><circle cx="224" cy="160" r="4.5" fill="#2B2B2B"/><path d="M200 198 Q193 210 183 204"/><path d="M200 198 Q207 210 217 204"/><path d="M152 186 L118 180"/><path d="M152 195 L118 200"/><path d="M248 186 L282 180"/><path d="M248 195 L282 200"/>`, dica: "<b>Som e movimento.</b> Pergunte que som o gato faz e imitem juntos, andando de quatro pela sala.",
     svg: L => `<rect ${L} x="4" y="4" width="392" height="392" rx="16"/>
       <ellipse ${L} cx="300" cy="290" rx="18" ry="62" transform="rotate(30 300 290)"/>
       <ellipse ${L} cx="200" cy="295" rx="85" ry="70"/>
@@ -446,7 +446,7 @@ const DESENHOS = [
       <circle ${L} cx="200" cy="170" r="65"/>
       <circle ${L} cx="176" cy="160" r="11"/><circle ${L} cx="224" cy="160" r="11"/>
       <polygon ${L} points="190,186 210,186 200,198"/>` },
-  { nome: "Urso", dica: "<b>Grande e pequeno.</b> Pinte o urso e depois procurem em casa uma coisa maior e uma menor que ele.",
+  { nome: "Urso", rosto: `<circle cx="172" cy="150" r="4" fill="#2B2B2B"/><circle cx="228" cy="150" r="4" fill="#2B2B2B"/><path d="M200 194 L200 204"/><path d="M200 204 Q191 214 183 207"/><path d="M200 204 Q209 214 217 207"/>`, dica: "<b>Grande e pequeno.</b> Pinte o urso e depois procurem em casa uma coisa maior e uma menor que ele.",
     svg: L => `<rect ${L} x="4" y="4" width="392" height="392" rx="16"/>
       <ellipse ${L} cx="200" cy="315" rx="82" ry="70"/><ellipse ${L} cx="200" cy="325" rx="45" ry="40"/>
       <circle ${L} cx="138" cy="105" r="30"/><circle ${L} cx="262" cy="105" r="30"/>
@@ -493,7 +493,7 @@ const DESENHOS = [
       ${faixa(145, 170)}${faixa(120, 145)}${faixa(95, 120)}${faixa(70, 95)}${faixa(45, 70)}
       <circle ${L} cx="45" cy="300" r="34"/><circle ${L} cx="82" cy="312" r="27"/>
       <circle ${L} cx="318" cy="312" r="27"/><circle ${L} cx="355" cy="300" r="34"/>`; } },
-  { nome: "Dinossauro", dica: "<b>Pesado e leve.</b> Andem pela casa pisando forte como o dinossauro e depois leve como uma pena.",
+  { nome: "Dinossauro", rosto: `<circle cx="128" cy="104" r="3" fill="#2B2B2B"/><path d="M100 120 Q124 136 150 124"/><circle cx="104" cy="103" r="2.5" fill="#2B2B2B"/>`, dica: "<b>Pesado e leve.</b> Andem pela casa pisando forte como o dinossauro e depois leve como uma pena.",
     svg: L => `<rect ${L} x="4" y="4" width="392" height="392" rx="16"/>
       <polygon ${L} points="300,235 388,305 296,292"/>
       <polygon ${L} points="198,205 214,168 232,205"/><polygon ${L} points="240,207 256,172 272,210"/><polygon ${L} points="278,220 292,190 306,228"/>
@@ -501,14 +501,14 @@ const DESENHOS = [
       <ellipse ${L} cx="225" cy="262" rx="100" ry="62"/>
       <polygon ${L} points="118,130 165,128 178,232 130,245"/>
       <ellipse ${L} cx="140" cy="112" rx="46" ry="32"/><circle ${L} cx="128" cy="104" r="7"/>` },
-  { nome: "Pato", dica: "<b>Fala com o bicho.</b> Pato em inglês é <i>duck</i>. Pergunte como fala outros bichos que ela conhece.",
+  { nome: "Pato", rosto: `<circle cx="122" cy="164" r="3.5" fill="#2B2B2B"/><path d="M84 182 L47 182"/>`, dica: "<b>Fala com o bicho.</b> Pato em inglês é <i>duck</i>. Pergunte como fala outros bichos que ela conhece.",
     svg: L => `<rect ${L} x="4" y="4" width="392" height="392" rx="16"/>
       <path ${L} d="M4 320 Q60 300 120 320 T240 320 T396 318 L396 380 Q396 396 380 396 L20 396 Q4 396 4 380Z"/>
       <ellipse ${L} cx="212" cy="262" rx="102" ry="64"/>
       <ellipse ${L} cx="232" cy="250" rx="50" ry="30"/>
       <polygon ${L} points="84,168 38,182 84,196"/>
       <circle ${L} cx="132" cy="176" r="50"/><circle ${L} cx="122" cy="164" r="8"/>` },
-  { nome: "Cachorro salsicha", dica: "<b>Comprido e curto.</b> O cachorro salsicha é comprido! Procurem pela casa uma coisa comprida e uma curta.",
+  { nome: "Cachorro salsicha", rosto: `<circle cx="96" cy="150" r="4.5" fill="#2B2B2B"/><path d="M28 214 Q50 230 74 216"/>`, dica: "<b>Comprido e curto.</b> O cachorro salsicha é comprido! Procurem pela casa uma coisa comprida e uma curta.",
     svg: L => `<rect ${L} x="4" y="4" width="392" height="392" rx="16"/>
       <rect ${L} x="4" y="330" width="392" height="66"/>
       <path ${L} d="M352 225 Q385 185 372 150 L360 152 Q368 185 340 215Z"/>
@@ -630,9 +630,9 @@ function camadas(d) {
     mascara: letraSvg(d.nome, 'fill="#000"') };
   return {
     base: d.svg(`${TRACO} fill="#fff" class="area"`),
-    linhas: linhasVisiveis(d.svg),
+    linhas: linhasVisiveis(d.svg) + rostoDe(d),
     mascara: null,
-    cartao: '<rect width="400" height="400" fill="#fff"/>' + linhasVisiveis(d.svg) };
+    cartao: '<rect width="400" height="400" fill="#fff"/>' + linhasVisiveis(d.svg) + rostoDe(d) };
 }
 // Formas geométricas para cobrir os pontos (28/10: a Lusia quer formas de verdade, sem linha e cruz).
 const FORMAS_TRACO = [
@@ -673,6 +673,8 @@ const CORES_DO_JOGO = [0, 1, 2, 4, 6, 8, 9, 10, 11]; // só as cores "fortes", f
 
 const TAMANHOS = [16, 34, 60]; // largura do pincel (em pontos de uma tela de 1080)
 const TRACO = 'stroke="#2B2B2B" stroke-width="4" stroke-linejoin="round"';
+// Rosto dos bichos (02/11, pedido da Lusia: todo bicho com olhos, nariz e boca). Só traço, por cima da pintura.
+const rostoDe = d => d.rosto ? `<g ${TRACO} fill="none" stroke-linecap="round">${d.rosto}</g>` : "";
 const LADO = 1080;
 
 // ===== Progresso (fica guardado no celular) =====
