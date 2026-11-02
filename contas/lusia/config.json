@@ -60,7 +60,7 @@
     "pasta": "contas/{conta}/tiktok-fila"
   },
   "instagram": {
-    "ativo": true,
+    "ativo": false,
     "modo": "carrossel",
     "postsIndividuaisPorRodada": 0,
     "stories": true,
@@ -78,7 +78,8 @@
         "me manda",
         "eu"
       ]
-    }
+    },
+    "pausadoEm": "2026-11-02: a dona pediu (postava oferta antiga e coisas que não eram para postar). Religar só com o OK dela."
   },
   "telegramCanal": {
     "ativo": false,
