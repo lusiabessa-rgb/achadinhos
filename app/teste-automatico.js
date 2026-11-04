@@ -517,7 +517,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     const lerCfg = maquina.lerConfig;
     try {
       // 1 conteúdo por dia no teste: com mais, a 2ª rodada publica o próximo da fila (o que é certo)
-      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoPorDia: 1 } });
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoPorDia: 1, soReels: false } });
       const sim = await publicar('lusia', { simular: true, dia, arqPublicados, filaReels: [], log: () => {} });
       assert.strictEqual(sim.tarefas.filter((t) => t.tipo === 'carrossel').length, 1);
       assert(sim.tarefas[0].legenda.includes('Salva') && !sim.tarefas[0].legenda.includes('na bio'));
@@ -530,6 +530,33 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       assert(reg.some((x) => x.corpo.image_url && x.corpo.image_url.startsWith('https://teste.github.io/ofertas/lusia/')));
       assert(fs.existsSync(arqPublicados), 'não anotou no arquivo temporário');
       assert.strictEqual(fs.existsSync(real) ? fs.readFileSync(real, 'utf8') : null, antesReal, 'o teste mexeu no publicados.json de verdade');
+    } finally {
+      maquina.lerConfig = lerCfg;
+      fs.rmSync(pastaTmp, { recursive: true, force: true });
+    }
+  });
+
+  await teste('modo só Reels (04/11): sai só o Reel da fila, nunca oferta, story ou foto de conteúdo', async () => {
+    const { publicar } = require('./publicar');
+    const r = await maquina.rodar('lusia', true);
+    const dia = path.basename(r.pastaDia).toLowerCase();
+    const pastaTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'soreels-'));
+    const arqPublicados = path.join(pastaTmp, 'publicados.json');
+    const lerCfg = maquina.lerConfig;
+    const agora = new Date();
+    const dataBR = agora.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+    const horaBR = Number(agora.toLocaleString('en-GB', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }));
+    const fila = [{ id: 'teste-reel', data: dataBR, hora: horaBR, video: 'reels/teste.mp4', legenda: 'Oi\n\nSalva pra não esquecer 💾\n\n✨ Conteúdo gerado por IA' }];
+    try {
+      const cfgCom = (extra) => (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, modo: 'carrossel', stories: true, postsIndividuaisPorRodada: 2, conteudoPorDia: 2, conteudoAPartirDas: 0, ...extra } });
+      maquina.lerConfig = cfgCom({ soReels: true });
+      const sim = await publicar('lusia', { simular: true, dia, arqPublicados, filaReels: fila, agora, log: () => {} });
+      assert.deepStrictEqual(sim.tarefas.map((t) => t.tipo), ['reel'], 'no modo só Reels saiu outra coisa');
+      const sem = await publicar('lusia', { simular: true, dia, arqPublicados, filaReels: [], agora, log: () => {} });
+      assert.ok(!(sem.tarefas || []).length, 'sem Reel na hora, o modo só Reels não pode publicar nada');
+      // Config real da lusia: ligado, só Reels, sem stories
+      const real = lerCfg(path.join(__dirname, '..', 'contas', 'lusia')).instagram;
+      if (real.ativo) assert.ok(real.soReels === true && real.stories === false, 'Instagram da lusia ligado sem o modo só Reels');
     } finally {
       maquina.lerConfig = lerCfg;
       fs.rmSync(pastaTmp, { recursive: true, force: true });
@@ -659,7 +686,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       const m = await sharp(path.join(raiz, 'publico', conta, fila[0].arte)).metadata();
       assert.deepStrictEqual([m.format, m.width, m.height], ['jpeg', 1080, 1350]);
       const lerCfg = maquina.lerConfig;
-      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoAPartirDas: 0, conteudoPorDia: 1, conteudoPorRodada: 1 } });
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoAPartirDas: 0, conteudoPorDia: 1, conteudoPorRodada: 1, soReels: false } });
       const reg = [];
       const opcoes = { ignorarDesligado: true, segredos: { igToken: 't', igUserId: '9' }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} };
       const r1 = await publicar(conta, opcoes);
@@ -673,7 +700,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       const pub = JSON.parse(fs.readFileSync(arqPub, 'utf8'));
       for (const k of Object.keys(pub)) pub[k].quando = new Date(Date.now() - 86400000 * 2).toISOString();
       fs.writeFileSync(arqPub, JSON.stringify(pub));
-      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoAPartirDas: 0 } });
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoAPartirDas: 0, soReels: false } });
       const r3 = await publicar(conta, opcoes);
       maquina.lerConfig = lerCfg;
       assert.strictEqual(r3.publicados, 1, 'não publicou o próximo da fila no outro dia');
@@ -1214,7 +1241,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     try {
       maquina.lerConfig = (p) => {
         const c = lerCfg(p);
-        return { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined } };
+        return { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined, soReels: false } };
       };
       const reg = [];
       const op = (id) => ({ arqPublicados: path.join(pastaTmp, 'p.json'), ignorarDesligado: true, segredos: { igToken: 't', igUserId: id }, fetchFn: instagramFalso(reg), intervaloNoAr: 1, intervaloStatus: 1, log: () => {} });
@@ -1522,7 +1549,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
         { id: '2026-10-27-18h', data: '2026-10-27', hora: 18, video: 'reels/cortina.mp4', legenda: leg('Cortina'), origem: 'cortina.mp4' },
         { id: '2026-10-27-20h', data: '2026-10-27', hora: 20, video: 'reels/arvore.mp4', legenda: leg('Arvore'), origem: 'arvore.mp4' },
       ]);
-      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoAPartirDas: 0, conteudoPorDia: 2, conteudoPorRodada: 1 } });
+      maquina.lerConfig = (p) => ({ ...lerCfg(p), site: { ...lerCfg(p).site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...lerCfg(p).instagram, conteudoAPartirDas: 0, conteudoPorDia: 2, conteudoPorRodada: 1, soReels: false } });
       const reg = [];
       const igFalso = instagramFalso(reg);
       const fetchFn = async (url, opt = {}) => {

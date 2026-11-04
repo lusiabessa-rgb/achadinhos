@@ -60,10 +60,11 @@
     "pasta": "contas/{conta}/tiktok-fila"
   },
   "instagram": {
-    "ativo": false,
+    "ativo": true,
+    "soReels": true,
     "modo": "carrossel",
     "postsIndividuaisPorRodada": 0,
-    "stories": true,
+    "stories": false,
     "conteudoPorDia": 2,
     "conteudoPorRodada": 1,
     "conteudoAPartirDas": 18,
@@ -79,7 +80,7 @@
         "eu"
       ]
     },
-    "pausadoEm": "2026-11-02: a dona pediu (postava oferta antiga e coisas que não eram para postar). 03/11: ela NÃO quer mais as artes de oferta com a FAIXA VERMELHA (carrossel/stories de oferta) nem no feed nem no Reels; fila de Reels esvaziada. Religar só com o OK dela e SEM as artes de oferta antigas."
+    "pausadoEm": "2026-11-02: a dona pediu (postava oferta antiga e coisas que não eram para postar). 03/11: ela NÃO quer mais as artes de oferta com a FAIXA VERMELHA (carrossel/stories de oferta) nem no feed nem no Reels; fila de Reels esvaziada. Religar só com o OK dela e SEM as artes de oferta antigas. RELIGADO em 04/11/2026 SÓ com Reels de vídeo (soReels: true, pedido dela; os mesmos vídeos do TikTok @shopabessa). Ofertas com a faixa vermelha (carrossel, stories, posts de oferta) continuam PROIBIDAS."
   },
   "telegramCanal": {
     "ativo": false,

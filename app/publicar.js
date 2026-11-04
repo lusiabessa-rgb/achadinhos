@@ -77,6 +77,13 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
     filaConteudo = JSON.parse(fs.readFileSync(path.join(pastaPublica, 'conteudo', 'fila.json'), 'utf8')) || [];
   } catch {}
   if (educativa) filaConteudo = [];
+  // SÓ REELS (04/11, pedido da dona): com "soReels": true sai SÓ o Reel de vídeo da fila. Nada de oferta
+  // (carrossel, post individual, story com a arte da faixa vermelha) nem foto de conteúdo.
+  if (!educativa && ig.soReels === true) {
+    if (dados.ofertas.length || filaConteudo.length) log('Modo só Reels: ofertas, stories e fotos de conteúdo NÃO são publicadas.');
+    dados.ofertas = [];
+    filaConteudo = [];
+  }
   const filaCarrosseis = educativa ? carrosseis.lerFila(conta) : [];
   // Reels com dia e hora marcados (os mesmos do TikTok). Conta educativa não tem.
   // filaReels (opção): os testes da conta real passam uma fila própria e nunca leem a de verdade
