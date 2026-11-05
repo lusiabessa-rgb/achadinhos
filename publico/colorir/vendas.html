@@ -69,6 +69,10 @@
   .garantia .medalha { flex: 0 0 auto; width: 84px; height: 84px; border-radius: 50%; background: var(--verde); color: #fff; display: grid; place-items: center; text-align: center; font-weight: 900; line-height: 1.05; font-size: 15px; box-shadow: 0 0 0 5px #fff, 0 0 0 8px var(--verde); }
   @media (min-width: 640px) { .precos { grid-template-columns: 1fr 1fr; } .galeria { grid-template-columns: repeat(3, 1fr); } .dois { grid-template-columns: 1fr 1fr; } h1 { font-size: 36px; } }
 </style>
+<!-- Meta Pixel "Colore com Helena" (05/11) -->
+<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");fbq("init","1646953793536232");fbq("track","PageView");
+document.addEventListener("click",function(e){var a=e.target.closest("a,button");if(a&&/pay.kiwify|assinar|checkout/i.test((a.href||"")+" "+(a.className||"")+" "+(a.id||"")))fbq("track","InitiateCheckout");});</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1646953793536232&ev=PageView&noscript=1"/></noscript>
 </head>
 <body>
 <div class="arco"></div>
@@ -124,7 +128,7 @@
   <h2>Tela não precisa ser só rolar feed.</h2>
   <p>A Sociedade Brasileira de Pediatria recomenda que crianças de 2 a 5 anos fiquem no máximo 1 hora por dia em telas, sempre com um adulto acompanhando, e que menores de 2 anos evitem telas (manual "Menos Telas, Mais Saúde").</p>
   <p>Foi pensando nisso que o Colore com Helena foi criado: um tempo de tela curto, com propósito e com você por perto. Seu filho pinta, toca, ouve, encontra cores e forma letras. Ele participa em vez de só assistir.</p>
-  <p>E é você quem manda no tempo: escolhe 10, 15 ou 20 minutos. Quando acaba, a tela é bloqueada, sugere uma brincadeira longe dela e só volta quando você liberar.</p>
+  <p>E é você quem manda no tempo: escolhe 10, 15 ou 20 minutos. Quando acaba, a tela é bloqueada, sugere uma brincadeira para a hora da pausa e só volta quando você liberar.</p>
   <img src="vendas/pausa.webp" alt="Tela da Hora da pausa: o adulto escolhe 10, 15 ou 20 minutos" style="width:100%;max-width:340px;display:block;margin:14px auto 0;border-radius:18px;box-shadow:0 4px 16px rgba(0,0,0,.1)">
   <p class="centro"><a class="botao" href="#precos">Quero para as férias</a></p>
 </section>
@@ -132,6 +136,7 @@
 <!-- 4. O que tem dentro -->
 <section>
   <h2>Tudo o que vem no app</h2>
+  <p class="centro">E o app terá atualizações: novos desenhos e atividades entram aos poucos, sem pagar nada a mais.</p>
   <div class="galeria">
     <figure><img src="vendas/desenho.webp" alt="Desenho para pintar"><figcaption>Desenhos para pintar</figcaption></figure>
     <figure><img src="vendas/letra.webp" alt="Letra A para pintar"><figcaption>Letras e números com voz</figcaption></figure>
@@ -273,8 +278,9 @@
   <details><summary>Para qual idade é?</summary><p>Para crianças a partir de 3 anos, sempre com um adulto por perto. As atividades vão do mais simples (pintar, achar cores) ao mais desafiador (escrever sozinha depois do pontilhado).</p></details>
   <details><summary>Meu filho precisa saber ler?</summary><p>Não. A voz gravada fala as letras, os números e as cores.</p></details>
   <details><summary>O app vai ensinar meu filho a ler?</summary><p>Ele não substitui a escola nem promete alfabetizar. Ajuda seu filho a conhecer letras, números, formas e cores brincando, e as dicas mostram como continuar a conversa fora da tela.</p></details>
-  <details><summary>E o tempo de tela?</summary><p>Você escolhe quanto tempo seu filho pode usar (10, 15 ou 20 minutos). Quando acaba, a tela é bloqueada e sugere uma brincadeira longe dela ou imprimir o desenho para pintar no papel. Só um adulto libera de novo.</p></details>
+  <details><summary>E o tempo de tela?</summary><p>Você escolhe quanto tempo seu filho pode usar (10, 15 ou 20 minutos). Quando acaba, a tela é bloqueada e sugere uma brincadeira para a hora da pausa ou imprimir o desenho para pintar no papel. Só um adulto libera de novo.</p></details>
   <details><summary>Tem anúncio? Vocês coletam dados do meu filho?</summary><p>Não tem nenhum anúncio. Não coletamos nenhum dado da criança, só o e-mail do adulto que assinou. Veja a <a href="privacidade.html">privacidade</a>.</p></details>
+  <details><summary>O app vai ganhar coisas novas?</summary><p>Sim! O Colore com Helena terá atualizações: novos desenhos, atividades e cenários entram aos poucos, sem custo a mais para quem é assinante.</p></details>
   <details><summary>Como cancelo?</summary><p>Quando quiser, sem multa, pela Kiwify (o link vem no e-mail da compra) ou pelo nosso e-mail. Nos primeiros 7 dias você ainda tem a garantia de reembolso total.</p></details>
   <details><summary>Qual plano vale mais a pena?</summary><p>O anual: no lançamento sai por R$ 79,90 o ano todo (equivale a R$ 6,66 por mês), contra R$ 14,90 por mês no mensal. Esse preço vale só até 30/11.</p></details>
 </section>
@@ -282,7 +288,7 @@
 <!-- 12. Chamada final -->
 <section class="centro">
   <h2>As férias estão chegando. O preço de lançamento termina em 30/11.</h2>
-  <p>Você não precisa escolher entre "tela o dia todo" e "nenhuma tela". Dá para ter um tempo de tela curto, com propósito, que termina numa brincadeira longe dela.</p>
+  <p>Você não precisa escolher entre "tela o dia todo" e "nenhuma tela". Dá para ter um tempo de tela curto, com propósito, que termina numa brincadeira no papel ou com a família.</p>
   <p>Assine hoje e, ainda hoje, seu filho já pode estar pintando, ouvindo a Helena e encontrando as cores no Vale Encantado.</p>
   <img src="vendas/salsicha.webp" alt="" style="width:110px">
   <p><a class="botao" href="#precos">Quero o Colore com Helena</a></p>
