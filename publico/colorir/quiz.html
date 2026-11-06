@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz: como está o tempo de tela do seu filho? · Colore com Helena</title>
+<meta name="description" content="5 perguntas rápidas de SIM ou NÃO para mães e pais. Veja o resultado na hora.">
+<meta property="og:title" content="Quiz rápido: como está o tempo de tela do seu filho?">
+<meta property="og:description" content="5 perguntas de SIM ou NÃO. Resultado na hora.">
+<meta property="og:image" content="https://lusiabessa-rgb.github.io/achadinhos/colorir/vendas/inicio.webp">
+<link rel="icon" href="icone-192.png">
+<link rel="stylesheet" href="paginas.css">
+<!-- Quiz interativo (pedido da Lusia, 06/11): no máximo 5 perguntas, nada extenso.
+     No fim, mostra só os motivos do app ligados às respostas SIM daquela família. -->
+<style>
+  main { padding-top: 14px; min-height: 80vh; }
+  .tela-quiz { background: #fff; border: 1px solid #EDE6D8; border-radius: 22px; padding: 24px 18px 26px; text-align: center; box-shadow: 0 2px 10px rgba(30,58,95,.05); }
+  .etq { display: inline-block; background: #EEF3FA; color: var(--tinta); font-weight: 800; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; padding: 6px 14px; border-radius: 999px; }
+  h1 { font-size: 30px; line-height: 1.15; margin: 14px 0 10px; }
+  .pergunta { font-family: "Fraunces", Georgia, serif; color: var(--tinta); font-size: 27px; line-height: 1.22; font-weight: 700; margin: 18px 0 6px; }
+  .nota { color: var(--suave); font-size: 16px; margin: 0 0 4px; }
+  .barra { height: 10px; background: #EFE8DA; border-radius: 99px; overflow: hidden; margin: 4px 0 6px; }
+  .barra i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--verm), var(--amar), var(--verde), var(--azul)); transition: width .3s; }
+  .conta { font-size: 14px; font-weight: 800; color: var(--suave); }
+  .opcoes { display: flex; gap: 14px; justify-content: center; margin-top: 26px; }
+  .opcoes button { flex: 1; max-width: 170px; font: 800 22px "Nunito", sans-serif; padding: 16px 0; border-radius: 999px; cursor: pointer; }
+  .sim { background: var(--verde); color: #fff; border: 0; box-shadow: 0 4px 12px rgba(43,168,74,.3); }
+  .nao { background: #fff; color: var(--tinta); border: 3px solid #C9C9C9; }
+  .comecar { font: 800 20px "Nunito", sans-serif; border: 0; cursor: pointer; margin-top: 18px; }
+  .faixa { font-family: "Fraunces", Georgia, serif; font-size: 25px; color: var(--tinta); font-weight: 700; line-height: 1.22; margin: 12px 0 6px; }
+  ul.motivos { list-style: none; padding: 0; margin: 18px 0 6px; text-align: left; display: grid; gap: 10px; }
+  ul.motivos li { background: #FBF8F1; border: 1px solid #C9C9C9; border-radius: 14px; padding: 10px 14px 10px 42px; position: relative; font-size: 16px; line-height: 1.4; }
+  ul.motivos li::before { content: "✓"; position: absolute; left: 14px; top: 9px; color: var(--verde); font-weight: 800; font-size: 19px; }
+  .fonte { font-size: 13px; color: var(--suave); margin-top: 14px; }
+  .compartilhar { display: inline-block; margin-top: 14px; font-weight: 700; font-size: 15px; }
+  [hidden] { display: none !important; }
+</style>
+<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");fbq("init","1646953793536232");fbq("track","PageView");</script>
+</head>
+<body>
+<div class="arco"></div>
+<main>
+<a class="topo" href="vendas.html"><img src="icone-192.png" alt=""><div><b>Colore com Helena</b><span>Pintar, brincar e aprender</span></div></a>
+
+<!-- Início -->
+<section id="inicio" class="tela-quiz">
+  <span class="etq">Quiz rápido · 5 perguntas</span>
+  <h1>Seu filho passa horas rolando a tela sem aprender nada?</h1>
+  <p class="nota">Responda SIM ou NÃO e veja o resultado na hora.</p>
+  <button class="botao comecar" id="btnComecar">Começar</button>
+</section>
+
+<!-- Pergunta -->
+<section id="quiz" class="tela-quiz" hidden>
+  <div class="conta" id="conta">Pergunta 1 de 5</div>
+  <div class="barra"><i id="barra"></i></div>
+  <p class="pergunta" id="pergunta"></p>
+  <p class="nota" id="nota"></p>
+  <div class="opcoes">
+    <button class="sim" data-r="1">SIM</button>
+    <button class="nao" data-r="0">NÃO</button>
+  </div>
+</section>
+
+<!-- Resultado -->
+<section id="resultado" class="tela-quiz" hidden>
+  <span class="etq" id="placar"></span>
+  <p class="faixa" id="faixa"></p>
+  <p class="nota" id="faixaTexto"></p>
+  <ul class="motivos" id="motivos"></ul>
+  <a class="botao" href="vendas.html" id="btnConhecer">Conhecer o Colore com Helena</a>
+  <p class="fonte">Pediatras recomendam no máximo 1 hora de tela por dia dos 2 aos 5 anos, com um adulto junto (Sociedade Brasileira de Pediatria · OMS).</p>
+  <a class="compartilhar" id="btnZap" href="#">Mandar o quiz para uma amiga no WhatsApp</a>
+</section>
+</main>
+
+<script>
+// Cada pergunta tem o motivo do app que responde a ela (só aparece se a pessoa disse SIM).
+const PERGUNTAS = [
+  { p: 'Ele pede o celular logo que acorda?', m: 'Você escolhe o tempo. Quando acaba, a tela bloqueia e só você libera.' },
+  { p: 'Passa de um vídeo para outro sem parar?', n: 'E, no fim, não lembra de nada do que viu?', m: 'No lugar do vídeo sem fim, ele colore, acha cores e forma letras.' },
+  { p: 'Na hora de desligar, vira choro ou briga?', m: 'Quem avisa que acabou é a Hora da pausa, não você.' },
+  { p: 'Você já deu o celular só para ter 10 minutos de paz?', n: 'Sem culpa. Quase toda mãe e todo pai já fez isso.', m: 'Seus 10 minutos de paz viram 10 minutos que ensinam, sem anúncio no meio.' },
+  { p: 'Você queria uma tela que ensinasse algo?', n: 'E que acabasse na hora que você escolhe?', m: 'Criado por uma professora de educação infantil e alfabetização, para crianças a partir de 3 anos.' },
+];
+const $ = (id) => document.getElementById(id);
+let atual = 0; const respostas = [];
+
+function mostra(id) { ['inicio', 'quiz', 'resultado'].forEach((x) => { $(x).hidden = x !== id; }); window.scrollTo(0, 0); }
+function pergunta() {
+  const q = PERGUNTAS[atual];
+  $('conta').textContent = `Pergunta ${atual + 1} de ${PERGUNTAS.length}`;
+  $('barra').style.width = `${(atual / PERGUNTAS.length) * 100}%`;
+  $('pergunta').textContent = q.p;
+  $('nota').textContent = q.n || '';
+}
+function resultado() {
+  const sims = respostas.filter(Boolean).length;
+  $('placar').textContent = `Você marcou ${sims} SIM`;
+  let faixa, texto;
+  if (sims <= 1) { faixa = 'A tela da sua casa já está no controle.'; texto = 'Parabéns! O app pode ser mais uma opção que ensina.'; }
+  else if (sims <= 3) { faixa = 'A tela está no piloto automático.'; texto = 'É muito comum, ainda mais nas férias. Veja por que o app é para a sua família:'; }
+  else { faixa = 'Hora de trocar a tela vazia por uma tela que ensina.'; texto = 'Sem culpa: dá para começar hoje. Veja por que o app é para a sua família:'; }
+  $('faixa').textContent = faixa; $('faixaTexto').textContent = texto;
+  // Só os motivos das perguntas com SIM (no máximo 3, para não ficar extenso)
+  let motivos = PERGUNTAS.filter((q, i) => respostas[i]).map((q) => q.m);
+  if (!motivos.length) motivos = [PERGUNTAS[1].m, PERGUNTAS[0].m];
+  $('motivos').innerHTML = motivos.slice(0, 3).map((m) => `<li>${m}</li>`).join('');
+  mostra('resultado');
+  if (window.fbq) fbq('trackCustom', 'QuizConcluido', { sims });
+}
+$('btnComecar').onclick = () => { atual = 0; respostas.length = 0; pergunta(); mostra('quiz'); };
+document.querySelectorAll('.opcoes button').forEach((b) => b.onclick = () => {
+  respostas[atual] = b.dataset.r === '1'; atual++;
+  if (atual < PERGUNTAS.length) pergunta(); else resultado();
+});
+$('btnZap').href = 'https://wa.me/?text=' + encodeURIComponent('Fiz esse quiz rápido sobre tempo de tela das crianças, faz também? 5 perguntas: ' + location.href.split('?')[0]);
+</script>
+</body>
+</html>
