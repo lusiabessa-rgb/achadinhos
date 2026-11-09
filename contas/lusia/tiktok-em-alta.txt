@@ -42,3 +42,5 @@
 2026-10-26 | 1737309673072002894 | Saco de lixo perfumado lavanda pia e banheiro | 10,80 | 6 | 11900 | 67,56 | 1700 | 4,2 | casa
 2026-10-26 | 1737357033650226325 | Porta papel higiênico adesivo sem furar | 19,79 | | 4100 | 83,83 | 894 | | casa
 2026-10-26 | 1734697333597111383 | Saboneteira de silicone com drenagem | 12,99 | | 1400 | 100 | 119 | 4,8 | casa
+2026-11-09 | 1732276566978954680 | Cortina de Luz LED 300 LEDs 3x3m USB com controle 8 modos | 25,73 | 12 | 9700 | 100 | | | natal
+2026-11-09 | 1734147015117145909 | Cortina de LED 3M 300 luzes 8 modos USB | 12,49 | | 5900 | 100 | | | natal
