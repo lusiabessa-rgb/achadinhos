@@ -1,4 +1,4 @@
-# Robô da Máquina de Ofertas: roda sozinho 3x por dia nos horários de pico (12h, 18h e 20h de Brasília)
+# Robô da Máquina de Ofertas: roda sozinho 4x por dia (12h, 18h, 20h e 21h de Brasília; às 21h sai o carrossel da fila contas/lusia/carrosseis)
 # Às 18h e 20h também sai o Reel marcado para aquele horário (contas/lusia/fila-reels.json), o mesmo do TikTok.
 # ou quando você aperta "Run workflow" no GitHub (pelo celular também).
 name: Maquina de Ofertas
@@ -9,6 +9,7 @@ on:
     - cron: "0 15 * * *"   # 12h em Brasília (ofertas)
     - cron: "0 21 * * *"   # 18h em Brasília (ofertas)
     - cron: "0 23 * * *"   # 20h em Brasília (post de conteúdo: pessoas em casa no feed)
+    - cron: "0 0 * * *"    # 21h em Brasília (carrossel de pesquisa do @achadinhoabessa, 1 por dia; ofertas e fotos seguem zeradas pelo soReels)
   workflow_dispatch: {}
 
 permissions:

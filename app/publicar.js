@@ -84,7 +84,11 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
     dados.ofertas = [];
     filaConteudo = [];
   }
-  const filaCarrosseis = educativa ? carrosseis.lerFila(conta) : [];
+  // Carrossel do achadinho (conta de vendas com "carrosselAtivo": true): fila à parte, sem oferta, 1 por dia a partir das 21h.
+  // O soReels NÃO barra esta fila: ele só zera ofertas, stories e fotos de conteúdo.
+  const carrosselVendas = !educativa && ig.carrosselAtivo === true;
+  const carrosselHora = ig.carrosselAPartirDas === undefined ? (educativa ? 19 : 21) : Number(ig.carrosselAPartirDas);
+  const filaCarrosseis = educativa || carrosselVendas ? carrosseis.lerFila(conta) : [];
   // Reels com dia e hora marcados (os mesmos do TikTok). Conta educativa não tem.
   // filaReels (opção): os testes da conta real passam uma fila própria e nunca leem a de verdade
   const filaReels = educativa ? [] : filaReelsForcada || reels.lerFila(conta);
@@ -138,9 +142,9 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
     // "conteudoPorRodada": no máximo N por rodada (12h, 18h, 20h), para espalhar os posts ao longo do dia
     .slice(0, Math.max(0, Math.min(porDia - jaHoje, ig.conteudoPorRodada === undefined ? Infinity : Number(ig.conteudoPorRodada) || 0)))
     .forEach((c) => tarefas.push({ chave: `conteudo:${c.slug}`, tipo: 'post', urls: [urlArte(c)], legenda: c.legenda, local: path.join(pastaPublica, c.arte) }));
-  // Carrossel educativo: o 1º da fila ainda não publicado, 1 por dia, a partir das 19h (simulação ignora a hora)
-  const prox = educativa
-    ? carrosseis.proximo(filaCarrosseis, feitos, { hojeBR, horaBR, aPartirDas: ig.carrosselAPartirDas === undefined ? 19 : Number(ig.carrosselAPartirDas), porDia: ig.carrosselPorDia === undefined ? 1 : Number(ig.carrosselPorDia) || 0, comecaEm: ig.carrosselComecaEm, ignorarHora: simular })
+  // Carrossel (helena 19h, achadinho 21h): o 1º da fila ainda não publicado, 1 por dia (simulação ignora a hora)
+  const prox = educativa || carrosselVendas
+    ? carrosseis.proximo(filaCarrosseis, feitos, { hojeBR, horaBR, aPartirDas: carrosselHora,porDia: ig.carrosselPorDia === undefined ? 1 : Number(ig.carrosselPorDia) || 0, comecaEm: ig.carrosselComecaEm, ignorarHora: simular })
     : null;
   if (prox) {
     tarefas.push({ chave: `carrossel:${prox.slug}`, tipo: 'carrossel', urls: prox.imagens.map((i) => `${base}/${encodeURI(conta)}/${i}`), legenda: prox.legenda, item: prox });
@@ -181,8 +185,8 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
         log(`  ${r.data} ${r.hora}h ${r.video} (${est})${prob.length && est !== 'já publicado' ? ' PROBLEMA: ' + prob.join('; ') : ''}`);
       }
     }
-    if (educativa) {
-      log(`Fila de carrosséis (${filaCarrosseis.length}), na ordem, 1 por dia a partir das ${ig.carrosselAPartirDas === undefined ? 19 : ig.carrosselAPartirDas}h:`);
+    if (educativa || carrosselVendas) {
+      log(`Fila de carrosséis (${filaCarrosseis.length}), na ordem, 1 por dia a partir das ${carrosselHora}h:`);
       for (const [i, c] of filaCarrosseis.entries()) {
         const prob = await carrosseis.conferirItem(conta, c);
         log(`  ${i + 1}) ${c.slug}: ${c.imagens.length} slides${feitos[`carrossel:${c.slug}`] ? ' (já publicado)' : ''} - ${prob.length ? 'PROBLEMA: ' + prob.join('; ') : 'conferido (1080x1350, sem palavras de venda)'}`);
@@ -254,7 +258,7 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
       // Reel que falhou: a dona fica sabendo (a próxima rodada tenta de novo, até 1 dia depois do horário)
       if (t.reel) await avisar(segredos || maquina.lerSegredos(pastaConta), `⚠️ O Reel de ${t.reel.data.split('-').reverse().slice(0, 2).join('/')} ${t.reel.hora}h não saiu no Instagram: ${e.message}\nA próxima rodada tenta de novo.`, fetchFn, log);
       // Carrossel educativo que falhou (31/10: saiu "success" e ninguém soube): avisa a dona no Telegram
-      if (t.item) await avisar(segredos || maquina.lerSegredos(pastaConta), `⚠️ O carrossel "${t.item.slug}" (${config.marca || conta}) NÃO saiu no Instagram hoje: ${e.message}\nNada foi publicado. A próxima rodada (amanhã às 19h) tenta este mesmo carrossel de novo.`, fetchFn, log);
+      if (t.item) await avisar(segredos || maquina.lerSegredos(pastaConta), `⚠️ O carrossel "${t.item.slug}" (${config.marca || conta}) NÃO saiu no Instagram hoje: ${e.message}\nNada foi publicado. A próxima rodada (amanhã às ${carrosselHora}h) tenta este mesmo carrossel de novo.`, fetchFn, log);
     }
   }
   log(`Instagram: ${publicados} publicação(ões) feitas.`);

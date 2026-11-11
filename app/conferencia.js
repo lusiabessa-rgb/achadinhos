@@ -46,7 +46,7 @@ function tipoDaChave(chave) {
   if (chave.startsWith('aviso:')) return 'aviso';
   if (chave.startsWith('reel:')) return 'reel';
   if (chave.startsWith('conteudo:')) return 'conteudo';
-  if (/:carrossel$/.test(chave)) return 'carrossel';
+  if (/:carrossel$/.test(chave) || chave.startsWith('carrossel:')) return 'carrossel';
   if (/:story:/.test(chave)) return 'story';
   return 'post';
 }

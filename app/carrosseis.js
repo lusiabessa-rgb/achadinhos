@@ -22,13 +22,58 @@ const PROIBIDAS = [
   [/comiss[aã]o/i, 'comissão'],
 ];
 
-function problemasDoTexto(texto) {
+// Carrossel do @achadinhoabessa (conta de vendas, modo "achadinho"): conteúdo de pesquisa, SEM venda direta.
+// Pode falar "achadinho", @achadinhoabessa e TikTok Shop; não pode #publi, link, carrinho, sacolinha, preço, cupom, criança.
+const PROIBIDAS_ACHADINHO = [
+  [/#publi\b/i, '#publi'],
+  [/\blinks?\b/i, 'link'],
+  [/carrinho/i, 'carrinho'],
+  [/sacolinha/i, 'sacolinha'],
+  [/R\$|\breais\b|pre[cç]o/i, 'preço'],
+  [/cupom|cupons/i, 'cupom'],
+  [/crian[cç]a|\bbeb[êe]|\bmenin[oa]s?\b|\bfilh[oa]s?\b/i, 'criança'],
+];
+
+function problemasDoTexto(texto, modo = 'educativo') {
   const t = String(texto || '');
+  if (modo === 'achadinho') return PROIBIDAS_ACHADINHO.filter(([re]) => re.test(t)).map(([, nome]) => `a legenda tem "${nome}" (carrossel do achadinho não leva venda)`);
   return PROIBIDAS.filter(([re]) => re.test(t)).map(([, nome]) => `a legenda tem "${nome}" (conta educativa não leva venda)`);
 }
 
+// Faixa vermelha de oferta (#b0294a): uma linha inteira (mais de 50%) dessa cor = arte de oferta antiga, proibida
+async function temFaixaVermelha(arquivo) {
+  const sharp = require('sharp');
+  const { data, info } = await sharp(arquivo).removeAlpha().resize(108, 135, { fit: 'fill' }).raw().toBuffer({ resolveWithObject: true });
+  const [r0, g0, b0] = [0xb0, 0x29, 0x4a];
+  for (let y = 0; y < info.height; y++) {
+    let n = 0;
+    for (let x = 0; x < info.width; x++) {
+      const i = (y * info.width + x) * 3;
+      if (Math.abs(data[i] - r0) + Math.abs(data[i + 1] - g0) + Math.abs(data[i + 2] - b0) < 45) n++;
+    }
+    if (n / info.width > 0.5) return true;
+  }
+  return false;
+}
+
+// Modo do carrossel da conta: "educativo" (helena), "achadinho" (conta de vendas com carrosselAtivo) ou null
+function modoDaConta(config) {
+  if (config && config.tipo === 'educativo') return 'educativo';
+  if (config && config.instagram && config.instagram.carrosselAtivo === true) return 'achadinho';
+  return null;
+}
+
+// Linhas de anotação interna ("Informação de pesquisa, sem link e sem preço.") não vão para a legenda do achadinho
+const limparLegenda = (t) =>
+  String(t || '')
+    .split(/\r?\n/)
+    .filter((l) => !/^\s*informa[cç][aã]o de pesquisa/i.test(l))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
 // Confere as imagens de um carrossel: 2 a 10, todas 1080x1350 (o Instagram não corta nada)
-async function problemasDasImagens(arquivos, { formato } = {}) {
+async function problemasDasImagens(arquivos, { formato, semFaixa = false } = {}) {
   const sharp = require('sharp');
   const p = [];
   if (arquivos.length < 2 || arquivos.length > 10) p.push(`carrossel precisa de 2 a 10 imagens (tem ${arquivos.length})`);
@@ -40,13 +85,14 @@ async function problemasDasImagens(arquivos, { formato } = {}) {
     const m = await sharp(a).metadata();
     if (m.width !== 1080 || m.height !== 1350) p.push(`${path.basename(a)} está em ${m.width}x${m.height} (precisa 1080x1350)`);
     if (formato && m.format !== formato) p.push(`${path.basename(a)} está em ${m.format} (precisa ${formato})`);
+    if (semFaixa && (await temFaixaVermelha(a))) p.push(`${path.basename(a)} tem a faixa vermelha de oferta (#b0294a), proibida`);
   }
   return p;
 }
 
 function exigirEducativa(conta, config) {
-  if (!config || config.tipo !== 'educativo') {
-    throw new Error(`A conta "${conta}" não é educativa ("tipo": "educativo" no config.json). Carrossel educativo não entra em conta de vendas.`);
+  if (!modoDaConta(config)) {
+    throw new Error(`A conta "${conta}" não é educativa ("tipo": "educativo" no config.json) nem tem "carrosselAtivo": true. Carrossel não entra em conta de vendas sem isso.`);
   }
 }
 
@@ -64,9 +110,10 @@ function lerFila(conta, raiz = RAIZ) {
 async function conferirItem(conta, item, raiz = RAIZ) {
   const p = [];
   if (!item || !item.slug || !Array.isArray(item.imagens) || !item.legenda) return ['item da fila incompleto (precisa slug, imagens e legenda)'];
-  p.push(...problemasDoTexto(item.legenda));
+  const modo = modoDaConta(require('./maquina').lerConfig(path.join(raiz, 'contas', conta))) || 'educativo';
+  p.push(...problemasDoTexto(item.legenda, modo));
   const locais = item.imagens.map((i) => path.join(raiz, 'publico', conta, i));
-  p.push(...(await problemasDasImagens(locais, { formato: 'jpeg' })));
+  p.push(...(await problemasDasImagens(locais, { formato: 'jpeg', semFaixa: modo === 'achadinho' })));
   return p;
 }
 
@@ -75,21 +122,25 @@ async function conferirItem(conta, item, raiz = RAIZ) {
 async function enfileirar(conta, pastaOrigem, { raiz = RAIZ, log = console.log } = {}) {
   const sharp = require('sharp');
   const maquina = require('./maquina');
-  exigirEducativa(conta, maquina.lerConfig(path.join(raiz, 'contas', conta)));
+  const configConta = maquina.lerConfig(path.join(raiz, 'contas', conta));
+  exigirEducativa(conta, configConta);
+  const modo = modoDaConta(configConta);
   const slug = path.basename(path.resolve(pastaOrigem)).toLowerCase().replace(/[^a-z0-9-]+/g, '-');
-  const pastaSlides = path.join(pastaOrigem, 'slides');
+  // slides em <pasta>/slides/01.png ou direto na pasta (slide-01.png)
+  const pastaSlides = fs.existsSync(path.join(pastaOrigem, 'slides')) ? path.join(pastaOrigem, 'slides') : pastaOrigem;
   const arqLegenda = path.join(pastaOrigem, 'legenda.txt');
   if (!fs.existsSync(pastaSlides)) throw new Error(`Não achei a pasta de slides: ${pastaSlides}`);
   if (!fs.existsSync(arqLegenda)) throw new Error(`Não achei a legenda: ${arqLegenda}`);
   const slides = fs
     .readdirSync(pastaSlides)
-    .filter((f) => /^\d+\.(png|jpe?g)$/i.test(f))
-    .sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
+    .filter((f) => /^(slide-)?\d+\.(png|jpe?g)$/i.test(f))
+    .sort((a, b) => parseInt(a.replace(/\D/g, ''), 10) - parseInt(b.replace(/\D/g, ''), 10))
     .map((f) => path.join(pastaSlides, f));
-  const legenda = fs.readFileSync(arqLegenda, 'utf8').replace(/^﻿/, '').trim();
+  let legenda = fs.readFileSync(arqLegenda, 'utf8').replace(/^﻿/, '').trim();
+  if (modo === 'achadinho') legenda = limparLegenda(legenda);
   if (!legenda) throw new Error('A legenda está vazia.');
 
-  const problemas = [...problemasDoTexto(legenda), ...(await problemasDasImagens(slides))];
+  const problemas = [...problemasDoTexto(legenda, modo), ...(await problemasDasImagens(slides, { semFaixa: modo === 'achadinho' }))];
   if (problemas.length) throw new Error(`Não entrou na fila:\n  - ${problemas.join('\n  - ')}`);
 
   const fila = lerFila(conta, raiz);
@@ -124,4 +175,4 @@ function proximo(fila, feitos, { hojeBR, horaBR, aPartirDas = 19, porDia = 1, ig
   return (fila || []).find((c) => c && c.slug && !(feitos || {})[`carrossel:${c.slug}`]) || null;
 }
 
-module.exports = { PROIBIDAS, problemasDoTexto, problemasDasImagens, exigirEducativa, lerFila, conferirItem, enfileirar, proximo, arqFila };
+module.exports = { PROIBIDAS, PROIBIDAS_ACHADINHO, modoDaConta, temFaixaVermelha, limparLegenda, problemasDoTexto, problemasDasImagens, exigirEducativa, lerFila, conferirItem, enfileirar, proximo, arqFila };
