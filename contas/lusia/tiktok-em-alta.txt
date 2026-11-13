@@ -44,3 +44,18 @@
 2026-10-26 | 1734697333597111383 | Saboneteira de silicone com drenagem | 12,99 | | 1400 | 100 | 119 | 4,8 | casa
 2026-11-09 | 1732276566978954680 | Cortina de Luz LED 300 LEDs 3x3m USB com controle 8 modos | 25,73 | 12 | 9700 | 100 | | | natal
 2026-11-09 | 1734147015117145909 | Cortina de LED 3M 300 luzes 8 modos USB | 12,49 | | 5900 | 100 | | | natal
+2026-11-09 | 1736550462393583556 | Fio de fada solar externo 10m/20m 100/200 LEDs | 12,99 | | 9100 | 56,83 | 830 | | natal
+2026-11-09 | 1738102036944618926 | Projetor natalino dinâmico 16 padrões | 34,60 | | 6100 | 13,81 | 1200 | | natal
+2026-11-09 | 1737542307888268475 | Kit capas de cadeira Natal 2/4/6 lugares | 30,10 | 7 | 6600 | 73,18 | 646 | 4,7 | natal
+2026-11-09 | 1738081709597623644 | Cortina de luz LED natalina 3x2/3x3/4x3 m | 43,90 | | 3900 | 38,61 | 394 | | natal
+2026-11-09 | 1737749049676170416 | Cascata 400 LED 5m/10m 8 funções Natal | 35,99 | | 6400 | 62,64 | 367 | | natal
+2026-11-09 | 1738014182543295792 | Cortina blackout luxo tecido grosso com ilhós | 10,58 | | 6100 | 28,96 | 544 | | casa
+2026-11-09 | 1738236147511559292 | Conjunto 12 panelas com panela de pressão antiaderente | 536,35 | | 5000 | 22,22 | 9 | | casa
+2026-11-09 | 1738115676840757187 | Filtro coador de café inox reutilizável | 17,99 | 10 | 2900 | 94,23 | 99 | | casa
+2026-11-09 | 1737570667576985229 | Repelente eletrônico ultrassônico bivolt | 9,79 | | 3300 | 80 | 36 | | casa
+2026-11-09 | 1738378025509160560 | Ventilador de teto 52cm com lâmpada LED controle | 54,90 | | 2800 | 75 | 56 | | casa
+2026-11-09 | 1736442284176279479 | Kit 6 organizadores de geladeira acrílico | 154,90 | 11,5 | 2800 | 66,67 | | 4,5 | casa
+2026-11-09 | 1736900977840064127 | Kit tampas elásticas para cobrir alimentos | 10,00 | 9,5 | 3100 | 100 | 347 | 3,8 | casa
+2026-11-09 | 1734336393632515845 | Pastilha efervescente limpa máquina de lavar 12/24/36 | 12,24 | 12 | 16000 | 92,24 | 3400 | | casa
+2026-11-09 | 1736030470045599119 | Fita dupla face transparente NanoGel | 9,90 | 8,5 | 7600 | 99,25 | 871 | | casa
+2026-11-09 | 1737832257542850266 | Aspirador 3 em 1 USB portátil | 12,99 | 7,5 | 2500 | 71,62 | 142 | | casa

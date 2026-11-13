@@ -80,5 +80,5 @@ GIT(['add', '-A']);
 if (!GIT(['status', '--porcelain'])) { console.log('Nada mudou.'); process.exit(0); }
 // identidade da marca, sem o nome dela
 execFileSync('git', ['-c', 'user.name=Colore com Helena', '-c', 'user.email=colorecomhelena@gmail.com', 'commit', '-qm', 'Atualiza o site do Colore com Helena'], { cwd: DESTINO, stdio: 'inherit' });
-execFileSync('git', ['push', '-q', 'origin', 'HEAD'], { cwd: DESTINO, stdio: 'inherit' });
+execFileSync('git', ['push', '-q', 'origin', 'HEAD:main'], { cwd: DESTINO, stdio: 'inherit' });
 console.log('Enviado. No ar em ' + NOVO + ' em 1 a 2 minutos.');
