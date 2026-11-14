@@ -65,7 +65,7 @@
     "modo": "carrossel",
     "postsIndividuaisPorRodada": 0,
     "stories": false,
-    "carrosselAtivo": true,
+    "carrosselAtivo": false,
     "carrosselAPartirDas": 21,
     "carrosselPorDia": 1,
     "carrosselComecaEm": "2026-11-12",
