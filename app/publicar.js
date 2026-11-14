@@ -86,7 +86,7 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
   }
   // Carrossel do achadinho (conta de vendas com "carrosselAtivo": true): fila à parte, sem oferta, 1 por dia a partir das 21h.
   // O soReels NÃO barra esta fila: ele só zera ofertas, stories e fotos de conteúdo.
-  const carrosselVendas = !educativa && ig.carrosselAtivo === true;
+  const carrosselVendas = !educativa && ig.carrosselAtivo === true && ig.carrosselPausado !== true; // 14/11: pausado pela dona (0 visualizações)
   const carrosselHora = ig.carrosselAPartirDas === undefined ? (educativa ? 19 : 21) : Number(ig.carrosselAPartirDas);
   const filaCarrosseis = educativa || carrosselVendas ? carrosseis.lerFila(conta) : [];
   // Reels com dia e hora marcados (os mesmos do TikTok). Conta educativa não tem.

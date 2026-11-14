@@ -555,7 +555,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       const sem = await publicar('lusia', { simular: true, dia, arqPublicados, filaReels: [], agora, log: () => {} });
       assert.ok(!(sem.tarefas || []).length, 'sem Reel na hora, o modo só Reels não pode publicar nada');
       // Carrossel da fila nova (21h) sai À PARTE: o Reel vem primeiro e ofertas, stories e fotos continuam zerados
-      maquina.lerConfig = cfgCom({ soReels: true, carrosselAtivo: true, carrosselAPartirDas: 0, carrosselComecaEm: undefined });
+      maquina.lerConfig = cfgCom({ soReels: true, carrosselAtivo: true, carrosselPausado: false, carrosselAPartirDas: 0, carrosselComecaEm: undefined });
       const com = await publicar('lusia', { simular: true, dia, arqPublicados, filaReels: fila, agora, log: () => {} });
       assert.deepStrictEqual(com.tarefas.map((t) => t.tipo), ['reel', 'carrossel'], 'Reel primeiro e só o carrossel da fila além dele');
       assert(com.tarefas[1].chave.startsWith('carrossel:'), 'o carrossel não é o da fila nova');
@@ -1385,7 +1385,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       // soReels continua ligado; só tira a hora e a data para poder rodar agora
       maquina.lerConfig = (p) => {
         const c = lerCfg(p);
-        return c.instagram && c.instagram.carrosselAtivo ? { ...c, site: { ...c.site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined } } : c;
+        return c.instagram && c.instagram.carrosselAtivo ? { ...c, site: { ...c.site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined, carrosselPausado: false } } : c;
       };
       assert.strictEqual(maquina.lerConfig(path.join(__dirname, '..', 'contas', 'lusia')).instagram.soReels, true);
       const sim = await publicar('lusia', { simular: true, arqPublicados, filaReels: [], log: () => {} });
@@ -1442,7 +1442,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     try {
       maquina.lerConfig = (p) => {
         const c = lerCfg(p);
-        return c.tipo === 'educativo' ? { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined } } : c;
+        return c.tipo === 'educativo' ? { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined, carrosselPausado: false } } : c;
       };
       const sim = await publicar('helena', { simular: true, arqPublicados, log: () => {} });
       assert.strictEqual(sim.tarefas.length, 1);
@@ -1508,7 +1508,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     try {
       maquina.lerConfig = (p) => {
         const c = lerCfg(p);
-        return c.tipo === 'educativo' ? { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined } } : c;
+        return c.tipo === 'educativo' ? { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined, carrosselPausado: false } } : c;
       };
       const arqPublicados = path.join(pastaTmp, 'publicados.json');
       const telegram = [];
