@@ -89,9 +89,10 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
   const carrosselVendas = !educativa && ig.carrosselAtivo === true && ig.carrosselPausado !== true; // 14/11: pausado pela dona (0 visualizações)
   const carrosselHora = ig.carrosselAPartirDas === undefined ? (educativa ? 19 : 21) : Number(ig.carrosselAPartirDas);
   const filaCarrosseis = educativa || carrosselVendas ? carrosseis.lerFila(conta) : [];
-  // Reels com dia e hora marcados (os mesmos do TikTok). Conta educativa não tem.
+  // Reels com dia e hora marcados (os mesmos do TikTok). Conta educativa só com "reelsAtivo": true
+  // (14/11: a Helena só tinha carrossel e não era descoberta; a dona aprovou Reels).
   // filaReels (opção): os testes da conta real passam uma fila própria e nunca leem a de verdade
-  const filaReels = educativa ? [] : filaReelsForcada || reels.lerFila(conta);
+  const filaReels = educativa && ig.reelsAtivo !== true ? [] : filaReelsForcada || reels.lerFila(conta);
   if (!dados.ofertas.length && !filaConteudo.length && !filaCarrosseis.length && !filaReels.length) {
     log('Nenhuma oferta nem post de conteúdo para publicar.');
     return { publicados: 0 };

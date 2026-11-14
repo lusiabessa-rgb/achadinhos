@@ -11,6 +11,7 @@
     "carrosselPorDia": 1,
     "carrosselAPartirDas": 19,
     "tokenVenceEm": "2026-12-20",
-    "carrosselComecaEm": "2026-10-27"
+    "carrosselComecaEm": "2026-10-27",
+    "reelsAtivo": true
   }
 }
