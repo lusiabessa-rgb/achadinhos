@@ -34,6 +34,39 @@
   ul.motivos li::before { content: "✓"; position: absolute; left: 14px; top: 9px; color: var(--verde); font-weight: 800; font-size: 19px; }
   .fonte { font-size: 13px; color: var(--suave); margin-top: 14px; }
   .compartilhar { display: inline-block; margin-top: 14px; font-weight: 700; font-size: 15px; }
+  #resultado { padding-bottom: 90px; }
+  .diag { position: relative; background: linear-gradient(160deg, #FFF4D6, #E6F4FF); border-radius: 20px; padding: 20px 14px 16px; margin: -6px -4px 0; }
+  .masc { width: 86px; display: block; margin: -4px auto 6px; animation: pula 1.6s ease-in-out infinite; }
+  @keyframes pula { 50% { transform: translateY(-8px) rotate(-4deg); } }
+  .termo { display: flex; gap: 5px; margin: 14px 4px 4px; }
+  .termo i { flex: 1; height: 16px; border-radius: 8px; background: #E4DDCF; }
+  .termo i.on:nth-child(1) { background: var(--verde); } .termo i.on:nth-child(2) { background: #8BC34A; }
+  .termo i.on:nth-child(3) { background: var(--amar); } .termo i.on:nth-child(4) { background: #FF9800; } .termo i.on:nth-child(5) { background: var(--verm); }
+  .termo-leg { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: var(--suave); margin: 0 4px 8px; }
+  .tit2 { font-family: "Fraunces", Georgia, serif; font-size: 21px; color: var(--tinta); margin: 24px 0 10px; }
+  .antes-depois { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left; }
+  .ad { border-radius: 16px; padding: 12px 10px; font-size: 14px; line-height: 1.35; display: grid; gap: 6px; }
+  .ad b { font-size: 16px; }
+  .hoje { background: #FDECEA; border: 2px solid #F5B5AE; } .hoje span::before { content: "✗ "; color: var(--verm); font-weight: 800; }
+  .depois { background: #E9F7EC; border: 2px solid #9ED7A8; } .depois span::before { content: "✓ "; color: var(--verde); font-weight: 800; }
+  .galeria { display: flex; gap: 8px; margin-top: 14px; }
+  .galeria img { flex: 1; min-width: 0; aspect-ratio: 9/16; object-fit: cover; border-radius: 14px; box-shadow: 0 3px 10px rgba(0,0,0,.12); }
+  .galeria img:nth-child(2) { transform: translateY(-8px) scale(1.04); }
+  .masc2 { width: 64px; position: absolute; right: -6px; top: -34px; }
+  .fixo { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.96); box-shadow: 0 -4px 14px rgba(0,0,0,.1); z-index: 9; text-align: center; }
+  .fixo .botao { display: block; max-width: 460px; margin: 0 auto; font-size: 18px; animation: pulsa 2s infinite; }
+  @keyframes pulsa { 50% { transform: scale(1.03); } }
+  .fixo .mf { position: absolute; bottom: 40px; width: 80px; animation: pula 1.6s ease-in-out infinite; pointer-events: none; }
+  .fixo .esq { left: 8px; } .fixo .dir { right: 8px; animation-delay: .8s; }
+  .oferta { position: relative; margin-top: 30px; border: 3px solid var(--verde); border-radius: 20px; padding: 18px 14px 16px; background: #F6FBF5; }
+  .selo-l { display: inline-block; background: var(--amar); color: var(--tinta); font-weight: 800; font-size: 13px; padding: 5px 12px; border-radius: 999px; }
+  .de-por { font-size: 18px; margin-top: 10px; color: var(--tinta); }
+  .de-por s { color: var(--suave); }
+  .de-por b { font-size: 32px; color: var(--verde); }
+  .mes { font-size: 15px; color: var(--suave); margin: 4px 0 14px; }
+  .oferta .botao { display: block; font-size: 20px; }
+  .garantia-l { font-size: 14px; font-weight: 700; color: var(--tinta); margin: 12px 0 8px; }
+  .link2 { display: block; font-size: 15px; font-weight: 700; margin-top: 10px; }
   [hidden] { display: none !important; }
 </style>
 <script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");fbq("init","1646953793536232");fbq("track","PageView");</script>
@@ -65,14 +98,47 @@
 
 <!-- Resultado -->
 <section id="resultado" class="tela-quiz" hidden>
-  <span class="etq" id="placar"></span>
-  <p class="faixa" id="faixa"></p>
-  <p class="nota" id="faixaTexto"></p>
+  <!-- Diagnóstico com cor e mascote (modelo Noom/BetterMe: o resultado tem que "mostrar", não só dizer) -->
+  <div class="diag">
+    <img class="masc" src="vendas/lapis.webp" alt="">
+    <span class="etq" id="placar"></span>
+    <p class="faixa" id="faixa"></p>
+    <div class="termo"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="termo-leg"><span>Tela no controle</span><span>Piloto automático</span></div>
+    <p class="nota" id="faixaTexto"></p>
+  </div>
+
+  <h2 class="tit2">Como fica a tela na sua casa</h2>
+  <div class="antes-depois">
+    <div class="ad hoje"><b>😩 Hoje</b><span>Vídeo atrás de vídeo</span><span>Não aprende nada</span><span>Choro na hora de desligar</span></div>
+    <div class="ad depois"><b>😊 Com a Helena</b><span>Pinta, acha cores e letras</span><span>Aprende brincando</span><span>A pausa avisa, não você</span></div>
+  </div>
+
+  <div class="galeria">
+    <img src="vendas/desenho.webp" alt="Desenho para pintar no app">
+    <img src="vendas/pausa.webp" alt="Hora da pausa: o adulto escolhe o tempo">
+    <img src="vendas/letra.webp" alt="Letra A para pintar">
+  </div>
+
+  <h2 class="tit2">O plano da sua família</h2>
   <ul class="motivos" id="motivos"></ul>
-  <a class="botao" href="vendas.html" id="btnConhecer">Conhecer o Colore com Helena</a>
+  <!-- Oferta já no resultado (modelo dos quizzes que vendem: resultado → plano → preço, sem página longa no meio) -->
+  <div class="oferta">
+    <img class="masc2" src="vendas/estrela.webp" alt="">
+    <span class="selo-l">⏰ Preço de lançamento acaba em <b id="falta">poucos dias</b></span>
+    <div class="de-por"><s>R$ 99,90</s> <b>R$ 79,90</b> por ano</div>
+    <p class="mes">= R$ 6,66 por mês · sem anúncio · cancela quando quiser</p>
+    <a class="botao" id="btnAssinar" href="https://pay.kiwify.com.br/aUE7IKa">Quero começar hoje</a>
+    <p class="garantia-l">🛡️ 7 dias de garantia: se não gostar, devolvemos 100%.</p>
+    <a class="link2" href="https://pay.kiwify.com.br/9P9HQon" id="btnMensal">Prefiro o plano mensal (R$ 14,90/mês)</a>
+    <a class="link2" href="./" id="btnGratis">Quero testar a parte grátis primeiro</a>
+    <a class="link2" href="vendas.html" id="btnConhecer">Ver tudo o que vem no app</a>
+  </div>
   <p class="fonte">Pediatras recomendam no máximo 1 hora de tela por dia dos 2 aos 5 anos, com um adulto junto (Sociedade Brasileira de Pediatria · OMS).</p>
   <a class="compartilhar" id="btnZap" href="#">Mandar o quiz para uma amiga no WhatsApp</a>
 </section>
+<!-- Botão fixo embaixo (só no resultado) -->
+<div class="fixo" id="fixo" hidden><img class="mf esq" src="vendas/maria.webp" alt=""><img class="mf dir" src="vendas/estrela.webp" alt=""><a class="botao" href="https://pay.kiwify.com.br/aUE7IKa" id="btnFixo">Quero começar hoje · R$ 79,90/ano</a></div>
 </main>
 
 <script>
@@ -82,7 +148,7 @@ const PERGUNTAS = [
   { p: 'Passa de um vídeo para outro sem parar?', n: 'E, no fim, não lembra de nada do que viu?', m: 'No lugar do vídeo sem fim, ele colore, acha cores e forma letras.' },
   { p: 'Na hora de desligar, vira choro ou briga?', m: 'Quem avisa que acabou é a Hora da pausa, não você.' },
   { p: 'Você já deu o celular só para ter 10 minutos de paz?', n: 'Sem culpa. Quase toda mãe e todo pai já fez isso.', m: 'Seus 10 minutos de paz viram 10 minutos que ensinam, sem anúncio no meio.' },
-  { p: 'Você queria uma tela que ensinasse algo?', n: 'E que acabasse na hora que você escolhe?', m: 'Criado por uma professora de educação infantil e alfabetização, para crianças a partir de 3 anos.' },
+  { p: 'Você queria uma tela que ensinasse algo?', n: 'E que acabasse na hora que você escolhe?', m: '<b>Criado por uma professora especialista em Educação Infantil, Alfabetização e Psicopedagogia</b>, com mais de 15 anos de experiência.' },
 ];
 const $ = (id) => document.getElementById(id);
 let atual = 0; const respostas = [];
@@ -100,14 +166,18 @@ function resultado() {
   $('placar').textContent = `Você marcou ${sims} SIM`;
   let faixa, texto;
   if (sims <= 1) { faixa = 'A tela da sua casa já está no controle.'; texto = 'Parabéns! O app pode ser mais uma opção que ensina.'; }
-  else if (sims <= 3) { faixa = 'A tela está no piloto automático.'; texto = 'É muito comum, ainda mais nas férias. Veja por que o app é para a sua família:'; }
-  else { faixa = 'Hora de trocar a tela vazia por uma tela que ensina.'; texto = 'Sem culpa: dá para começar hoje. Veja por que o app é para a sua família:'; }
+  else if (sims <= 3) { faixa = 'A tela está no piloto automático.'; texto = 'É muito comum. A boa notícia: dá para virar o jogo sem briga e sem tirar a tela de vez.'; }
+  else { faixa = 'Hora de trocar a tela vazia por uma tela que ensina.'; texto = 'Sem culpa: quase toda família passa por isso. Dá para começar hoje.'; }
   $('faixa').textContent = faixa; $('faixaTexto').textContent = texto;
   // Só os motivos das perguntas com SIM (no máximo 3, para não ficar extenso)
   let motivos = PERGUNTAS.filter((q, i) => respostas[i]).map((q) => q.m);
   if (!motivos.length) motivos = [PERGUNTAS[1].m, PERGUNTAS[0].m];
   $('motivos').innerHTML = motivos.slice(0, 3).map((m) => `<li>${m}</li>`).join('');
+  document.querySelectorAll('.termo i').forEach((b, i) => b.classList.toggle('on', i < Math.max(sims, 1)));
+  const dias = Math.ceil((new Date('2026-12-01T00:00:00-03:00') - Date.now()) / 864e5);
+  if (dias > 0) $('falta').textContent = dias === 1 ? '1 dia' : `${dias} dias`; else $('falta').parentElement.hidden = true;
   mostra('resultado');
+  $('fixo').hidden = false;
   if (window.fbq) fbq('trackCustom', 'QuizConcluido', { sims });
 }
 $('btnComecar').onclick = () => { atual = 0; respostas.length = 0; pergunta(); mostra('quiz'); };
@@ -115,6 +185,9 @@ document.querySelectorAll('.opcoes button').forEach((b) => b.onclick = () => {
   respostas[atual] = b.dataset.r === '1'; atual++;
   if (atual < PERGUNTAS.length) pergunta(); else resultado();
 });
+// Pixel: saber quem clicou em cada botão do resultado (para achar o furo)
+[['btnAssinar', 'anual'], ['btnFixo', 'anual'], ['btnMensal', 'mensal']].forEach(([id, plano]) => $(id).addEventListener('click', () => { if (window.fbq) fbq('track', 'InitiateCheckout', { content_name: plano, origem: 'quiz' }); }));
+[['btnGratis', 'gratis'], ['btnConhecer', 'vendas']].forEach(([id, d]) => $(id).addEventListener('click', () => { if (window.fbq) fbq('trackCustom', 'QuizClique', { destino: d }); }));
 $('btnZap').href = 'https://wa.me/?text=' + encodeURIComponent('Fiz esse quiz rápido sobre tempo de tela das crianças, faz também? 5 perguntas: ' + location.href.split('?')[0]);
 </script>
 </body>

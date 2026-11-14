@@ -45,7 +45,7 @@
     .cartaoAssinatura p { margin: 0; flex: 1; font-size: 14px; line-height: 1.35; }
     .cartaoAssinatura .btn { white-space: nowrap; }
     #janelaAss { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; place-items: center;
-      z-index: 50; padding: 16px; }
+      z-index: 80; padding: 16px; }
     #janelaAss.aberta { display: grid; }
     #janelaAss .caixa { background: #fff; border-radius: 22px; padding: 22px 18px; max-width: 380px; width: 100%;
       text-align: center; }
@@ -95,11 +95,14 @@
   }
 
   function paraAdulto() {
+    // 14/11 (ideia aprovada pela Lusia): quem testou a parte grátis volta para a compra com um convite forte.
     mostra(`<div style="font-size:44px">⭐</div>
-      <h2>Assinatura Colore com Helena</h2>
-      <p>Libera tudo: todos os desenhos, letras de A a Z, números, formas, quebra-cabeças e jogos. Desenhos novos chegando sempre. Cancele quando quiser.</p>
+      <h2>Gostou? Libere tudo!</h2>
+      <p>Todos os desenhos, letras de A a Z, números, formas, quebra-cabeças e jogos, com a Hora da pausa que você controla. Sem anúncio. Desenhos novos chegando sempre.</p>
+      <p style="font-size:22px;margin:0 0 4px"><b style="color:#2BA84A">R$ 6,66 por mês</b></p>
+      <p style="font-size:13px;margin:0 0 12px">no plano anual de R$ 79,90 (preço de lançamento até 30/11)<br>🛡️ 7 dias de garantia: se não gostar, devolvemos 100%</p>
       <div class="botoes">
-        <button class="btn verde" id="assQuero">Quero assinar</button>
+        <button class="btn verde" id="assQuero">Quero liberar tudo</button>
         <button class="btn forte" id="assJa">Já sou assinante</button>
         <button class="btn" id="assFecha">Agora não</button>
       </div>`);
@@ -197,6 +200,22 @@
   abrirVale = () => assinante() ? original.abrirVale() : cadeado();
   abrirSequencia = () => assinante() ? original.abrirSequencia() : cadeado();
   montaQuebra = f => assinante() || indiceQC(f) < GRATIS.quebra ? original.montaQuebra(f) : cadeado();
+
+  // Fim do tempo de tela (parte grátis): além da brincadeira, um convite para o adulto liberar tudo.
+  if (typeof telaDescanso === "function") {
+    const descansoOriginal = telaDescanso;
+    telaDescanso = () => {
+      const jaAberta = $("pausaTela").classList.contains("aberta");
+      descansoOriginal();
+      if (jaAberta || assinante() || $("pausaConvite")) return;
+      const b = document.createElement("button");
+      b.className = "btn verde"; b.id = "pausaConvite";
+      b.style.marginTop = "10px";
+      b.innerHTML = "⭐ Gostou? Libere tudo por R$ 6,66/mês";
+      b.onclick = () => portaoDoAdulto(); // abre POR CIMA do descanso: fechar volta para o bloqueio (a criança não escapa)
+      $("pausaCaixa").appendChild(b);
+    };
+  }
 
   abrirSecao = id => {
     original.abrirSecao(id);
