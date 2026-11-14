@@ -68,6 +68,20 @@ async function esperarPronto(cred, idContainer, fetchFn, intervalo = 3000, maxTe
 // media_publish com paciência (31/10: o carrossel 05 da helena falhou com "Media ID is not available",
 // código 9007 = o Instagram ainda não liberou o contêiner). Se der 9007: espera, confere de novo o
 // status_code do contêiner (e dos filhos, no carrossel) e tenta outra vez, até "vezes" tentativas.
+// 14/11: o Instagram às vezes responde "Fatal (código -1)" no media_publish MAS publica mesmo assim.
+// A máquina achava que falhou, não anotava e repetia o post no dia seguinte (helena 10, 11 e 12/11).
+// Antes de dar erro, confere se o contêiner já ficou PUBLISHED; se sim, pega o ID do post mais recente.
+async function jaPublicado(cred, idContainer, fetchFn) {
+  try {
+    const r = await chamar(cred, 'GET', idContainer, { fields: 'status_code' }, fetchFn);
+    if (r.status_code !== 'PUBLISHED') return null;
+    const m = await chamar(cred, 'GET', `${cred.userId}/media`, { fields: 'id', limit: 1 }, fetchFn);
+    return (m.data && m.data[0] && m.data[0].id) || `publicado-${idContainer}`;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function publicarContainer(cred, idContainer, fetchFn, intervalo, { filhos = [], vezes = 5, video = false } = {}) {
   const pausa = intervalo === undefined ? 15000 : intervalo;
   for (let i = 1; ; i++) {
@@ -75,6 +89,9 @@ async function publicarContainer(cred, idContainer, fetchFn, intervalo, { filhos
       const p = await chamar(cred, 'POST', `${cred.userId}/media_publish`, { creation_id: idContainer }, fetchFn);
       return p.id;
     } catch (e) {
+      if (e instanceof ErroFatal && [190, 10, 200].includes(e.codigo)) throw e;
+      const saiu = await jaPublicado(cred, idContainer, fetchFn);
+      if (saiu) return saiu;
       if (e.codigo !== 9007) throw e;
       if (i >= vezes) {
         throw new Error(`O Instagram não liberou a publicação (código 9007, "mídia ainda não disponível") nem depois de ${vezes} tentativas. Nada publicado; a próxima rodada tenta de novo.`);
