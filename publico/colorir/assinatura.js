@@ -242,7 +242,9 @@
         <button class="btn verde" id="assAbrir">Assinar</button>`;
       document.querySelectorAll(".secao.s-vale, .secao.s-seq").forEach(b => b.classList.add("trancado"));
     } else if (assinante()) {
-      cartao.innerHTML = `<span style="font-size:26px">⭐</span><p><b>Assinante</b><br>Tudo liberado. Obrigada!</p>`;
+      // 16/11: bônus de quem assina (decisão da dona) = Kit 30 Dias de Férias + Mini Kit de Natal (PDF em pasta com nome secreto)
+      cartao.innerHTML = `<span style="font-size:26px">⭐</span><p><b>Assinante</b><br>Tudo liberado. Obrigada!</p>
+        <a class="btn verde" href="bonus-a288c7a2f776/kit-30-dias-e-natal.pdf" target="_blank" rel="noopener" download>🎁 Baixar meu bônus: Kit 30 Dias + Natal</a>`;
     } else {
       cartao.innerHTML = `<span style="font-size:26px">🔒</span><p><b>Versão grátis</b><br>Parte do app liberada. Assine para abrir tudo.</p>
         <button class="btn verde" id="assAbrir">Assinar</button>`;
