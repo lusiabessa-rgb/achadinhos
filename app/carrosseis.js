@@ -175,4 +175,23 @@ function proximo(fila, feitos, { hojeBR, horaBR, aPartirDas = 19, porDia = 1, ig
   return (fila || []).find((c) => c && c.slug && !(feitos || {})[`carrossel:${c.slug}`]) || null;
 }
 
-module.exports = { PROIBIDAS, PROIBIDAS_ACHADINHO, modoDaConta, temFaixaVermelha, limparLegenda, problemasDoTexto, problemasDasImagens, exigirEducativa, lerFila, conferirItem, enfileirar, proximo, arqFila };
+// 16/11 (pedido da Lusia): "o dia que der problema, ela precisa postar na manhã seguinte" + 2 por dia saem na MESMA rodada.
+// Devolve [{ item, dia }] (dia = a que dia o post pertence; vai para o publicados.json).
+// - A partir de "aPartirDas" (19h): até porDia − (já postados HOJE), na ordem da fila.
+// - Antes disso (rodada da manhã): só RECUPERA o que faltou ONTEM (porDia − postados de ontem), marcado como de ontem.
+function proximos(fila, feitos, { hojeBR, ontemBR, horaBR, aPartirDas = 19, porDia = 1, ignorarHora = false, comecaEm } = {}) {
+  const diaDe = (iso) => new Date(iso).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+  const doDia = (d) => Object.entries(feitos || {}).filter(([k, v]) => k.startsWith('carrossel:') && v && v.quando && (v.dia || diaDe(v.quando)) === d).length;
+  const pendentes = (fila || []).filter((c) => c && c.slug && !(feitos || {})[`carrossel:${c.slug}`]);
+  let dia, n;
+  if (ignorarHora || horaBR >= aPartirDas) {
+    if (!ignorarHora && comecaEm && hojeBR < comecaEm) return [];
+    dia = hojeBR; n = porDia - doDia(hojeBR);
+  } else {
+    if (!ontemBR || (comecaEm && ontemBR < comecaEm)) return [];
+    dia = ontemBR; n = porDia - doDia(ontemBR);
+  }
+  return pendentes.slice(0, Math.max(0, n)).map((item) => ({ item, dia }));
+}
+
+module.exports = { PROIBIDAS, PROIBIDAS_ACHADINHO, modoDaConta, temFaixaVermelha, limparLegenda, problemasDoTexto, problemasDasImagens, exigirEducativa, lerFila, conferirItem, enfileirar, proximo, proximos, arqFila };

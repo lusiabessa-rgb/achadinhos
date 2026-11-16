@@ -6,6 +6,7 @@ name: Helena (carrossel educativo)
 on:
   schedule:
     - cron: "0 22 * * *"   # 19h em Brasília (o GitHub pode atrasar alguns minutos)
+    - cron: "0 12 * * *"   # 9h em Brasília: RECUPERAÇÃO (16/11) — posta o que faltou ontem; se ontem saiu tudo, não faz nada
   workflow_dispatch: {}
 
 permissions:

@@ -1433,6 +1433,19 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     assert.strictEqual(car.proximo(fila, {}, { hojeBR: '2026-10-27', horaBR: 19 }).slug, 'a');
     assert.strictEqual(car.proximo(fila, { 'carrossel:a': { quando: '2026-10-27T22:00:00Z' } }, { hojeBR: '2026-10-27', horaBR: 21 }), null, '2 no mesmo dia');
     assert.strictEqual(car.proximo(fila, { 'carrossel:a': { quando: '2026-10-26T22:00:00Z' } }, { hojeBR: '2026-10-27', horaBR: 19 }).slug, 'b');
+    // 16/11: 2 por dia na MESMA rodada (19h) e rodada da manhã (9h) RECUPERA o que faltou ontem, marcado como de ontem
+    const f3 = [{ slug: "a" }, { slug: "b" }, { slug: "c" }, { slug: "d" }];
+    const sl = (r) => r.map((x) => x.item.slug + "@" + x.dia).join(",");
+    const o = { hojeBR: "2026-11-18", ontemBR: "2026-11-17", porDia: 2, comecaEm: "2026-11-17" };
+    assert.strictEqual(sl(car.proximos(f3, {}, { ...o, horaBR: 19 })), "a@2026-11-18,b@2026-11-18", "19h: os 2 do dia juntos");
+    assert.strictEqual(sl(car.proximos(f3, {}, { ...o, horaBR: 9 })), "a@2026-11-17,b@2026-11-17", "9h: ontem falhou inteiro -> recupera 2, como de ontem");
+    const ontem1 = { "carrossel:a": { quando: "2026-11-17T22:00:00Z" } };
+    assert.strictEqual(sl(car.proximos(f3, ontem1, { ...o, horaBR: 9 })), "b@2026-11-17", "9h: ontem saiu 1 -> recupera só 1");
+    const ontemOk = { "carrossel:a": { quando: "2026-11-17T22:00:00Z" }, "carrossel:b": { quando: "2026-11-17T22:01:00Z" } };
+    assert.strictEqual(sl(car.proximos(f3, ontemOk, { ...o, horaBR: 9 })), "", "9h: ontem completo -> nada");
+    const recuperado = { ...ontem1, "carrossel:b": { quando: "2026-11-18T12:00:00Z", dia: "2026-11-17" } };
+    assert.strictEqual(sl(car.proximos(f3, recuperado, { ...o, horaBR: 19 })), "c@2026-11-18,d@2026-11-18", "o recuperado de manhã não come a vaga de hoje");
+    assert.strictEqual(sl(car.proximos(f3, {}, { ...o, hojeBR: "2026-11-17", ontemBR: "2026-11-16", horaBR: 9 })), "", "não recupera dia antes de começar");
     // De ponta a ponta com a fila real (arquivo de publicados TEMPORÁRIO)
     const pastaTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hel-'));
     const arqPublicados = path.join(pastaTmp, 'publicados.json');

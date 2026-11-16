@@ -108,8 +108,8 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
   try {
     feitos = JSON.parse(fs.readFileSync(arqPublicados, 'utf8')) || {};
   } catch {}
-  const marcar = (chave, id) => {
-    feitos[chave] = { id, quando: new Date().toISOString() };
+  const marcar = (chave, id, dia) => {
+    feitos[chave] = dia ? { id, quando: new Date().toISOString(), dia } : { id, quando: new Date().toISOString() };
     fs.writeFileSync(arqPublicados + '.tmp', JSON.stringify(feitos, null, 2));
     fs.renameSync(arqPublicados + '.tmp', arqPublicados);
   };
@@ -144,11 +144,13 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
     .slice(0, Math.max(0, Math.min(porDia - jaHoje, ig.conteudoPorRodada === undefined ? Infinity : Number(ig.conteudoPorRodada) || 0)))
     .forEach((c) => tarefas.push({ chave: `conteudo:${c.slug}`, tipo: 'post', urls: [urlArte(c)], legenda: c.legenda, local: path.join(pastaPublica, c.arte) }));
   // Carrossel (helena 19h, achadinho 21h): o 1º da fila ainda não publicado, 1 por dia (simulação ignora a hora)
-  const prox = educativa || carrosselVendas
-    ? carrosseis.proximo(filaCarrosseis, feitos, { hojeBR, horaBR, aPartirDas: carrosselHora,porDia: ig.carrosselPorDia === undefined ? 1 : Number(ig.carrosselPorDia) || 0, comecaEm: ig.carrosselComecaEm, ignorarHora: simular })
-    : null;
-  if (prox) {
-    tarefas.push({ chave: `carrossel:${prox.slug}`, tipo: 'carrossel', urls: prox.imagens.map((i) => `${base}/${encodeURI(conta)}/${i}`), legenda: prox.legenda, item: prox });
+  // 16/11: todos os do dia na mesma rodada (porDia) + rodada da manhã recupera o que faltou ontem
+  const ontemBR = new Date(Date.now() - 864e5).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+  const proxs = educativa || carrosselVendas
+    ? carrosseis.proximos(filaCarrosseis, feitos, { hojeBR, ontemBR, horaBR, aPartirDas: carrosselHora, porDia: ig.carrosselPorDia === undefined ? 1 : Number(ig.carrosselPorDia) || 0, comecaEm: ig.carrosselComecaEm, ignorarHora: simular })
+    : [];
+  for (const { item: prox, dia: diaDoPost } of proxs) {
+    tarefas.push({ chave: `carrossel:${prox.slug}`, tipo: 'carrossel', urls: prox.imagens.map((i) => `${base}/${encodeURI(conta)}/${i}`), legenda: prox.legenda, item: prox, dia: diaDoPost });
   }
   if (ig.stories && !educativa) {
     dados.ofertas
@@ -249,7 +251,7 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
       else if (t.tipo === 'carrossel') id = await instagram.publicarCarrossel(cred, t.urls, t.legenda, fetchFn, intervaloStatus);
       else if (t.tipo === 'post') id = await instagram.publicarImagem(cred, t.urls[0], t.legenda, fetchFn, intervaloStatus);
       else id = await instagram.publicarStory(cred, t.urls[0], fetchFn, intervaloStatus);
-      marcar(t.chave, id);
+      marcar(t.chave, id, t.dia && t.dia !== hojeBR ? t.dia : undefined); // "dia" só no recuperado de manhã (conta para ontem)
       publicados++;
       livres--;
       log(`  publicado: ${t.tipo} (id ${id})`);
@@ -259,7 +261,7 @@ async function publicar(conta, { simular = false, fetchFn = fetch, intervaloNoAr
       // Reel que falhou: a dona fica sabendo (a próxima rodada tenta de novo, até 1 dia depois do horário)
       if (t.reel) await avisar(segredos || maquina.lerSegredos(pastaConta), `⚠️ O Reel de ${t.reel.data.split('-').reverse().slice(0, 2).join('/')} ${t.reel.hora}h não saiu no Instagram: ${e.message}\nA próxima rodada tenta de novo.`, fetchFn, log);
       // Carrossel educativo que falhou (31/10: saiu "success" e ninguém soube): avisa a dona no Telegram
-      if (t.item) await avisar(segredos || maquina.lerSegredos(pastaConta), `⚠️ O carrossel "${t.item.slug}" (${config.marca || conta}) NÃO saiu no Instagram hoje: ${e.message}\nNada foi publicado. A próxima rodada (amanhã às ${carrosselHora}h) tenta este mesmo carrossel de novo.`, fetchFn, log);
+      if (t.item) await avisar(segredos || maquina.lerSegredos(pastaConta), `⚠️ O carrossel "${t.item.slug}" (${config.marca || conta}) NÃO saiu no Instagram hoje: ${e.message}\nNada foi publicado. A rodada de recuperação (amanhã às 9h) tenta este mesmo carrossel de novo.`, fetchFn, log);
     }
   }
   log(`Instagram: ${publicados} publicação(ões) feitas.`);
