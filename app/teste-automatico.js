@@ -1385,7 +1385,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
       // soReels continua ligado; só tira a hora e a data para poder rodar agora
       maquina.lerConfig = (p) => {
         const c = lerCfg(p);
-        return c.instagram && c.instagram.carrosselAtivo ? { ...c, site: { ...c.site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined, carrosselPausado: false } } : c;
+        return c.instagram && c.instagram.carrosselAtivo ? { ...c, site: { ...c.site, urlBase: 'https://teste.github.io/ofertas' }, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined, carrosselPausado: false, reelsAtivo: false } } : c;
       };
       assert.strictEqual(maquina.lerConfig(path.join(__dirname, '..', 'contas', 'lusia')).instagram.soReels, true);
       const sim = await publicar('lusia', { simular: true, arqPublicados, filaReels: [], log: () => {} });
@@ -1442,7 +1442,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     try {
       maquina.lerConfig = (p) => {
         const c = lerCfg(p);
-        return c.tipo === 'educativo' ? { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined, carrosselPausado: false } } : c;
+        return c.tipo === 'educativo' ? { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined, carrosselPausado: false, reelsAtivo: false, carrosselPorDia: 1 } } : c;
       };
       const sim = await publicar('helena', { simular: true, arqPublicados, log: () => {} });
       assert.strictEqual(sim.tarefas.length, 1);
@@ -1508,7 +1508,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
     try {
       maquina.lerConfig = (p) => {
         const c = lerCfg(p);
-        return c.tipo === 'educativo' ? { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined, carrosselPausado: false } } : c;
+        return c.tipo === 'educativo' ? { ...c, instagram: { ...c.instagram, carrosselAPartirDas: 0, carrosselComecaEm: undefined, carrosselPausado: false, reelsAtivo: false, carrosselPorDia: 1 } } : c;
       };
       const arqPublicados = path.join(pastaTmp, 'publicados.json');
       const telegram = [];

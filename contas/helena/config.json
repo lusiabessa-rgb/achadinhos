@@ -8,10 +8,10 @@
   "instagram": {
     "ativo": true,
     "idDaConta": "17841420312757652",
-    "carrosselPorDia": 1,
+    "carrosselPorDia": 2,
     "carrosselAPartirDas": 19,
     "tokenVenceEm": "2026-12-20",
-    "carrosselComecaEm": "2026-10-27",
+    "carrosselComecaEm": "2026-11-17",
     "reelsAtivo": true
   }
 }
