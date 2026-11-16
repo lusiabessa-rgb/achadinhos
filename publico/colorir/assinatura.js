@@ -21,7 +21,7 @@
   const TESTE_DIAS = 3; // 16/11: ela mudou de 7 para 3 dias
   try { if (/^(3|7)dias$/.test(new URLSearchParams(location.search).get("teste") || "") && !st.testeDesde) { st.testeDesde = Date.now(); localStorage.setItem("helena-assinatura", JSON.stringify(st)); } } catch (e) {}
   const emTeste = () => !!st.testeDesde && Date.now() - st.testeDesde < TESTE_DIAS * 864e5;
-  const assinante = () => (!!st.ok && Date.now() - (st.conferido || 0) < VALE_SEM_INTERNET) || emTeste();
+  const assinante = () => (!!st.ok && Date.now() - (st.conferido || 0) < VALE_SEM_INTERNET); // 16/11: o teste NÃO entra aqui (só libera o quebra-cabeça)
 
   async function hashDo(email) {
     const dados = new TextEncoder().encode(SAL + ":" + email.trim().toLowerCase());
@@ -198,13 +198,13 @@
 
   // ===== Trava nas funções do app =====
   const original = { abrir, abrirSecao, abrirVale, abrirSequencia, abrirQuebra, montaQuebra, montaInicio };
-  const livreNaSecao = i => assinante() || i < (GRATIS[secaoAtual] ?? 0);
+  const livreNaSecao = i => assinante() || (secaoAtual === "quebra" && emTeste()) || i < (GRATIS[secaoAtual] ?? 0);
   const indiceQC = f => Object.keys(FIGURAS_QC).indexOf(f);
 
   abrir = (i, ...resto) => livreNaSecao(i) ? original.abrir(i, ...resto) : cadeado();
   abrirVale = () => assinante() ? original.abrirVale() : cadeado();
   abrirSequencia = () => assinante() ? original.abrirSequencia() : cadeado();
-  montaQuebra = f => assinante() || indiceQC(f) < GRATIS.quebra ? original.montaQuebra(f) : cadeado();
+  montaQuebra = f => assinante() || emTeste() || indiceQC(f) < GRATIS.quebra ? original.montaQuebra(f) : cadeado();
 
   // Fim do tempo de tela (parte grátis): além da brincadeira, um convite para o adulto liberar tudo.
   if (typeof telaDescanso === "function") {
@@ -238,8 +238,9 @@
     cartao.className = "cartaoAssinatura";
     if (emTeste() && !st.ok) {
       const faltam = Math.max(1, Math.ceil((st.testeDesde + TESTE_DIAS * 864e5 - Date.now()) / 864e5));
-      cartao.innerHTML = `<span style="font-size:26px">🎁</span><p><b>Teste grátis</b><br>Tudo liberado por mais ${faltam === 1 ? "1 dia" : faltam + " dias"}.</p>
+      cartao.innerHTML = `<span style="font-size:26px">🎁</span><p><b>Teste grátis</b><br>Quebra-cabeça liberado por mais ${faltam === 1 ? "1 dia" : faltam + " dias"}. Assine para abrir tudo.</p>
         <button class="btn verde" id="assAbrir">Assinar</button>`;
+      document.querySelectorAll(".secao.s-vale, .secao.s-seq").forEach(b => b.classList.add("trancado"));
     } else if (assinante()) {
       cartao.innerHTML = `<span style="font-size:26px">⭐</span><p><b>Assinante</b><br>Tudo liberado. Obrigada!</p>`;
     } else {
