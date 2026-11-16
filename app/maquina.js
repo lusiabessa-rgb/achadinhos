@@ -212,7 +212,8 @@ async function rodar(conta, modoTeste) {
   if (!fs.existsSync(pastaConta)) throw new Error(`A conta "${conta}" não existe em ${path.join(RAIZ, 'contas')}`);
 
   const hoje = new Date().toLocaleDateString('sv-SE'); // 2026-10-16
-  const pastaDia = path.join(RAIZ, 'POSTAR-HOJE', conta, hoje + (modoTeste ? '-TESTE' : ''));
+  // 16/11: no modo TESTE grava na pasta temporária do Windows (fora do OneDrive, que travava o painel.html com EBUSY); o modo normal continua em POSTAR-HOJE
+  const pastaDia = modoTeste ? path.join(require('os').tmpdir(), 'maquina-teste', conta, hoje + '-TESTE') : path.join(RAIZ, 'POSTAR-HOJE', conta, hoje);
   fs.mkdirSync(pastaDia, { recursive: true });
 
   const diario = [];
