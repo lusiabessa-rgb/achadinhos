@@ -16,10 +16,10 @@
   let st = {};
   try { st = JSON.parse(localStorage.getItem("helena-assinatura")) || {}; } catch (e) {}
   const salva = () => { try { localStorage.setItem("helena-assinatura", JSON.stringify(st)); } catch (e) {} };
-  // TESTE DE 7 DIAS (16/11, pedido da dona para as mães dos alunos): link com ?teste=7dias libera tudo
-  // por 7 dias a contar do 1º acesso neste aparelho; depois volta a ser a versão grátis (com o convite para assinar).
-  const TESTE_DIAS = 7;
-  try { if (new URLSearchParams(location.search).get("teste") === "7dias" && !st.testeDesde) { st.testeDesde = Date.now(); localStorage.setItem("helena-assinatura", JSON.stringify(st)); } } catch (e) {}
+  // TESTE GRÁTIS (16/11, pedido da dona para as mães dos alunos): link com ?teste=3dias (o antigo 7dias também vale, mas dá 3) libera tudo
+  // por TESTE_DIAS dias a contar do 1º acesso neste aparelho; depois volta a ser a versão grátis (com o convite para assinar).
+  const TESTE_DIAS = 3; // 16/11: ela mudou de 7 para 3 dias
+  try { if (/^(3|7)dias$/.test(new URLSearchParams(location.search).get("teste") || "") && !st.testeDesde) { st.testeDesde = Date.now(); localStorage.setItem("helena-assinatura", JSON.stringify(st)); } } catch (e) {}
   const emTeste = () => !!st.testeDesde && Date.now() - st.testeDesde < TESTE_DIAS * 864e5;
   const assinante = () => (!!st.ok && Date.now() - (st.conferido || 0) < VALE_SEM_INTERNET) || emTeste();
 
