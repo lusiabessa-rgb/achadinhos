@@ -125,12 +125,13 @@
   <!-- Oferta já no resultado (modelo dos quizzes que vendem: resultado → plano → preço, sem página longa no meio) -->
   <div class="oferta">
     <img class="masc2" src="vendas/estrela.webp" alt="">
+    <!-- 16/11 (pedido da dona): um valor só, sempre a parcela menor (R$ 6,66/mês do anual). Nada de 79,90/99,90/14,90 na tela: confunde -->
     <span class="selo-l">⏰ Preço de lançamento acaba em <b id="falta">poucos dias</b></span>
-    <div class="de-por"><s>R$ 99,90</s> <b>R$ 79,90</b> por ano</div>
-    <p class="mes">= R$ 6,66 por mês · sem anúncio · cancela quando quiser</p>
+    <div class="de-por"><b>R$ 6,66</b> por mês</div>
+    <p class="mes">no plano anual · sem anúncio · cancela quando quiser</p>
     <a class="botao" id="btnAssinar" href="https://pay.kiwify.com.br/aUE7IKa">Quero começar hoje</a>
     <p class="garantia-l">🛡️ 7 dias de garantia: se não gostar, devolvemos 100%.</p>
-    <a class="link2" href="https://pay.kiwify.com.br/9P9HQon" id="btnMensal">Prefiro o plano mensal (R$ 14,90/mês)</a>
+    <a class="link2" href="https://pay.kiwify.com.br/9P9HQon" id="btnMensal">Prefiro pagar mês a mês</a>
     <a class="link2" href="./" id="btnGratis">Quero testar a parte grátis primeiro</a>
     <a class="link2" href="vendas.html" id="btnConhecer">Ver tudo o que vem no app</a>
   </div>
@@ -138,7 +139,7 @@
   <a class="compartilhar" id="btnZap" href="#">Mandar o quiz para uma amiga no WhatsApp</a>
 </section>
 <!-- Botão fixo embaixo (só no resultado) -->
-<div class="fixo" id="fixo" hidden><img class="mf esq" src="vendas/maria.webp" alt=""><img class="mf dir" src="vendas/estrela.webp" alt=""><a class="botao" href="https://pay.kiwify.com.br/aUE7IKa" id="btnFixo">Quero começar hoje · R$ 79,90/ano</a></div>
+<div class="fixo" id="fixo" hidden><img class="mf esq" src="vendas/maria.webp" alt=""><img class="mf dir" src="vendas/estrela.webp" alt=""><a class="botao" href="https://pay.kiwify.com.br/aUE7IKa" id="btnFixo">Quero começar hoje · R$ 6,66/mês</a></div>
 </main>
 
 <script>
@@ -186,7 +187,7 @@ document.querySelectorAll('.opcoes button').forEach((b) => b.onclick = () => {
   if (atual < PERGUNTAS.length) pergunta(); else resultado();
 });
 // Pixel: saber quem clicou em cada botão do resultado (para achar o furo)
-[['btnAssinar', 'anual'], ['btnFixo', 'anual'], ['btnMensal', 'mensal']].forEach(([id, plano]) => $(id).addEventListener('click', () => { if (window.fbq) fbq('track', 'InitiateCheckout', { content_name: plano, origem: 'quiz' }); }));
+[['btnFixo', 'anual'], ['btnAssinar', 'anual'], ['btnMensal', 'mensal']].forEach(([id, plano]) => $(id).addEventListener('click', () => { if (window.fbq) fbq('track', 'InitiateCheckout', { content_name: plano, origem: 'quiz' }); }));
 [['btnGratis', 'gratis'], ['btnConhecer', 'vendas']].forEach(([id, d]) => $(id).addEventListener('click', () => { if (window.fbq) fbq('trackCustom', 'QuizClique', { destino: d }); }));
 $('btnZap').href = 'https://wa.me/?text=' + encodeURIComponent('Fiz esse quiz rápido sobre tempo de tela das crianças, faz também? 5 perguntas: ' + location.href.split('?')[0]);
 </script>
