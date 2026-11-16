@@ -196,6 +196,12 @@
   /* Formas e Sequência de Cores (v13, 28/10) */
   .s-formas { background: linear-gradient(135deg, #13A89E, #1D6FD8); }
   .s-seq { background: linear-gradient(135deg, #E63946, #8E5CC8); }
+  .s-novidades { background: linear-gradient(135deg, #2BB3A3, #F7C61B); }
+  .novFundo { position: fixed; inset: 0; background: rgba(36,31,49,.55); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+  .novCaixa { background: #fff; border-radius: 24px; padding: 26px 22px; max-width: 380px; width: 100%; text-align: center; font-family: inherit; }
+  .novCaixa h2 { margin: 6px 0 14px; }
+  .novItem { background: #FFF6D6; border-radius: 16px; padding: 14px; text-align: left; font-size: 17px; margin: 8px 0; }
+  .novCaixa button { margin-top: 16px; border: 0; background: #2E9E4F; color: #fff; font-weight: 800; font-size: 18px; border-radius: 999px; padding: 12px 30px; }
   .fila { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 18px 0 6px; }
   .bola { width: min(13vw, 54px); aspect-ratio: 1; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
   .bola.falta { background: #fff; border: 4px dashed #BBB; display: grid; place-items: center; font-size: 24px; font-weight: 800; color: #999; }
@@ -775,8 +781,27 @@ function montaInicio() {
     b.onclick = fn;
     $("secoes").appendChild(b);
   });
+  // 16/11 (pedido da Lusia): quadrado "Atualizações" para a família ver que o app vai crescer. Só entra o que ela vai fazer de verdade.
+  const nov = document.createElement("button");
+  nov.className = "secao s-novidades";
+  nov.innerHTML = `<span class="emoji">✨</span><b>Atualizações</b><small>Veja o que vem por aí</small>`;
+  nov.onclick = abrirNovidades;
+  $("secoes").appendChild(nov);
   $("medalhas").innerHTML = MEDALHAS.map(m =>
     `<div class="medalha ${prog.estrelas >= m[0] ? "" : "trancada"}"><span>${m[1]}</span>${m[2]}</div>`).join("");
+}
+
+// Lista do quadro "Atualizações" (a Lusia decide o que entra; 16/11: Folha em branco)
+const NOVIDADES = [["✏️", "Folha em branco", "Desenho livre: a criança cria o que quiser, do jeito dela."]];
+function abrirNovidades() {
+  const f = document.createElement("div");
+  f.className = "novFundo";
+  f.innerHTML = `<div class="novCaixa"><div style="font-size:44px">✨</div><h2>Em breve no app</h2>
+    ${NOVIDADES.map(([e, t, d]) => `<div class="novItem"><b>${e} ${t}</b><br>${d}</div>`).join("")}
+    <p style="margin-top:12px;font-size:15px">O app ganha novidades sempre, sem custo a mais para quem assina.</p>
+    <button type="button">Legal!</button></div>`;
+  f.onclick = (e) => { if (e.target === f || e.target.tagName === "BUTTON") f.remove(); };
+  document.body.appendChild(f);
 }
 
 let secaoAtual = null;
