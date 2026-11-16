@@ -16,7 +16,12 @@
   let st = {};
   try { st = JSON.parse(localStorage.getItem("helena-assinatura")) || {}; } catch (e) {}
   const salva = () => { try { localStorage.setItem("helena-assinatura", JSON.stringify(st)); } catch (e) {} };
-  const assinante = () => !!st.ok && Date.now() - (st.conferido || 0) < VALE_SEM_INTERNET;
+  // TESTE DE 7 DIAS (16/11, pedido da dona para as mães dos alunos): link com ?teste=7dias libera tudo
+  // por 7 dias a contar do 1º acesso neste aparelho; depois volta a ser a versão grátis (com o convite para assinar).
+  const TESTE_DIAS = 7;
+  try { if (new URLSearchParams(location.search).get("teste") === "7dias" && !st.testeDesde) { st.testeDesde = Date.now(); localStorage.setItem("helena-assinatura", JSON.stringify(st)); } } catch (e) {}
+  const emTeste = () => !!st.testeDesde && Date.now() - st.testeDesde < TESTE_DIAS * 864e5;
+  const assinante = () => (!!st.ok && Date.now() - (st.conferido || 0) < VALE_SEM_INTERNET) || emTeste();
 
   async function hashDo(email) {
     const dados = new TextEncoder().encode(SAL + ":" + email.trim().toLowerCase());
@@ -231,7 +236,11 @@
     original.montaInicio();
     const cartao = document.createElement("div");
     cartao.className = "cartaoAssinatura";
-    if (assinante()) {
+    if (emTeste() && !st.ok) {
+      const faltam = Math.max(1, Math.ceil((st.testeDesde + TESTE_DIAS * 864e5 - Date.now()) / 864e5));
+      cartao.innerHTML = `<span style="font-size:26px">🎁</span><p><b>Teste grátis</b><br>Tudo liberado por mais ${faltam === 1 ? "1 dia" : faltam + " dias"}.</p>
+        <button class="btn verde" id="assAbrir">Assinar</button>`;
+    } else if (assinante()) {
       cartao.innerHTML = `<span style="font-size:26px">⭐</span><p><b>Assinante</b><br>Tudo liberado. Obrigada!</p>`;
     } else {
       cartao.innerHTML = `<span style="font-size:26px">🔒</span><p><b>Versão grátis</b><br>Parte do app liberada. Assine para abrir tudo.</p>
