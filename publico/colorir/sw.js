@@ -1,9 +1,9 @@
-// Guarda o app no celular para abrir sem internet. O montar.js troca 686fbb9c80 a cada mudança.
-const CACHE = "helena-686fbb9c80";
+// Guarda o app no celular para abrir sem internet. O montar.js troca eae1b791e5 a cada mudança.
+const CACHE = "helena-eae1b791e5";
 const ARQUIVOS = ["./", "index.html", "assinatura.js", "manifest.webmanifest", "icone-192.png", "icone-512.png", "icone-180.png"];
 
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS.map(a => new Request(a, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", e => {
