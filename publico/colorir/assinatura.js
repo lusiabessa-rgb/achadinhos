@@ -229,7 +229,7 @@
   };
   abrirQuebra = () => {
     original.abrirQuebra();
-    if (assinante()) return;
+    if (assinante() || emTeste()) return;
     [...$("qcLista").children].forEach((b, i) => b.classList.toggle("trancado", i >= GRATIS.quebra));
   };
   montaInicio = () => {
