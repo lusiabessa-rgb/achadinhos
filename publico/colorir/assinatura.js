@@ -13,6 +13,8 @@
   const SAL = "colore-com-helena";
   const VALE_SEM_INTERNET = 35 * 864e5; // 35 dias: depois disso precisa conferir de novo com internet
 
+  const TERMOS_VERSAO = "2026-11-18"; // mudou os Termos/Privacidade? troque a data
+  let aceite = null;
   let st = {};
   try { st = JSON.parse(localStorage.getItem("helena-assinatura")) || {}; } catch (e) {}
   const salva = () => { try { localStorage.setItem("helena-assinatura", JSON.stringify(st)); } catch (e) {} };
@@ -131,6 +133,10 @@
     mostra(`<h2>Já sou assinante</h2>
       <p>Digite o e-mail usado na compra.</p>
       <input id="assEmail" type="email" inputmode="email" autocomplete="email" placeholder="seu@email.com" value="${st.email || ""}">
+      <label style="display:flex;gap:10px;align-items:flex-start;text-align:left;font-size:14px;margin:12px 0 0;cursor:pointer">
+        <input id="assAceite" type="checkbox" style="width:22px;height:22px;flex:none;margin:0" ${st.aceite ? "checked" : ""}>
+        <span>Li e aceito os <a href="termos.html" target="_blank">Termos de uso</a> e a <a href="privacidade.html" target="_blank">Política de Privacidade</a>.</span>
+      </label>
       <p class="msg" id="assMsg"></p>
       <div class="botoes">
         <button class="btn verde" id="assEntrar">Liberar o app</button>
@@ -141,12 +147,15 @@
     $("assEntrar").onclick = async () => {
       const email = $("assEmail").value.trim();
       if (!/^\S+@\S+\.\S+$/.test(email)) return ($("assMsg").textContent = "Confira o e-mail.");
+      if (!$("assAceite").checked) return ($("assMsg").textContent = "Marque a caixinha para aceitar os Termos e a Privacidade.");
+      // Registro do aceite (LGPD, 18/11): versão dos termos + data/hora, guardado no aparelho e mandado ao servidor
+      aceite = st.aceite || { versao: TERMOS_VERSAO, em: new Date().toISOString() };
       if (SERVIDOR) return pedeCodigo(email);
       $("assMsg").textContent = "Conferindo...";
       const ok = await confere(email);
       if (ok === null) return ($("assMsg").textContent = "Sem internet agora. Tente de novo com internet.");
       if (!ok) return ($("assMsg").textContent = "Não achei esse e-mail. Se acabou de assinar, espere alguns minutos.");
-      st = { email, ok: true, conferido: Date.now() };
+      st = { email, ok: true, conferido: Date.now(), aceite };
       salva();
       montaInicio();
       mostra(`<div style="font-size:52px">🎉</div><h2>Tudo liberado!</h2><p>Bom divertimento!</p>
@@ -187,10 +196,10 @@
       const codigo = $("assCodigo").value.replace(/\D/g, "");
       if (codigo.length !== 6) return ($("assMsg").textContent = "O código tem 6 números.");
       $("assMsg").textContent = "Conferindo...";
-      const e = await servidor({ acao: "entrar", email, codigo, aparelho: st.aparelho || "" });
+      const e = await servidor({ acao: "entrar", email, codigo, aparelho: st.aparelho || "", aceite: aceite ? aceite.versao + "|" + aceite.em : "" });
       if (!e) return ($("assMsg").textContent = "Sem internet agora. Tente de novo com internet.");
       if (!e.ok) return ($("assMsg").textContent = e.msg || "Código errado.");
-      st = { email, ok: true, conferido: Date.now(), passe: e.passe, aparelho: e.aparelho };
+      st = { email, ok: true, conferido: Date.now(), passe: e.passe, aparelho: e.aparelho, aceite };
       salva();
       tudoLiberado();
     };
