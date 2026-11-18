@@ -142,7 +142,7 @@
   #cenario .errou, .fruta.errou { animation: treme .4s; transform-box: fill-box; transform-origin: center; }
   .estrelinha { animation: surge .5s; transform-box: fill-box; transform-origin: center; pointer-events: none; }
   @keyframes surge { from { transform: scale(0); } }
-  .frutas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+  .frutas { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 14px 0; }
   .fruta { background: #fff; border: 0; border-radius: 20px; padding: 6px; box-shadow: 0 2px 10px rgba(0,0,0,.08); cursor: pointer; }
   .fruta svg { width: 100%; height: auto; display: block; }
   .fruta.certa { outline: 4px solid var(--verde); }
@@ -1394,10 +1394,13 @@ const FRUTAS = [
     svg: `<path d="M100 48 C80 48 82 82 76 96 C50 116 50 178 100 178 C150 178 150 116 124 96 C118 82 120 48 100 48Z" fill="#A6D04A" stroke="#7FA82E" stroke-width="3"/>
       <path d="M100 48 Q100 32 108 24" stroke="#8B5A2B" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="80" cy="130" rx="9" ry="18" fill="#fff" opacity=".3"/>` }
 ];
-let feira = { certa: null };
+// 18/11 (reclamação de uma mãe testando: "só tem fruta repetida"): nunca repete cor nem fruta seguidas,
+// mesa com 4 frutas (antes 6 de 8 = sempre as mesmas) e partida curta de 5 frutas com festa no fim.
+const FEIRA_RODADAS = 5;
+let feira = { certa: null, ultimaCor: null, ultimaFruta: null, rodada: 0 };
 
 function abrirFeira() {
-  feira.certa = null;
+  feira.certa = null; feira.rodada = 0; feira.ultimaCor = null; feira.ultimaFruta = null;
   $("frutas").innerHTML = "";
   $("feiraFato").hidden = true;
   $("feiraPedido").textContent = "Vamos à feira?";
@@ -1411,11 +1414,16 @@ function pedeFruta() {
   toca("feira-" + feira.certa);
 }
 function novaRodadaFeira() {
-  const cores = [...new Set(FRUTAS.map(f => f.c))];
+  const cores = [...new Set(FRUTAS.map(f => f.c))].filter(c => c !== feira.ultimaCor);
   feira.certa = cores[Math.floor(Math.random() * cores.length)];
-  const daCor = embaralha(FRUTAS.filter(f => f.c === feira.certa));
-  const outras = embaralha(FRUTAS.filter(f => f.c !== feira.certa));
-  const mesa = embaralha([daCor[0], ...outras.slice(0, 5)]);
+  feira.ultimaCor = feira.certa;
+  let daCor = embaralha(FRUTAS.filter(f => f.c === feira.certa && f !== feira.ultimaFruta));
+  if (!daCor.length) daCor = embaralha(FRUTAS.filter(f => f.c === feira.certa));
+  feira.ultimaFruta = daCor[0];
+  // as outras 3 frutas: cada uma de uma cor diferente, para a mesa variar e não confundir
+  const vistas = new Set([feira.certa]), outras = [];
+  embaralha(FRUTAS.filter(f => f.c !== feira.certa)).forEach(f => { if (!vistas.has(f.c) && outras.length < 3) { vistas.add(f.c); outras.push(f); } });
+  const mesa = embaralha([daCor[0], ...outras]);
   $("feiraFato").hidden = true;
   $("feiraPedido").innerHTML = `Fruta ${CORES_PT[feira.certa].f} <span style="font-weight:400;color:#777">· ${CORES_PT[feira.certa].en}</span>`;
   $("feiraOuvir").textContent = "🔊 Ouvir de novo";
@@ -1448,8 +1456,14 @@ function tocouFruta(f, b) {
   confete();
   $("feiraFato").innerHTML = mascote("pequeno") + `<b>Você sabia?</b> ${f.fato}`;
   $("feiraFato").hidden = false;
-  $("feiraOuvir").textContent = "Próxima fruta ➜";
-  $("feiraOuvir").onclick = novaRodadaFeira;
+  feira.rodada++;
+  if (feira.rodada >= FEIRA_RODADAS) {
+    $("feiraOuvir").textContent = "Terminar a feira 🎉";
+    $("feiraOuvir").onclick = () => festa("🧺", "Você fez a feira toda!", FEIRA_RODADAS + " frutas certinhas! Quer fazer outra feira?", () => { feira.rodada = 0; feira.ultimaFruta = null; novaRodadaFeira(); });
+  } else {
+    $("feiraOuvir").textContent = `Próxima fruta ➜ (${feira.rodada}/${FEIRA_RODADAS})`;
+    $("feiraOuvir").onclick = novaRodadaFeira;
+  }
   if (medalha) festa(medalha[1], "Medalha nova!", "Você juntou " + prog.estrelas + " estrelas!", null);
 }
 
