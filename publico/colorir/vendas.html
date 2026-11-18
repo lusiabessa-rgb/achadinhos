@@ -228,12 +228,11 @@ document.addEventListener("click",function(e){var a=e.target.closest("a,button")
     <div class="plano destaque">
       <span class="selo">MELHOR CUSTO</span>
       <h3>Plano Anual</h3>
-      <div class="de">R$ 99,90</div>
-      <div class="valor">R$ 79,90 <small>por ano</small></div>
-      <span class="economia">Economize R$ 98,90 em relação a 12 meses do plano mensal</span>
-      <p>Equivale a <b>R$ 6,66 por mês</b>: menos que um picolé por mês, para as férias inteiras e o ano todo.</p>
-      <p>Pagamento à vista, sem juros: Pix, boleto ou cartão.</p>
-      <p>Preço de lançamento para quem assinar até 30/11. Depois dessa data, o anual passa a R$ 99,90.</p>
+      <div class="valor">12x de R$ 8,26 <small>no plano anual</small></div>
+      <span class="economia">Bem mais barato que 12 meses do plano mensal</span>
+      <p>Menos que um picolé por mês, para as férias inteiras e o ano todo.</p>
+      <p>No cartão em até 12x, ou no Pix.</p>
+      <p>Preço de lançamento para quem assinar até 30/11. Depois dessa data, o preço do anual sobe.</p>
       <a class="botao" data-plano="anual" href="#">Quero o plano anual</a>
     </div>
     <div class="plano mensal">
@@ -270,7 +269,7 @@ document.addEventListener("click",function(e){var a=e.target.closest("a,button")
   <details><summary>Tem anúncio? Vocês coletam dados do meu filho?</summary><p>Não tem nenhum anúncio. Não coletamos nenhum dado da criança, só o e-mail do adulto que assinou. Veja a <a href="privacidade.html">privacidade</a>.</p></details>
   <details><summary>O app vai ganhar coisas novas?</summary><p>Sim! O Colore com Helena terá atualizações: novos desenhos, atividades e cenários entram aos poucos, sem custo a mais para quem é assinante.</p></details>
   <details><summary>Como cancelo?</summary><p>Quando quiser, sem multa, pela Kiwify (o link vem no e-mail da compra) ou pelo nosso e-mail. Nos primeiros 7 dias você ainda tem a garantia de reembolso total.</p></details>
-  <details><summary>Qual plano vale mais a pena?</summary><p>O anual: no lançamento sai por R$ 79,90 o ano todo (equivale a R$ 6,66 por mês), contra R$ 14,90 por mês no mensal. Esse preço vale só até 30/11.</p></details>
+  <details><summary>Qual plano vale mais a pena?</summary><p>O anual: no lançamento sai em até 12x de R$ 8,26 (ou no Pix), contra R$ 14,90 por mês no mensal. Esse preço vale só até 30/11.</p></details>
 </section>
 
 <!-- 12. Chamada final -->
@@ -286,7 +285,7 @@ document.addEventListener("click",function(e){var a=e.target.closest("a,button")
 <footer class="rodape"><a href="./">Abrir o app</a><a href="ajuda.html">Ajuda</a><a href="termos.html">Termos de uso</a><a href="privacidade.html">Privacidade</a><br>Colore com Helena · Contato: colorecomhelena@gmail.com</footer>
 <script>
   // Links de pagamento da Kiwify (os mesmos do app). Anual = plano de lançamento R$ 79,90 até 30/11; depois: d1O6hAv (R$ 99,90).
-  const CHECKOUT = { anual: "https://pay.kiwify.com.br/aUE7IKa", mensal: "https://pay.kiwify.com.br/9P9HQon" };
+  const CHECKOUT = { anual: "https://pay.kiwify.com.br/RIK2pX5", mensal: "https://pay.kiwify.com.br/9P9HQon" };
   document.querySelectorAll("[data-plano]").forEach(a => a.href = CHECKOUT[a.dataset.plano]);
 </script>
 </body>

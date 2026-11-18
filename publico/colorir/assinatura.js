@@ -6,7 +6,7 @@
   const GRATIS = { desenhos: 3, formas: 2, letras: 5, numeros: 3, quebra: 2 };
   // Jogo das Cores e Feira das Frutas ficam abertos. Vale Encantado e Sequência são da assinatura.
   // Links de pagamento da Kiwify (produto "Colore com Helena", criado em 31/10)
-  const LINKS = { mensal: "https://pay.kiwify.com.br/9P9HQon", anual: "https://pay.kiwify.com.br/aUE7IKa" }; // anual = plano de lançamento R$ 79,90 até 30/11 (depois: d1O6hAv, R$ 99,90)
+  const LINKS = { mensal: "https://pay.kiwify.com.br/9P9HQon", anual: "https://pay.kiwify.com.br/RIK2pX5" }; // anual = plano de lançamento 12x (RIK2pX5, 12x de R$ 8,26 com juros da Kiwify) até 30/11 (depois: d1O6hAv, R$ 99,90)
   // TRAVA FORTE (31/10): endereço do servidor (Google Apps Script, mini-app/trava/Codigo.gs).
   // Vazio = ainda não instalado: o app usa a lista antiga de e-mails (assinantes.json).
   const SERVIDOR = "https://script.google.com/macros/s/AKfycbylt4cbcJ9s2M_cmMI48UTH3LvC6yZRts-MnqSerCxDreYWhzdMZZR8_Wbc2nvFaEW-/exec";
@@ -106,8 +106,8 @@
     mostra(`<div style="font-size:44px">⭐</div>
       <h2>Gostou? Libere tudo!</h2>
       <p>Todos os desenhos, letras de A a Z, números, formas, quebra-cabeças e jogos, com a Hora da pausa que você controla. Sem anúncio. Desenhos novos chegando sempre.</p>
-      <p style="font-size:22px;margin:0 0 4px"><b style="color:#2BA84A">R$ 6,66 por mês</b></p>
-      <p style="font-size:13px;margin:0 0 12px">no plano anual de R$ 79,90 (preço de lançamento até 30/11)<br>🛡️ 7 dias de garantia: se não gostar, devolvemos 100%</p>
+      <p style="font-size:22px;margin:0 0 4px"><b style="color:#2BA84A">12x de R$ 8,26</b></p>
+      <p style="font-size:13px;margin:0 0 12px">no plano anual, ou no Pix (preço de lançamento até 30/11)<br>🛡️ 7 dias de garantia: se não gostar, devolvemos 100%</p>
       <div class="botoes">
         <button class="btn verde" id="assQuero">Quero liberar tudo</button>
         <button class="btn forte" id="assJa">Já sou assinante</button>
@@ -117,7 +117,7 @@
       mostra(`<h2>Escolha o plano</h2>
         <p>Depois de pagar, volte aqui e toque em "Já sou assinante" com o mesmo e-mail da compra.</p>
         <div class="botoes">
-          <button class="btn verde" id="assAnual">⭐ Anual: R$ 79,90<br><small>preço de lançamento até 30/11 · sai R$ 6,66 por mês</small></button>
+          <button class="btn verde" id="assAnual">⭐ Anual: 12x de R$ 8,26<br><small>preço de lançamento até 30/11 · ou no Pix</small></button>
           <button class="btn forte" id="assMensal">Mensal: R$ 14,90<br><small>preço de lançamento até 30/11</small></button>
           <button class="btn" id="assFecha">Voltar</button>
         </div>`);
@@ -225,7 +225,7 @@
       const b = document.createElement("button");
       b.className = "btn verde"; b.id = "pausaConvite";
       b.style.marginTop = "10px";
-      b.innerHTML = "⭐ Gostou? Libere tudo por R$ 6,66/mês";
+      b.innerHTML = "⭐ Gostou? Libere tudo por 12x de R$ 8,26";
       b.onclick = () => portaoDoAdulto(); // abre POR CIMA do descanso: fechar volta para o bloqueio (a criança não escapa)
       $("pausaCaixa").appendChild(b);
     };
