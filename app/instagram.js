@@ -17,7 +17,9 @@ async function chamar(cred, metodo, caminho, params = {}, fetchFn = fetch) {
   const url = new URL(`${HOST}/${VERSAO}/${caminho}`);
   const corpo = new URLSearchParams({ ...params, access_token: cred.token });
   let ultimoErro;
-  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+  // 19/11: media_publish NUNCA é repetido às cegas (o Instagram publica e ainda responde erro -1: dava post duplicado)
+  const maxTent = caminho.endsWith('/media_publish') ? 1 : 3;
+  for (let tentativa = 1; tentativa <= maxTent; tentativa++) {
     try {
       const resp =
         metodo === 'GET'
@@ -42,7 +44,7 @@ async function chamar(cred, metodo, caminho, params = {}, fetchFn = fetch) {
       if (e instanceof ErroFatal || (e.message || '').startsWith('Instagram:')) throw e;
       ultimoErro = e.name === 'TimeoutError' ? new Error('O Instagram demorou demais para responder.') : e;
     }
-    if (tentativa < 3) await espera(3000 * tentativa);
+    if (tentativa < maxTent) await espera(3000 * tentativa);
   }
   throw ultimoErro;
 }
@@ -71,7 +73,24 @@ async function esperarPronto(cred, idContainer, fetchFn, intervalo = 3000, maxTe
 // 14/11: o Instagram às vezes responde "Fatal (código -1)" no media_publish MAS publica mesmo assim.
 // A máquina achava que falhou, não anotava e repetia o post no dia seguinte (helena 10, 11 e 12/11).
 // Antes de dar erro, confere se o contêiner já ficou PUBLISHED; se sim, pega o ID do post mais recente.
-async function jaPublicado(cred, idContainer, fetchFn) {
+// 19/11: o status do contêiner nem sempre vira PUBLISHED (gato saiu 6x). Agora também olha os posts recentes:
+// se há um post com a mesma legenda, o post saiu.
+const igual = (a, b) => !!a && !!b && String(a).trim().slice(0, 80) === String(b).trim().slice(0, 80);
+async function postIgualRecente(cred, legenda, fetchFn, janelaMs) {
+  if (!legenda) return null;
+  try {
+    const m = await chamar(cred, 'GET', `${cred.userId}/media`, { fields: 'id,timestamp,caption', limit: '25' }, fetchFn);
+    const agora = Date.now();
+    const achou = (m.data || []).find((p) => igual(p.caption, legenda) && (!p.timestamp || agora - new Date(p.timestamp).getTime() < janelaMs));
+    return achou ? achou.id : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function jaPublicado(cred, idContainer, fetchFn, legenda) {
+  const pelaLegenda = await postIgualRecente(cred, legenda, fetchFn, 30 * 60 * 1000);
+  if (pelaLegenda) return pelaLegenda;
   try {
     const r = await chamar(cred, 'GET', idContainer, { fields: 'status_code' }, fetchFn);
     if (r.status_code !== 'PUBLISHED') return null;
@@ -82,7 +101,7 @@ async function jaPublicado(cred, idContainer, fetchFn) {
   }
 }
 
-async function publicarContainer(cred, idContainer, fetchFn, intervalo, { filhos = [], vezes = 5, video = false } = {}) {
+async function publicarContainer(cred, idContainer, fetchFn, intervalo, { filhos = [], vezes = 5, video = false, legenda } = {}) {
   const pausa = intervalo === undefined ? 15000 : intervalo;
   for (let i = 1; ; i++) {
     try {
@@ -90,7 +109,7 @@ async function publicarContainer(cred, idContainer, fetchFn, intervalo, { filhos
       return p.id;
     } catch (e) {
       if (e instanceof ErroFatal && [190, 10, 200].includes(e.codigo)) throw e;
-      const saiu = await jaPublicado(cred, idContainer, fetchFn);
+      const saiu = await jaPublicado(cred, idContainer, fetchFn, legenda);
       if (saiu) return saiu;
       if (e.codigo !== 9007) throw e;
       if (i >= vezes) {
@@ -117,12 +136,15 @@ async function limiteDeHoje(cred, fetchFn) {
 async function publicarImagem(cred, urlImagem, legenda, fetchFn = fetch, intervalo) {
   const c = await chamar(cred, 'POST', `${cred.userId}/media`, { image_url: urlImagem, caption: legenda }, fetchFn);
   await esperarPronto(cred, c.id, fetchFn, intervalo);
-  return publicarContainer(cred, c.id, fetchFn, intervalo);
+  return publicarContainer(cred, c.id, fetchFn, intervalo, { legenda });
 }
 
 // Carrossel com 2 a 10 imagens (conta como 1 post no limite do dia).
 async function publicarCarrossel(cred, urlsImagens, legenda, fetchFn = fetch, intervalo) {
   const urls = urlsImagens.slice(0, 10);
+  // 19/11: se este mesmo carrossel já está no feed (últimos 3 dias), NÃO posta de novo: devolve o id que já existe
+  const jaNoFeed = await postIgualRecente(cred, legenda, fetchFn, 3 * 24 * 3600 * 1000);
+  if (jaNoFeed) return jaNoFeed;
   if (urls.length < 2) return publicarImagem(cred, urls[0], legenda, fetchFn, intervalo);
   const filhos = [];
   for (const u of urls) {
@@ -139,7 +161,7 @@ async function publicarCarrossel(cred, urlsImagens, legenda, fetchFn = fetch, in
   );
   await esperarPronto(cred, pai.id, fetchFn, intervalo);
   // (antes do publish: filhos e contêiner do carrossel já estão FINISHED; 3 em 3 s, até ~2 min cada)
-  return publicarContainer(cred, pai.id, fetchFn, intervalo, { filhos });
+  return publicarContainer(cred, pai.id, fetchFn, intervalo, { filhos, legenda });
 }
 
 // Story com 1 imagem (sem legenda; o link fica na bio).
@@ -154,7 +176,7 @@ async function publicarStory(cred, urlImagem, fetchFn = fetch, intervalo) {
 async function publicarReel(cred, urlVideo, legenda, fetchFn = fetch, intervalo = 10000, maxTentativas = 60) {
   const c = await chamar(cred, 'POST', `${cred.userId}/media`, { media_type: 'REELS', video_url: urlVideo, caption: legenda, share_to_feed: 'true' }, fetchFn);
   await esperarPronto(cred, c.id, fetchFn, intervalo, maxTentativas, true);
-  return publicarContainer(cred, c.id, fetchFn, intervalo, { video: true });
+  return publicarContainer(cred, c.id, fetchFn, intervalo, { video: true, legenda });
 }
 
 // O token dura 60 dias. Renovar estende o prazo (precisa ter mais de 24h de vida).
