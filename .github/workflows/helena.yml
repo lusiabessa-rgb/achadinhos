@@ -5,8 +5,13 @@ name: Helena (carrossel educativo)
 
 on:
   schedule:
-    - cron: "0 22 * * *"   # 19h em Brasília (o GitHub pode atrasar alguns minutos)
-    - cron: "0 12 * * *"   # 9h em Brasília: RECUPERAÇÃO (16/11) — posta o que faltou ontem; se ontem saiu tudo, não faz nada
+    # 20/11: o GitHub passou a atrasar 5 a 8 h as rodadas marcadas em hora cheia (:00). Agora: minutos fora do pico + tentativas de reserva.
+    # Seguro repetir: o publicador só posta o que ainda não saiu (registro + conferência no feed) e a fila "helena" roda uma de cada vez.
+    - cron: "7 22 * * *"    # 19h07 em Brasília
+    - cron: "37 22 * * *"   # reserva 19h37
+    - cron: "7 23 * * *"    # reserva 20h07
+    - cron: "17 12 * * *"   # 9h17: RECUPERAÇÃO (posta o que faltou ontem; se ontem saiu tudo, não faz nada)
+    - cron: "47 12 * * *"   # reserva 9h47
   workflow_dispatch: {}
 
 permissions:

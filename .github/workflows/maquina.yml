@@ -6,10 +6,10 @@ name: Maquina de Ofertas
 on:
   # Horários automáticos (o GitHub pode atrasar alguns minutos)
   schedule:
-    - cron: "0 15 * * *"   # 12h em Brasília (ofertas)
-    - cron: "0 21 * * *"   # 18h em Brasília (ofertas)
-    - cron: "0 23 * * *"   # 20h em Brasília (post de conteúdo: pessoas em casa no feed)
-    - cron: "0 0 * * *"    # 21h em Brasília (carrossel de pesquisa do @achadinhoabessa, 1 por dia; ofertas e fotos seguem zeradas pelo soReels)
+    - cron: "7 15 * * *"   # 12h em Brasília (ofertas)
+    - cron: "7 21 * * *"   # 18h em Brasília (ofertas)
+    - cron: "7 23 * * *"   # 20h em Brasília (post de conteúdo: pessoas em casa no feed)
+    - cron: "7 0 * * *"    # 21h em Brasília (carrossel de pesquisa do @achadinhoabessa, 1 por dia; ofertas e fotos seguem zeradas pelo soReels)
   workflow_dispatch: {}
 
 permissions:
