@@ -211,7 +211,20 @@
   const indiceQC = f => Object.keys(FIGURAS_QC).indexOf(f);
 
   abrir = (i, ...resto) => livreNaSecao(i) ? original.abrir(i, ...resto) : cadeado();
-  abrirVale = () => assinante() ? original.abrirVale() : cadeado();
+  // 20/11 (pedido dela: "só a Cozinha fica grátis... não deixe muitas coisas grátis, senão ninguém assina"):
+  // os jogos novos nasceram depois da trava e estavam abertos para todos. Agora só a COZINHA DA HELENA (cena do Vale) é teste grátis.
+  const CENA_GRATIS = "cozinha";
+  const jogosOriginais = { abrirJogo, abrirFeira, abrirTurma, mostrarCenario };
+  abrirJogo = () => assinante() ? jogosOriginais.abrirJogo() : cadeado();
+  abrirFeira = () => assinante() ? jogosOriginais.abrirFeira() : cadeado();
+  abrirTurma = (id, ...resto) => assinante() ? jogosOriginais.abrirTurma(id, ...resto) : cadeado();
+  mostrarCenario = id => (assinante() || id === CENA_GRATIS) ? jogosOriginais.mostrarCenario(id) : cadeado();
+  abrirVale = () => {
+    if (assinante()) return original.abrirVale();
+    vale.cenario = CENA_GRATIS; // quem não assinou entra direto na Cozinha; as outras cenas pedem assinatura
+    original.abrirVale();
+    $("valeCenarios").querySelectorAll("button").forEach(b => b.classList.toggle("trancado", b.dataset.cen !== CENA_GRATIS));
+  };
   abrirSequencia = () => assinante() ? original.abrirSequencia() : cadeado();
   montaQuebra = f => assinante() || emTeste() || indiceQC(f) < GRATIS.quebra ? original.montaQuebra(f) : cadeado();
 
