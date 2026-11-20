@@ -14,7 +14,8 @@ const SIMULAR = process.argv.includes('--simular');
 const DESTINO = SIMULAR ? fs.mkdtempSync(path.join(os.tmpdir(), 'site-helena-')) : path.join(__dirname, '..', '..', 'site-colorecomhelena');
 const REPO = 'https://github.com/colorecomhelena/colorecomhelena.github.io.git';
 const NOVO = 'https://colorecomhelena.github.io/';
-const PROIBIDO = /lusia|bessa/i;
+// 20/11: ela AUTORIZOU aparecer (Professora Lusia Helena Bessa) na página de vendas. Continua proibido vazar o e-mail, o GitHub e a conta do Achadinho.
+const PROIBIDO = /lusiabessa|achadinho/i;
 const GIT = (args, cwd = DESTINO) => execFileSync('git', args, { cwd, stdio: 'pipe' }).toString().trim();
 
 // Tira o nome dela do texto do arquivo (só anotações e endereços; nada que a mãe vê muda)
