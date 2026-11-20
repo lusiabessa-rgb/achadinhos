@@ -212,11 +212,11 @@
 
   abrir = (i, ...resto) => livreNaSecao(i) ? original.abrir(i, ...resto) : cadeado();
   // 20/11 (pedido dela: "só a Cozinha fica grátis... não deixe muitas coisas grátis, senão ninguém assina"):
-  // os jogos novos nasceram depois da trava e estavam abertos para todos. Agora só a COZINHA DA HELENA (cena do Vale) é teste grátis.
+  // os jogos novos nasceram depois da trava e estavam abertos para todos. Agora só 2 coisas são teste grátis: a COZINHA DA HELENA (cena do Vale) e a FEIRA DAS FRUTAS.
   const CENA_GRATIS = "cozinha";
   const jogosOriginais = { abrirJogo, abrirFeira, abrirTurma, mostrarCenario };
   abrirJogo = () => assinante() ? jogosOriginais.abrirJogo() : cadeado();
-  abrirFeira = () => assinante() ? jogosOriginais.abrirFeira() : cadeado();
+  // 20/11: a FEIRA DAS FRUTAS é a 2ª coisa grátis (escolha minha, ela autorizou: "duas está ótimo"). Não travar.
   abrirTurma = (id, ...resto) => assinante() ? jogosOriginais.abrirTurma(id, ...resto) : cadeado();
   mostrarCenario = id => (assinante() || id === CENA_GRATIS) ? jogosOriginais.mostrarCenario(id) : cadeado();
   abrirVale = () => {
