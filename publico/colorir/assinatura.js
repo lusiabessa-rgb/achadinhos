@@ -106,8 +106,8 @@
     mostra(`<div style="font-size:44px">⭐</div>
       <h2>Gostou? Libere tudo!</h2>
       <p>Todos os desenhos, letras de A a Z, números, formas, quebra-cabeças e jogos, com a Hora da pausa que você controla. Sem anúncio. Desenhos novos chegando sempre.</p>
-      <p style="font-size:22px;margin:0 0 4px"><b style="color:#2BA84A">R$ 79,90 por ano</b></p>
-      <p style="font-size:13px;margin:0 0 12px">à vista, ou 12x de R$ 8,26 (total R$ 99,12) · mensal R$ 14,90 (preço de lançamento até 30/11)<br>🛡️ 7 dias de garantia: se não gostar, devolvemos 100%</p>
+      <p style="font-size:22px;margin:0 0 4px"><b style="color:#2BA84A">12x de R$ 8,26</b></p>
+      <p style="font-size:13px;margin:0 0 12px">plano anual · ou mensal R$ 14,90 (preço de lançamento até 30/11)<br>🛡️ 7 dias de garantia: se não gostar, devolvemos 100%</p>
       <div class="botoes">
         <button class="btn verde" id="assQuero">Quero liberar tudo</button>
         <button class="btn forte" id="assJa">Já sou assinante</button>
@@ -117,7 +117,7 @@
       mostra(`<h2>Escolha o plano</h2>
         <p>Depois de pagar, volte aqui e toque em "Já sou assinante" com o mesmo e-mail da compra.</p>
         <div class="botoes">
-          <button class="btn verde" id="assAnual">⭐ Anual: R$ 79,90 à vista<br><small>ou 12x de R$ 8,26 (total R$ 99,12) · lançamento até 30/11</small></button>
+          <button class="btn verde" id="assAnual">⭐ Anual: 12x de R$ 8,26<br><small>plano de lançamento até 30/11</small></button>
           <button class="btn forte" id="assMensal">Mensal: R$ 14,90<br><small>preço de lançamento até 30/11</small></button>
           <button class="btn" id="assFecha">Voltar</button>
         </div>`);
@@ -238,7 +238,7 @@
       const b = document.createElement("button");
       b.className = "btn verde"; b.id = "pausaConvite";
       b.style.marginTop = "10px";
-      b.innerHTML = "⭐ Gostou? Libere tudo por R$ 79,90 no ano";
+      b.innerHTML = "⭐ Gostou? Libere tudo em 12x de R$ 8,26";
       b.onclick = () => portaoDoAdulto(); // abre POR CIMA do descanso: fechar volta para o bloqueio (a criança não escapa)
       $("pausaCaixa").appendChild(b);
     };
