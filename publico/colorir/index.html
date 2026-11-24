@@ -2130,7 +2130,7 @@ function acabouQuebra() {
 }
 
 // ===== Hora da pausa (ideia 5, pedido da Lusia em 01/11) =====
-// O adulto escolhe 10, 15 ou 20 minutos (trava da continha). Conta só o tempo com o app aberto na tela.
+// O adulto escolhe 15, 20 ou 60 minutos (trava da continha). Conta só o tempo com o app aberto na tela.
 // Falta 1 minuto: aviso suave. Acabou: tela de descanso que só o adulto desbloqueia.
 // Ficou mais de 30 minutos longe do app: o tempo começa de novo (o descanso já aconteceu).
 function passoPausa(st, agora) {
@@ -2144,7 +2144,7 @@ function passoPausa(st, agora) {
   if (st.min > 1 && st.usado >= (st.min - 1) * 60000 && !st.avisou) { st.avisou = true; return "aviso"; }
   return "nada";
 } // fim passoPausa
-const TEMPOS_TELA = [10, 15, 20, 60]; // 60 = 1 hora (pedido dela, 24/11)
+const TEMPOS_TELA = [15, 20, 60]; // 60 = 1 hora; sem 10 min (pedido dela, 24/11)
 const rotuloMin = m => m === 60 ? "1 hora" : m + " minutos";
 const BRINCADEIRAS = [
   "Desenhe no papel o que você pintou.",
