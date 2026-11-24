@@ -2144,7 +2144,8 @@ function passoPausa(st, agora) {
   if (st.min > 1 && st.usado >= (st.min - 1) * 60000 && !st.avisou) { st.avisou = true; return "aviso"; }
   return "nada";
 } // fim passoPausa
-const TEMPOS_TELA = [10, 15, 20];
+const TEMPOS_TELA = [10, 15, 20, 60]; // 60 = 1 hora (pedido dela, 24/11)
+const rotuloMin = m => m === 60 ? "1 hora" : m + " minutos";
 const BRINCADEIRAS = [
   "Desenhe no papel o que você pintou.",
   "Procure 3 coisas azuis na casa.",
@@ -2158,7 +2159,7 @@ const BRINCADEIRAS = [
 let pausa = { min: 0 };
 try { pausa = Object.assign(pausa, JSON.parse(localStorage.getItem("helena-pausa")) || {}); } catch (e) {}
 const guardaPausa = () => { try { localStorage.setItem("helena-pausa", JSON.stringify(pausa)); } catch (e) {} };
-function mostraTempoTela() { $("tempoTela").textContent = "⏰ Tempo de tela: " + (pausa.min ? pausa.min + " minutos" : "desligado"); }
+function mostraTempoTela() { $("tempoTela").textContent = "⏰ Tempo de tela: " + (pausa.min ? rotuloMin(pausa.min) : "desligado"); }
 
 // Trava do adulto: continha fácil (a criança pequena não resolve sozinha).
 function travaDoAdulto(depois, voltar) {
@@ -2175,7 +2176,7 @@ function travaDoAdulto(depois, voltar) {
 function escolheTempo() {
   $("pausaCaixa").innerHTML = `<div class="lua">⏰</div><h2>Tempo de tela</h2>
     <p>Você escolhe quanto tempo seu filho pode usar. Quando o tempo acabar, a tela é bloqueada e só volta quando você liberar.</p>
-    <div class="tempos">${[0, ...TEMPOS_TELA].map(m => `<button class="btn${pausa.min === m ? " ligado" : ""}" data-min="${m}">${m ? m + " minutos" : "Desligado"}</button>`).join("")}</div>`;
+    <div class="tempos">${[0, ...TEMPOS_TELA].map(m => `<button class="btn${pausa.min === m ? " ligado" : ""}" data-min="${m}">${m ? rotuloMin(m) : "Desligado"}</button>`).join("")}</div>`;
   $("pausaTela").classList.add("aberta");
   $("pausaCaixa").querySelectorAll("[data-min]").forEach(b => b.onclick = () => {
     pausa = { min: +b.dataset.min, usado: 0, ultimo: Date.now(), bloqueado: false, avisou: false };
