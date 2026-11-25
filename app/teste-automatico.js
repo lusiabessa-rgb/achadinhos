@@ -1878,7 +1878,7 @@ const resposta = (status, json) => ({ ok: status === 200, status, json: async ()
   await teste('app colorir: Hora da pausa (tempo de tela, aviso de 1 minuto, bloqueio só o adulto tira)', async () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'publico', 'colorir', 'index.html'), 'utf8');
     for (const t of ['id="tempoTela"', 'id="pausaTela"', 'id="pausaAviso"', 'Falta 1 minuto!', 'Hora de descansar os olhos!',
-      'Imprimir este desenho para pintar no papel', 'Só para adultos', '"helena-pausa"', '[10, 15, 20]', 'window.print()']) {
+      'Imprimir este desenho para pintar no papel', 'Só para adultos', '"helena-pausa"', '[15, 20, 60]', '"1 hora"', 'window.print()']) {
       assert.ok(html.includes(t), 'faltou no app: ' + t);
     }
     assert.ok(!/inh[ao]s?\b/i.test(html.match(/const BRINCADEIRAS = \[[\s\S]*?\];/)[0]), 'brincadeira com diminutivo');

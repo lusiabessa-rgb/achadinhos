@@ -4,7 +4,7 @@
 <script>if(location.hostname.endsWith(".github.io")&&location.hostname!=="colorecomhelena.github.io"){window.fbq=function(){};location.replace("https://colorecomhelena.github.io/"+location.pathname.split("/colorir/").pop()+location.search+location.hash);}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Colore com Helena · app de atividades para as férias</title>
+<title>Colore com Helena · app infantil de colorir e aprender</title>
 <meta name="description" content="Desenhos para pintar, letras e números com voz, jogos de cores e quebra-cabeças, criados por uma professora alfabetizadora. Sem anúncios e com Hora da pausa.">
 <meta property="og:title" content="Colore com Helena: troque o feed infinito por uma tela que ensina brincando">
 <meta property="og:description" content="App de atividades para crianças de 2 a 6 anos, criado por uma professora. Sem anúncios, com Hora da pausa.">
@@ -66,6 +66,13 @@
   .plano p { margin: 6px 0; font-size: 15px; color: #4a433d; }
   .plano .botao { width: 100%; text-align: center; margin-top: 12px; }
   .faixa { background: var(--amar); color: #3b2e00; text-align: center; font-weight: 800; padding: 10px 14px; border-radius: 14px; }
+  .confianca { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .confianca span { background: #fff; border: 2px solid var(--linha); border-radius: 14px; padding: 10px 8px; text-align: center; font-size: 14px; font-weight: 700; color: #4a433d; }
+  .tres { display: grid; gap: 10px; margin-top: 10px; }
+  .passo { display: flex; gap: 12px; align-items: center; background: #fff; border: 2px solid var(--linha); border-radius: 16px; padding: 10px 14px; }
+  .passo b { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; background: var(--verde); color: #fff; display: grid; place-items: center; font-size: 18px; }
+  .passo p { margin: 0; font-size: 15px; line-height: 1.35; }
+  @media (min-width: 640px) { .confianca { grid-template-columns: repeat(4, 1fr); } .tres { grid-template-columns: repeat(3, 1fr); } .passo { align-items: flex-start; } }
   .garantia { display: flex; gap: 14px; align-items: center; }
   .garantia .medalha { flex: 0 0 auto; width: 84px; height: 84px; border-radius: 50%; background: var(--verde); color: #fff; display: grid; place-items: center; text-align: center; font-weight: 900; line-height: 1.05; font-size: 15px; box-shadow: 0 0 0 5px #fff, 0 0 0 8px var(--verde); }
   @media (min-width: 640px) { .precos { grid-template-columns: 1fr 1fr; } .galeria { grid-template-columns: repeat(3, 1fr); } .dois { grid-template-columns: 1fr 1fr; } h1 { font-size: 36px; } }
@@ -84,11 +91,12 @@ document.addEventListener("click",function(e){var a=e.target.closest("a,button")
 <!-- 1. Dobra -->
 <section class="centro" style="padding-top:4px">
   <div class="hero">
-  <span class="chamada">☀️ As férias estão chegando</span>
-  <h1 class="gancho">Seu filho vai passar as férias <span class="risco">rolando vídeo</span>… ou <span class="marca">criando</span>?</h1>
-  <p class="destaque">Troque o feed infinito por uma tela que <b>ensina brincando</b>.</p>
+  <span class="chamada">🎨 Aplicativo infantil de colorir</span>
+  <h1 class="gancho">E se o tempo que seu filho passa na tela também fosse um momento de <span class="marca">criatividade</span> e descobertas?</h1>
+  <p class="destaque">A tela não precisa ser inimiga do aprendizado. <b>O segredo está no conteúdo.</b></p>
   <p class="autoridade">✏️ Criado pela Professora Lusia Helena · Pedagoga e Especialista em Psicopedagogia e Alfabetização</p>
   <p class="selinhos">Sem anúncios · Garantia de 7 dias · Cancela quando quiser</p>
+  <p style="margin:14px 0 0"><a class="botao" href="#precos">Quero conhecer o app</a> <a class="botao azul" href="./">Abrir a parte grátis</a></p>
   </div>
   <div class="dobra-img">
     <img class="tela" src="vendas/inicio.webp" alt="Tela inicial do app Colore com Helena">
@@ -99,10 +107,30 @@ document.addEventListener("click",function(e){var a=e.target.closest("a,button")
 
 </section>
 
+<!-- 25/11 (pedido dela, pesquisa de páginas de venda): faixa de confiança + Como funciona + teste grátis logo no começo -->
+<section>
+  <div class="confianca">
+    <span>🔒 Pagamento seguro pela Kiwify</span>
+    <span>↩️ Garantia de 7 dias</span>
+    <span>✋ Cancele quando quiser</span>
+    <span>👩‍🏫 Feito por professora</span>
+  </div>
+  <h2 class="centro" style="margin-top:22px">Como funciona</h2>
+  <div class="tres">
+    <div class="passo"><b>1</b><p><strong>Você escolhe o tempo</strong><br>15 minutos, 20 minutos ou 1 hora.</p></div>
+    <div class="passo"><b>2</b><p><strong>A criança pinta, toca e ouve</strong><br>Letras, números, cores e jogos com a voz da Helena.</p></div>
+    <div class="passo"><b>3</b><p><strong>O tempo acaba e a tela pausa</strong><br>Só você libera de novo.</p></div>
+  </div>
+  <div class="cartao centro" style="margin-top:14px">
+    <p style="margin:0 0 8px"><b>Quer ver antes de assinar?</b> Abra a parte grátis e teste com seu filho hoje.</p>
+    <a class="botao azul" href="./">Abrir a parte grátis</a>
+  </div>
+</section>
+
 <!-- 2. Dor -->
 <section>
-  <h2>Férias em casa: você conhece essa cena?</h2>
-  <p>Quando as aulas acabam, nos primeiros dias tudo é festa. Depois vem o "mãe, tô entediado", "pai, me dá o celular".</p>
+  <h2>Telas em casa: você conhece essa cena?</h2>
+  <p>Tem dias em que tudo é festa. Depois vem o "mãe, tô entediado", "pai, me dá o celular".</p>
   <p>Aí a gente cede, porque precisa trabalhar, fazer o almoço, respirar um pouco. E seu filho passa a tarde rolando vídeo atrás de vídeo, sem fazer nada com as mãos nem com a cabeça.</p>
   <p>Bate aquela culpa. Você sabe que tela sem limite não faz bem, mas também não dá para inventar atividade nova toda hora.</p>
   <div class="comparar">
@@ -127,12 +155,31 @@ document.addEventListener("click",function(e){var a=e.target.closest("a,button")
 
 <!-- 3. Solução -->
 <section>
-  <h2>Tela não precisa ser só rolar feed.</h2>
+  <h2>Não é sobre tirar a tela. É sobre oferecer algo que vale a pena explorar.</h2>
   <p>A Sociedade Brasileira de Pediatria recomenda que crianças de 2 a 5 anos fiquem no máximo 1 hora por dia em telas, sempre com um adulto acompanhando, e que menores de 2 anos evitem telas (manual "Menos Telas, Mais Saúde").</p>
   <p>Foi pensando nisso que o Colore com Helena foi criado: um tempo de tela curto, com propósito e com você por perto. Seu filho pinta, toca, ouve, encontra cores e forma letras. Ele participa em vez de só assistir.</p>
-  <p>E é você quem manda no tempo: escolhe 10, 15 ou 20 minutos. Quando acaba, a tela é bloqueada, sugere uma brincadeira para a hora da pausa e só volta quando você liberar.</p>
-  <img src="vendas/pausa.webp" alt="Tela da Hora da pausa: o adulto escolhe 10, 15 ou 20 minutos" style="width:100%;max-width:340px;display:block;margin:14px auto 0;border-radius:18px;box-shadow:0 4px 16px rgba(0,0,0,.1)">
-  <p class="centro"><a class="botao" href="#precos">Quero para as férias</a></p>
+  <p>E é você quem manda no tempo: escolhe 15 minutos, 20 minutos ou 1 hora. Quando acaba, a tela é bloqueada, sugere uma brincadeira para a hora da pausa e só volta quando você liberar.</p>
+  <img src="vendas/pausa.webp" alt="Tela da Hora da pausa: o adulto escolhe 15 minutos, 20 minutos ou 1 hora" style="width:100%;max-width:340px;display:block;margin:14px auto 0;border-radius:18px;box-shadow:0 4px 16px rgba(0,0,0,.1)">
+  <p class="centro"><a class="botao" href="#precos">Quero conhecer o app</a></p>
+</section>
+
+<!-- Depoimento de mãe (19/11; assinatura só com nome e cidade, pedido dela). Subiu para depois da solução em 24/11 (prova social mais cedo). -->
+<section>
+  <h2>O que as mães estão achando</h2>
+  <div class="cartao" style="display:flex;gap:14px;align-items:center">
+    <img src="vendas/depoimento-mae.webp" alt="Foto de uma mãe com o filho, rosto da criança coberto por um coração" width="72" height="72" style="width:72px;height:72px;border-radius:50%;flex:0 0 auto;object-fit:cover">
+    <div>
+      <p style="margin:0 0 6px">“Professora Helena, meu filho está gostando muito do joguinho, ele pede todos os dias e achei fácil para ele entender.”</p>
+      <b style="font-size:14px">Adriana · Goiânia</b>
+    </div>
+  </div>
+  <div class="cartao" style="margin-top:12px;display:flex;gap:14px;align-items:center">
+    <img src="vendas/depoimento-jessica.webp" alt="Coração feito de conchas" width="72" height="72" style="width:72px;height:72px;border-radius:50%;flex:0 0 auto;object-fit:cover">
+    <div>
+      <p style="margin:0 0 6px">“Oi, tia Helena, meu filho está gostando muito de aprender com a Maria!!! O seu joguinho ajudou muito o aprendizado dele 😊💗”</p>
+      <b style="font-size:14px">Jéssica · Uberlândia</b>
+    </div>
+  </div>
 </section>
 
 <!-- 4. O que tem dentro -->
@@ -160,8 +207,9 @@ document.addEventListener("click",function(e){var a=e.target.closest("a,button")
   <div class="dois">
     <div class="cartao"><h2 style="font-size:20px">É para você se:</h2>
       <ul class="lista">
-        <li>tem um filho de 2 a 6 anos e quer uma opção melhor que o feed nas férias;</li>
+        <li>tem um filho de 2 a 6 anos e quer uma opção melhor que o feed no dia a dia;</li>
         <li>quer uma atividade educativa pronta, sem ter que inventar nada todo dia;</li>
+        <li>é mãe, pai, avó, tia ou cuidadora e quer uma atividade boa para fazer junto com a criança;</li>
         <li>pode ficar por perto enquanto seu filho usa, mesmo fazendo outra coisa no mesmo cômodo;</li>
         <li>gosta de saber o que cada atividade trabalha.</li>
       </ul></div>
@@ -200,29 +248,10 @@ document.addEventListener("click",function(e){var a=e.target.closest("a,button")
   <div class="cartao">📱 Funciona em Android e em iPhone. O app abre por um link e ainda não está na Play Store nem na App Store, por isso você não precisa procurar nada em loja.</div>
 </section>
 
-<!-- Depoimento de mãe (19/11; assinatura só com nome e cidade, pedido dela) -->
-<section>
-  <h2>O que as mães estão achando</h2>
-  <div class="cartao" style="display:flex;gap:14px;align-items:center">
-    <img src="vendas/depoimento-mae.webp" alt="Foto de uma mãe com o filho, rosto da criança coberto por um coração" width="72" height="72" style="width:72px;height:72px;border-radius:50%;flex:0 0 auto;object-fit:cover">
-    <div>
-      <p style="margin:0 0 6px">“Professora Helena, meu filho está gostando muito do joguinho, ele pede todos os dias e achei fácil para ele entender.”</p>
-      <b style="font-size:14px">Adriana · Goiânia</b>
-    </div>
-  </div>
-  <div class="cartao" style="margin-top:12px;display:flex;gap:14px;align-items:center">
-    <img src="vendas/depoimento-jessica.webp" alt="Coração feito de conchas" width="72" height="72" style="width:72px;height:72px;border-radius:50%;flex:0 0 auto;object-fit:cover">
-    <div>
-      <p style="margin:0 0 6px">“Oi, tia Helena, meu filho está gostando muito de aprender com a Maria!!! O seu joguinho ajudou muito o aprendizado dele 😊💗”</p>
-      <b style="font-size:14px">Jéssica · Uberlândia</b>
-    </div>
-  </div>
-</section>
-
 <!-- Amostra grátis -->
 <section class="centro">
   <h2>Experimente a parte grátis antes</h2>
-  <p>Alguns desenhos, letras, números, quebra-cabeças, o Jogo das Cores e a Feira das Frutas ficam abertos para você testar com seu filho hoje mesmo.</p>
+  <p>Alguns desenhos, letras, números, quebra-cabeças, a Cozinha da Helena e a Feira das Frutas ficam abertos para você testar com seu filho hoje mesmo.</p>
   <a class="botao azul" href="./">Abrir a parte grátis</a>
 </section>
 
@@ -252,8 +281,8 @@ document.addEventListener("click",function(e){var a=e.target.closest("a,button")
       <h3>Plano Anual</h3>
       <div class="valor">12x de R$ 8,26 <small>plano anual</small></div>
       <span class="economia">Bem mais barato que 12 meses do plano mensal</span>
-      <p>Menos que um picolé por mês, para as férias inteiras e o ano todo.</p>
-      <p>Parcelado no cartão, para as férias inteiras e o ano todo.</p>
+      <p>Menos que um picolé por mês, para o ano todo.</p>
+      <p>Parcelado no cartão, para o ano todo.</p>
       <p>Preço de lançamento para quem assinar até 30/11. Depois dessa data, o preço do anual sobe.</p>
       <a class="botao" data-plano="anual" href="#">Quero o plano anual</a>
     </div>
@@ -287,7 +316,7 @@ document.addEventListener("click",function(e){var a=e.target.closest("a,button")
   <details><summary>Para qual idade é?</summary><p>Para crianças de 2 a 6 anos, sempre com um adulto por perto. As atividades vão do mais simples (pintar, achar cores) ao mais desafiador (escrever sozinha depois do pontilhado).</p></details>
   <details><summary>Meu filho precisa saber ler?</summary><p>Não. A voz gravada fala as letras, os números e as cores.</p></details>
   <details><summary>O app vai ensinar meu filho a ler?</summary><p>Ele não substitui a escola nem promete alfabetizar. Ajuda seu filho a conhecer letras, números, formas e cores brincando, e as dicas mostram como continuar a conversa fora da tela.</p></details>
-  <details><summary>E o tempo de tela?</summary><p>Você escolhe quanto tempo seu filho pode usar (10, 15 ou 20 minutos). Quando acaba, a tela é bloqueada e sugere uma brincadeira para a hora da pausa ou imprimir o desenho para pintar no papel. Só um adulto libera de novo.</p></details>
+  <details><summary>E o tempo de tela?</summary><p>Você escolhe quanto tempo seu filho pode usar (15 minutos, 20 minutos ou 1 hora). Quando acaba, a tela é bloqueada e sugere uma brincadeira para a hora da pausa ou imprimir o desenho para pintar no papel. Só um adulto libera de novo.</p></details>
   <details><summary>Tem anúncio? Vocês coletam dados do meu filho?</summary><p>Não tem nenhum anúncio. Não coletamos nenhum dado da criança, só o e-mail do adulto que assinou. Veja a <a href="privacidade.html">privacidade</a>.</p></details>
   <details><summary>O app vai ganhar coisas novas?</summary><p>Sim! O Colore com Helena terá atualizações: novos desenhos, atividades e cenários entram aos poucos, sem custo a mais para quem é assinante.</p></details>
   <details><summary>Como cancelo?</summary><p>Quando quiser, sem multa, pela Kiwify (o link vem no e-mail da compra) ou pelo nosso e-mail. Nos primeiros 7 dias você ainda tem a garantia de reembolso total.</p></details>
@@ -296,7 +325,7 @@ document.addEventListener("click",function(e){var a=e.target.closest("a,button")
 
 <!-- 12. Chamada final -->
 <section class="centro">
-  <h2>As férias estão chegando. O preço de lançamento termina em 30/11.</h2>
+  <h2>O preço de lançamento termina em 30/11.</h2>
   <p>Você não precisa escolher entre "tela o dia todo" e "nenhuma tela". Dá para ter um tempo de tela curto, com propósito, que termina numa brincadeira no papel ou com a família.</p>
   <p>Assine hoje e, ainda hoje, seu filho já pode estar pintando, ouvindo a Helena e encontrando as cores no Vale Encantado.</p>
   <img src="vendas/maria.webp" alt="" style="width:110px">
